@@ -10,7 +10,7 @@ This project aims to extend [Durable Task Framework](https://github.com/Azure/du
 
 [Durable Task Framework](https://github.com/Azure/durabletask) is an open source framework that provides a foundation for workflow-as-code in .NET platform.
 
-[Azure Durable Functions](https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview) is a more popular framework connects Durable Task Framework to Azure serverless platform, making it simpler to create workflows as code.
+[Azure Durable Functions](https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview)  connects Durable Task Framework to Azure serverless platform, making it simpler to create workflows as code.
 
 The concepts of Durable Functions led to the development of [Cadence](https://cadenceworkflow.io/). A platform that brings Durable Functions to other programming languages and extends it with concepts for better microservices orchestration, like tasks lists and distributed workers.
 

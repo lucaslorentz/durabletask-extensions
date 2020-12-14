@@ -25,6 +25,6 @@
 
 ![Screenshot](screenshots/orchestration-terminate.png)
 
-## Puerge orchestration
+## Purge orchestration
 
 ![Screenshot](screenshots/orchestration-purge.png)
