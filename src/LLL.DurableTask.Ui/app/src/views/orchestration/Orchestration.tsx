@@ -91,7 +91,7 @@ export function Orchestration() {
       setEventsHistory(history);
       setIsLoading(false);
     })();
-  }, [instanceId]);
+  }, [instanceId, executionId]);
 
   const filteredEvents = eventsHistory.filter(
     (e) =>

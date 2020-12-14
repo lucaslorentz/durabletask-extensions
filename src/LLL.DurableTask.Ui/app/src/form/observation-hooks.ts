@@ -11,7 +11,7 @@ import { createProxyObserver } from "./observation-proxy";
 export function useObserver(description: string) {
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
 
-  const proxyObserver = useMemo(() => createProxyObserver(description), []);
+  const proxyObserver = useMemo(() => createProxyObserver(description), [description]);
 
   const { deactivate, dispose } = proxyObserver.activate(forceUpdate);
 
