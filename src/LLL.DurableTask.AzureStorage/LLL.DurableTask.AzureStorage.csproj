@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.3" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="3.1.7" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LLL.DurableTask.Core\LLL.DurableTask.Core.csproj" />
+  </ItemGroup>
+</Project>

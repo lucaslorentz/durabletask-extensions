@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+    <SpaRoot>app\</SpaRoot>
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="3.1.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Don't publish the SPA source files, but do show them in the project files list -->
+    <Content Remove="$(SpaRoot)**" />
+    <None Remove="$(SpaRoot)**" />
+    <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" />
+  </ItemGroup>
+
+  <Target Name="EnsureNodeEnv" BeforeTargets="YarnInstall">
+    <!-- Ensure Node.js is installed -->
+    <Exec Command="node --version" ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
+    </Exec>
+    <Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
+    <!-- Ensure Yarn is installed -->
+    <Exec Command="yarn --version" ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
+    </Exec>
+    <Error Condition="'$(ErrorCode)' != '0'" Text="Yarn is required to build and run this project. To continue, please install Yarn from https://yarnpkg.com/, and then restart your command prompt or IDE." />
+  </Target>
+
+  <Target Name="YarnInstall" BeforeTargets="YarnBuild" Condition=" !Exists('$(SpaRoot)node_modules') ">
+    <Message Importance="high" Text="Restoring dependencies using 'yarn'. This may take several minutes..." />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="yarn" />
+  </Target>
+
+  <Target Name="YarnBuild" BeforeTargets="SpaEmbedResources" Condition=" !Exists('$(SpaRoot)build') ">
+    <Exec WorkingDirectory="$(SpaRoot)" Command="yarn build" ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
+    </Exec>
+    <RemoveDir Directories="$(SpaRoot)build" Condition="'$(ErrorCode)' != '0'" />
+    <Error Condition="'$(ErrorCode)' != '0'" Text="Failed to run yarn build" />
+  </Target>
+
+  <Target Name="SpaEmbedResources" BeforeTargets="PrepareForBuild">
+    <ItemGroup>
+      <EmbeddedResource Include="$(SpaRoot)build\**" />
+    </ItemGroup>
+  </Target>
+
+</Project>

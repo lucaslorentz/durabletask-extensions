@@ -1,0 +1,245 @@
+﻿
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+package DurableTaskHub;
+
+service OrchestrationService {
+    //OrchestrationServiceClient
+    rpc CreateTaskOrchestration (CreateTaskOrchestrationRequest) returns (google.protobuf.Empty);
+    rpc ForceTerminateTaskOrchestration (ForceTerminateTaskOrchestrationRequest) returns (google.protobuf.Empty);
+    rpc SendTaskOrchestrationMessageBatch (SendTaskOrchestrationMessageBatchRequest) returns (google.protobuf.Empty);
+    rpc GetOrchestrationHistory (GetOrchestrationHistoryRequest) returns (GetOrchestrationHistoryResponse);
+    rpc GetOrchestrationState (GetOrchestrationStateRequest) returns (GetOrchestrationStateResponse);
+    rpc GetOrchestrationInstanceState (GetOrchestrationInstanceStateRequest) returns (GetOrchestrationInstanceStateResponse);
+    rpc PurgeOrchestrationHistory (PurgeOrchestrationHistoryRequest) returns (google.protobuf.Empty);
+    rpc WaitForOrchestration (WaitForOrchestrationRequest) returns (WaitForOrchestrationResponse);
+
+    rpc GetOrchestrations (GetOrchestrationsRequest) returns (GetOrchestrationsResponse);
+    rpc PurgeInstanceHistory (PurgeInstanceHistoryRequest) returns (PurgeInstanceHistoryResponse);
+
+    //OrchestrationService
+    rpc LockNextTaskOrchestrationWorkItem (stream TaskOrchestrationRequest) returns (stream TaskOrchestrationResponse);
+
+    rpc LockNextTaskActivityWorkItem (LockNextTaskActivityWorkItemRequest) returns (LockNextTaskActivityWorkItemResponse);
+    rpc RenewTaskActivityWorkItemLock (RenewTaskActivityWorkItemLockRequest) returns (RenewTaskActivityWorkItemLockResponse);
+    rpc CompleteTaskActivityWorkItem (CompleteTaskActivityWorkItemRequest) returns (google.protobuf.Empty);
+    rpc AbandonTaskActivityWorkItem (AbandonTaskActivityWorkItemRequest) returns (google.protobuf.Empty);
+}
+
+// Client messages
+message CreateTaskOrchestrationRequest {
+    string creationMessage = 1;
+    repeated int32 dedupeStatuses = 2;
+}
+
+message ForceTerminateTaskOrchestrationRequest {
+    string instanceId = 1;
+    string reason = 2;
+}
+
+message SendTaskOrchestrationMessageBatchRequest {
+    repeated string messages = 1;
+}
+
+message GetOrchestrationHistoryRequest {
+    string instanceId = 1;
+    string executionId = 2;
+}
+
+message GetOrchestrationHistoryResponse {
+    string history = 1;
+}
+
+message GetOrchestrationStateRequest {
+    string instanceId = 1;
+    string executionId = 2;
+}
+
+message GetOrchestrationStateResponse {
+    string state = 1;
+}
+
+message GetOrchestrationInstanceStateRequest {
+    string instanceId = 1;
+    bool allExecutions = 2;
+}
+
+message GetOrchestrationInstanceStateResponse {
+    repeated string states = 1;
+}
+
+message WaitForOrchestrationRequest {
+    string instanceId = 1;
+    string executionId = 2;
+    google.protobuf.Duration timeout = 3;
+}
+
+message WaitForOrchestrationResponse {
+    string state = 1;
+}
+
+message PurgeOrchestrationHistoryRequest {
+    google.protobuf.Timestamp thresholdDateTimeUtc = 1;
+    OrchestrationTimeFilterType timeRangeFilterType = 2;
+}
+
+enum OrchestrationTimeFilterType {
+    ORCHESTRATION_TIME_FILTER_TYPE_CREATED = 0;
+    ORCHESTRATION_TIME_FILTER_TYPE_COMPLETED = 1;
+    ORCHESTRATION_TIME_FILTER_TYPE_UPDATED = 2;
+}
+
+message GetOrchestrationsRequest {
+    int32 top = 1;
+    string continuationToken = 2;
+    string instanceId = 3;
+    string name = 4;
+    google.protobuf.Timestamp createdTimeFrom = 5;
+    google.protobuf.Timestamp createdTimeTo = 6;
+    repeated int32 runtimeStatus = 7;
+}
+
+message GetOrchestrationsResponse {
+    repeated string states = 1;
+    bool countIsNull = 2;
+    int64 count = 3;
+    string continuationToken = 4;
+}
+
+message PurgeInstanceHistoryRequest {
+    string instanceId = 1;
+}
+
+message PurgeInstanceHistoryResponse {
+    int32 instancesDeleted = 1;
+}
+
+// Orchestration messages
+message TaskOrchestrationRequest {
+    oneof Message {
+        LockNextTaskOrchestrationWorkItemRequest lockRequest = 1;
+        RenewTaskOrchestrationWorkItemLockRequest renewRequest = 2;
+        CompleteTaskOrchestrationWorkItemRequest completeRequest = 3;
+        FetchNewOrchestrationMessagesRequest fetchRequest = 4;
+        ReleaseTaskOrchestrationWorkItemRequest releaseRequest = 5;
+        AbandonTaskOrchestrationWorkItemLockRequest abandonRequest = 6;
+    };
+}
+
+message TaskOrchestrationResponse {
+    oneof Message {
+        bool lockResponseIsNull = 1;
+        LockNextTaskOrchestrationWorkItemResponse lockResponse = 2;
+        RenewTaskOrchestrationWorkItemLockResponse renewResponse = 3;
+        CompleteTaskOrchestrationWorkItemResponse completeResponse = 4;
+        bool fetchResponseIsNull = 5;
+        FetchNewOrchestrationMessagesResponse fetchResponse = 6;
+        ReleaseTaskOrchestrationWorkItemResponse releaseResponse = 7;
+        AbandonTaskOrchestrationWorkItemLockResponse abandonResponse = 8;
+    };
+}
+
+message LockNextTaskOrchestrationWorkItemRequest {
+    google.protobuf.Duration receiveTimeout = 1;
+    repeated NameVersion orchestrations = 2;
+    bool allOrchestrations = 3;
+}
+
+message LockNextTaskOrchestrationWorkItemResponse {
+    string instanceId = 1;
+    repeated string events = 2;
+    google.protobuf.Timestamp lockedUntilUtc = 3;
+    repeated string newMessages = 4;
+}
+
+message RenewTaskOrchestrationWorkItemLockRequest {
+}
+
+message RenewTaskOrchestrationWorkItemLockResponse {
+    google.protobuf.Timestamp lockedUntilUtc = 1;
+}
+
+message CompleteTaskOrchestrationWorkItemRequest {
+    repeated string newEvents = 4;
+    repeated string outboundMessages = 5;
+    repeated string orchestratorMessages = 6;
+    repeated string timerMessages = 7;
+    string continuedAsNewMessage = 8;
+    string orchestrationState = 9;
+}
+
+message CompleteTaskOrchestrationWorkItemResponse {
+}
+
+message FetchNewOrchestrationMessagesRequest {
+}
+
+message FetchNewOrchestrationMessagesResponse {
+    repeated string newMessages = 1;
+}
+
+message ReleaseTaskOrchestrationWorkItemRequest {
+}
+
+message ReleaseTaskOrchestrationWorkItemResponse {
+}
+
+message AbandonTaskOrchestrationWorkItemLockRequest {
+}
+
+message AbandonTaskOrchestrationWorkItemLockResponse {
+}
+
+// Activity messages
+message LockNextTaskActivityWorkItemRequest {
+    google.protobuf.Duration receiveTimeout = 1;
+    repeated NameVersion activities = 2;
+    bool allActivities = 3;
+}
+
+message LockNextTaskActivityWorkItemResponse {
+    oneof response {
+        bool isNull = 1;
+        LockNextTaskActivityWorkItemResponseValue value = 2;
+    }
+}
+
+message LockNextTaskActivityWorkItemResponseValue {
+    string id = 1;
+    google.protobuf.Timestamp lockedUntilUtc = 2;
+    string taskMessage = 3;
+}
+
+message RenewTaskActivityWorkItemLockRequest {
+    string id = 1;
+    google.protobuf.Timestamp lockedUntilUtc = 2;
+    string taskMessage = 3;
+}
+
+message RenewTaskActivityWorkItemLockResponse {
+    string id = 1;
+    google.protobuf.Timestamp lockedUntilUtc = 2;
+    string taskMessage = 3;
+}
+
+message CompleteTaskActivityWorkItemRequest {
+    string id = 1;
+    google.protobuf.Timestamp lockedUntilUtc = 2;
+    string taskMessage = 3;
+    string responseMessage = 4;
+}
+
+message AbandonTaskActivityWorkItemRequest {
+    string id = 1;
+    google.protobuf.Timestamp lockedUntilUtc = 2;
+    string taskMessage = 3;
+}
+
+message NameVersion {
+    string name = 1;
+    string version = 2;
+}

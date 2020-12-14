@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_12z1dix" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.0.0">
+  <bpmn:process id="Process_0p4p5qn" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0xkgto3</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0xkgto3" sourceRef="StartEvent_1" targetRef="Activity_0r30cuk" />
+    <bpmn:serviceTask id="Activity_0r30cuk" name="Book Car" camunda:type="external" camunda:topic="BookCar (v1)">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="carBookingId">
+            <camunda:script scriptFormat="javascript">result.BookingId</camunda:script>
+          </camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0xkgto3</bpmn:incoming>
+      <bpmn:outgoing>Flow_124erq2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_124erq2" sourceRef="Activity_0r30cuk" targetRef="Activity_1o1whi8" />
+    <bpmn:serviceTask id="Activity_1o1whi8" name="Book Hotel" camunda:type="external" camunda:topic="BookHotel (v1)">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="hotelBookingId">
+            <camunda:script scriptFormat="javascript">result.BookingId</camunda:script>
+          </camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_124erq2</bpmn:incoming>
+      <bpmn:outgoing>Flow_1tft0cd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1tft0cd" sourceRef="Activity_1o1whi8" targetRef="Activity_04gmal6" />
+    <bpmn:serviceTask id="Activity_04gmal6" name="Book Flight" camunda:type="external" camunda:topic="BookFlight (v1)">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="flightBookingId">
+            <camunda:script scriptFormat="javascript">result.BookingId</camunda:script>
+          </camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1tft0cd</bpmn:incoming>
+      <bpmn:outgoing>Flow_1s05s84</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Event_1k4esae" attachedToRef="Activity_0r30cuk">
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_1mv51ks" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="Activity_1pd6qb9" name="Cancel Car" isForCompensation="true" camunda:type="external" camunda:topic="CancelCar (v1)">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="BookingId">
+            <camunda:script scriptFormat="javascript">variables.carBookingId</camunda:script>
+          </camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Event_0pq238j" attachedToRef="Activity_1o1whi8">
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_1xm4pw8" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="Activity_0lmpyba" name="Cancel Hotel" isForCompensation="true" camunda:type="external" camunda:topic="CancelHotel (v1)">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="BookingId">
+            <camunda:script scriptFormat="javascript">variables.hotelBookingId</camunda:script>
+          </camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Event_137rpal" attachedToRef="Activity_04gmal6">
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_1w0pw6o" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="Activity_0mrp1j2" name="Cancel Flight" isForCompensation="true" camunda:type="external" camunda:topic="CancelFlight (v1)">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="BookingId">
+            <camunda:script scriptFormat="javascript">variables.flightBookingId</camunda:script>
+          </camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1s05s84" sourceRef="Activity_04gmal6" targetRef="Event_0dxyysp" />
+    <bpmn:intermediateThrowEvent id="Event_0dxyysp">
+      <bpmn:incoming>Flow_1s05s84</bpmn:incoming>
+      <bpmn:outgoing>Flow_0b8y4cf</bpmn:outgoing>
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_16fu6b8" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_0b8y4cf" sourceRef="Event_0dxyysp" targetRef="Event_05ujvmm" />
+    <bpmn:endEvent id="Event_05ujvmm">
+      <bpmn:incoming>Flow_0b8y4cf</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:association id="Association_0mcgfnj" associationDirection="One" sourceRef="Event_1k4esae" targetRef="Activity_1pd6qb9" />
+    <bpmn:association id="Association_05wogsu" associationDirection="One" sourceRef="Event_0pq238j" targetRef="Activity_0lmpyba" />
+    <bpmn:association id="Association_02ixnwd" associationDirection="One" sourceRef="Event_137rpal" targetRef="Activity_0mrp1j2" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_0p4p5qn">
+      <bpmndi:BPMNEdge id="Flow_0b8y4cf_di" bpmnElement="Flow_0b8y4cf">
+        <di:waypoint x="858" y="117" />
+        <di:waypoint x="932" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1s05s84_di" bpmnElement="Flow_1s05s84">
+        <di:waypoint x="750" y="117" />
+        <di:waypoint x="822" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1tft0cd_di" bpmnElement="Flow_1tft0cd">
+        <di:waypoint x="570" y="117" />
+        <di:waypoint x="650" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_124erq2_di" bpmnElement="Flow_124erq2">
+        <di:waypoint x="390" y="117" />
+        <di:waypoint x="470" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xkgto3_di" bpmnElement="Flow_0xkgto3">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="290" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0i9xq9c_di" bpmnElement="Activity_0r30cuk">
+        <dc:Bounds x="290" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0wrvqy9_di" bpmnElement="Activity_1o1whi8">
+        <dc:Bounds x="470" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1mxnl1b_di" bpmnElement="Activity_04gmal6">
+        <dc:Bounds x="650" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_05cyjrh_di" bpmnElement="Activity_1pd6qb9">
+        <dc:Bounds x="370" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1803ffn_di" bpmnElement="Activity_0lmpyba">
+        <dc:Bounds x="548" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0bubfun_di" bpmnElement="Activity_0mrp1j2">
+        <dc:Bounds x="720" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_03tma7n_di" bpmnElement="Event_0dxyysp">
+        <dc:Bounds x="822" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_10c6pap_di" bpmnElement="Event_05ujvmm">
+        <dc:Bounds x="932" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_137rpal_di" bpmnElement="Event_137rpal">
+        <dc:Bounds x="682" y="139" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0pq238j_di" bpmnElement="Event_0pq238j">
+        <dc:Bounds x="502" y="139" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_15dx5k0_di" bpmnElement="Event_1k4esae">
+        <dc:Bounds x="322" y="139" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0mcgfnj_di" bpmnElement="Association_0mcgfnj">
+        <di:waypoint x="340" y="175" />
+        <di:waypoint x="340" y="220" />
+        <di:waypoint x="370" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_05wogsu_di" bpmnElement="Association_05wogsu">
+        <di:waypoint x="520" y="175" />
+        <di:waypoint x="520" y="220" />
+        <di:waypoint x="548" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_02ixnwd_di" bpmnElement="Association_02ixnwd">
+        <di:waypoint x="700" y="175" />
+        <di:waypoint x="700" y="220" />
+        <di:waypoint x="720" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

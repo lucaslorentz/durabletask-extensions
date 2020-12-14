@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.5.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.7" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.7" />
+    <PackageReference Include="Grpc.Tools" Version="2.34.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Google.Protobuf" Version="3.14.0" />
+    <PackageReference Include="Grpc.Core" Version="2.34.0" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.33.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Protos\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="..\LLL.DurableTask.Server.Grpc\Protos\OrchestrationService.proto" GrpcServices="Client" Link="Protos\OrchestrationService.proto" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LLL.DurableTask.Core\LLL.DurableTask.Core.csproj" />
+  </ItemGroup>
+</Project>

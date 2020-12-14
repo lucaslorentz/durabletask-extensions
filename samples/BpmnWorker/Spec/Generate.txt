@@ -1,0 +1,3 @@
+﻿dotnet tool install --global dotnet-xscgen --version 2.0.370
+
+xscgen --nullable *.xsd
