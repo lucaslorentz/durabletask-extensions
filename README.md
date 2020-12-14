@@ -6,6 +6,15 @@
 
 This project aims to extend [Durable Task Framework](https://github.com/Azure/durabletask) with more features and make it easier to use.
 
+Scope:
+- More interfaces defining storage features
+- Dependency injection integration
+- EF Core MySql/PostgreSQL/SqlServer storages
+- Distributed workers: Allows splitting orchestrations/activities implementation in multiple workers
+- Indirect storage access via GRPC protocol: Centralize your storage choice and configuration in a single component.
+- UI
+- BPMN runner (not sure yet)
+
 ## Motivation
 
 [Durable Task Framework](https://github.com/Azure/durabletask) is an open source framework that provides a foundation for workflow-as-code in .NET platform.
