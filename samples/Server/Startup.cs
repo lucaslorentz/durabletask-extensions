@@ -63,7 +63,7 @@ namespace Server
             {
                 endpoints.MapControllers();
 
-                endpoints.MapTaskHubServerGrpcEndpoints();
+                endpoints.MapDurableTaskServerGrpcService();
             });
         }
     }

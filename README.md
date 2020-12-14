@@ -201,7 +201,7 @@ services.AddDurableTaskServer(builder =>
 ...
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapTaskHubServerGrpcEndpoints();
+    endpoints.MapDurableTaskServerGrpcService();
 });
 ```
 

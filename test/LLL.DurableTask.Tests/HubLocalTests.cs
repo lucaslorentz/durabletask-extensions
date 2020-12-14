@@ -54,7 +54,7 @@ namespace LLL.DurableTask.Server.Tests
 
                         app.UseEndpoints(endpoints =>
                         {
-                            endpoints.MapTaskHubServerGrpcEndpoints();
+                            endpoints.MapDurableTaskServerGrpcService();
                         });
                     })
                 ).StartAsync();

@@ -5,7 +5,7 @@ namespace Microsoft.AspNetCore.Builder
 {
     public static class EndpointRouteBuilderExtensions
     {
-        public static IEndpointRouteBuilder MapTaskHubServerGrpcEndpoints(this IEndpointRouteBuilder endpoints)
+        public static IEndpointRouteBuilder MapDurableTaskServerGrpcService(this IEndpointRouteBuilder endpoints)
         {
             endpoints.MapGrpcService<GrpcServerOrchestrationService>();
             
