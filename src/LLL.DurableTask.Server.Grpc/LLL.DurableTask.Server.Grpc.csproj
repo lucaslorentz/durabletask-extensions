@@ -4,6 +4,10 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup>
+      <Description>Exposes a Durable Task storage implementation as GRPC</Description>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="Protos\OrchestrationService.proto" />
   </ItemGroup>

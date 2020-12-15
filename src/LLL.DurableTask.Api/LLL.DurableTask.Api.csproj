@@ -3,6 +3,10 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
   </PropertyGroup>
+
+  <PropertyGroup>
+      <Description>Exposes Durable Task management operations as a REST API</Description>
+  </PropertyGroup>
   
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

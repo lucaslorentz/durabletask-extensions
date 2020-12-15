@@ -4,6 +4,10 @@
     <TargetFrameworks>netcoreapp3.1;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
 
+  <PropertyGroup>
+      <Description>PostgreSQL extensions to EFCore Durable Task Storage</Description>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="3.1.8">
       <PrivateAssets>all</PrivateAssets>
