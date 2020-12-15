@@ -56,5 +56,4 @@ jobs:
           echo Version: $Version
           dotnet pack -c Release -o nupkg
       - name: Push to NuGet Feed
-        run: dotnet nuget push ./nupkg/*.nupkg --source $NUGET_FEED --skip-duplicate --api-key $NUGET_KEY
-        
+        run: dotnet nuget push "./nupkg/*.nupkg" --source $NUGET_FEED --skip-duplicate --api-key $NUGET_KEY
