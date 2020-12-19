@@ -1,5 +1,4 @@
 ﻿using System;
-using LLL.DurableTask.EFCore.Entities;
 
 namespace LLL.DurableTask.EFCore.Entities
 {

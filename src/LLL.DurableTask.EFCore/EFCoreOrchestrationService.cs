@@ -20,12 +20,6 @@ namespace LLL.DurableTask.EFCore
         IOrchestrationService,
         IExtendedOrchestrationService
     {
-        private const int DelayAfterFailureInSeconds = 5;
-
-        private static readonly TimeSpan _lockPollingInterval = TimeSpan.FromMilliseconds(100);
-        private static readonly TimeSpan _orchestrationLockTimeout = TimeSpan.FromMinutes(1);
-        private static readonly TimeSpan _activtyLockTimeout = TimeSpan.FromMinutes(1);
-
         private readonly EFCoreOrchestrationOptions _options;
         private readonly Func<OrchestrationDbContext> _dbContextFactory;
         private readonly OrchestratorMessageMapper _orchestratorMessageMapper;
@@ -54,11 +48,11 @@ namespace LLL.DurableTask.EFCore
             _logger = logger;
         }
 
-        public int TaskOrchestrationDispatcherCount => 1;
-        public int MaxConcurrentTaskOrchestrationWorkItems { get; } = 100;
-        public int MaxConcurrentTaskActivityWorkItems { get; } = 10;
+        public int TaskOrchestrationDispatcherCount => _options.TaskOrchestrationDispatcherCount;
+        public int MaxConcurrentTaskOrchestrationWorkItems => _options.MaxConcurrentTaskOrchestrationWorkItems;
+        public int MaxConcurrentTaskActivityWorkItems => _options.MaxConcurrentTaskActivityWorkItems;
         public BehaviorOnContinueAsNew EventBehaviourForContinueAsNew => BehaviorOnContinueAsNew.Carryover;
-        public int TaskActivityDispatcherCount => 1;
+        public int TaskActivityDispatcherCount => _options.TaskActivityDispatcherCount;
 
         public Task CreateAsync()
         {
@@ -99,12 +93,12 @@ namespace LLL.DurableTask.EFCore
 
         public int GetDelayInSecondsAfterOnFetchException(Exception exception)
         {
-            return DelayAfterFailureInSeconds;
+            return _options.DelayInSecondsAfterFailure;
         }
 
         public int GetDelayInSecondsAfterOnProcessException(Exception exception)
         {
-            return DelayAfterFailureInSeconds;
+            return _options.DelayInSecondsAfterFailure;
         }
 
         public bool IsMaxMessageCountExceeded(int currentMessageCount, OrchestrationRuntimeState runtimeState)
@@ -125,7 +119,7 @@ namespace LLL.DurableTask.EFCore
             var stoppableCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(
                 cancellationToken, _stopCts.Token).Token;
 
-            return await PollingHelper.PollAsync(async () =>
+            return await BackoffPollingHelper.PollAsync(async () =>
             {
                 using (var dbContext = _dbContextFactory())
                 {
@@ -153,6 +147,7 @@ namespace LLL.DurableTask.EFCore
                         var runtimeState = new OrchestrationRuntimeState(deserializedEvents);
 
                         var session = new EFCoreOrchestrationSession(
+                            _options,
                             _dbContextFactory,
                             instance,
                             execution,
@@ -169,7 +164,7 @@ namespace LLL.DurableTask.EFCore
                         }
 
                         instance.LockId = Guid.NewGuid().ToString();
-                        instance.AvailableAt = DateTime.UtcNow.Add(_orchestrationLockTimeout);
+                        instance.AvailableAt = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
 
                         await dbContext.SaveChangesAsync();
 
@@ -185,7 +180,13 @@ namespace LLL.DurableTask.EFCore
                         };
                     }
                 }
-            }, r => r != null, _lockPollingInterval, stoppableCancellationToken);
+            },
+            r => r != null,
+            receiveTimeout,
+            _options.PollingInterval.Initial,
+            _options.PollingInterval.Factor,
+            _options.PollingInterval.Max,
+            stoppableCancellationToken);
         }
 
         public async Task<TaskActivityWorkItem> LockNextTaskActivityWorkItem(TimeSpan receiveTimeout, CancellationToken cancellationToken)
@@ -201,7 +202,7 @@ namespace LLL.DurableTask.EFCore
             var stoppableCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(
                 cancellationToken, _stopCts.Token).Token;
 
-            return await PollingHelper.PollAsync(async () =>
+            return await BackoffPollingHelper.PollAsync(async () =>
             {
                 using (var dbContext = _dbContextFactory())
                 {
@@ -213,7 +214,7 @@ namespace LLL.DurableTask.EFCore
                             return null;
 
                         activityMessage.LockId = Guid.NewGuid().ToString();
-                        activityMessage.AvailableAt = DateTime.UtcNow.Add(_activtyLockTimeout);
+                        activityMessage.AvailableAt = DateTime.UtcNow.Add(_options.ActivtyLockTimeout);
 
                         await dbContext.SaveChangesAsync();
                         await transaction.CommitAsync();
@@ -226,7 +227,13 @@ namespace LLL.DurableTask.EFCore
                         };
                     }
                 }
-            }, x => x != null, _lockPollingInterval, stoppableCancellationToken);
+            },
+            x => x != null,
+            receiveTimeout,
+            _options.PollingInterval.Initial,
+            _options.PollingInterval.Factor,
+            _options.PollingInterval.Max,
+            stoppableCancellationToken);
         }
 
         public async Task ReleaseTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem)
@@ -267,9 +274,13 @@ namespace LLL.DurableTask.EFCore
             {
                 var session = workItem.Session as EFCoreOrchestrationSession;
 
+                var lockedUntilUTC = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
+
                 dbContext.Instances.Attach(session.Instance);
                 session.Instance.AvailableAt = DateTime.UtcNow.AddMinutes(5);
                 await dbContext.SaveChangesAsync();
+
+                workItem.LockedUntilUtc = lockedUntilUTC;
             }
         }
 
@@ -289,7 +300,7 @@ namespace LLL.DurableTask.EFCore
             {
                 var (id, lockId) = ParseTaskActivityWorkItemId(workItem.Id);
 
-                var lockedUntilUTC = DateTime.UtcNow.AddMinutes(5);
+                var lockedUntilUTC = DateTime.UtcNow.Add(_options.ActivtyLockTimeout);
 
                 var renewedCount = await RenewActivityMessageLock(dbContext, id, lockId, lockedUntilUTC);
 
@@ -340,8 +351,6 @@ namespace LLL.DurableTask.EFCore
                     ? _orchestratorMessageMapper.CreateOrchestratorMessage(continuedAsNewMessage, 0)
                     : null;
 
-                PopulateStorageEventsInput(newOrchestrationRuntimeState, outboundMessages, orchestratorMessages);
-
                 await dbContext.ActivityMessages.AddRangeAsync(activityMessages);
                 await dbContext.OrchestratorMessages.AddRangeAsync(orchestatorMessages);
                 await dbContext.OrchestratorMessages.AddRangeAsync(timerOrchestratorMessages);
@@ -373,6 +382,8 @@ namespace LLL.DurableTask.EFCore
                 session.Execution = await SaveExecutionAsync(dbContext, workItem.OrchestrationRuntimeState, session.Execution);
 
                 // Update new execution
+                EnrichNewEventsInput(newOrchestrationRuntimeState, outboundMessages, orchestratorMessages);
+
                 if (newOrchestrationRuntimeState != workItem.OrchestrationRuntimeState)
                     session.Execution = await SaveExecutionAsync(dbContext, newOrchestrationRuntimeState);
 
@@ -506,7 +517,7 @@ namespace LLL.DurableTask.EFCore
             return (Guid.Parse(parts[0]), parts[1]);
         }
 
-        private static void PopulateStorageEventsInput(OrchestrationRuntimeState newOrchestrationRuntimeState, IList<TaskMessage> outboundMessages, IList<TaskMessage> orchestratorMessages)
+        private static void EnrichNewEventsInput(OrchestrationRuntimeState newOrchestrationRuntimeState, IList<TaskMessage> outboundMessages, IList<TaskMessage> orchestratorMessages)
         {
             foreach (var outboundEvent in outboundMessages.Select(e => e.Event))
             {

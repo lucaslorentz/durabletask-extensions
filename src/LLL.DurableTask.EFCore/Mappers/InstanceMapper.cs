@@ -15,7 +15,6 @@ namespace LLL.DurableTask.EFCore.Mappers
             _options = options.Value;
         }
 
-
         public Instance CreateInstance(ExecutionStartedEvent executionStartedEvent)
         {
             var instance = new Instance

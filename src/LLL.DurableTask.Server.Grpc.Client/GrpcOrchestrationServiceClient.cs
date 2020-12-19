@@ -28,11 +28,11 @@ namespace LLL.DurableTask.Server.Client
         private readonly ILogger _logger;
         private readonly GrpcOrchestrationServiceOptions _options;
 
-        public int TaskOrchestrationDispatcherCount => 1;
-        public int MaxConcurrentTaskOrchestrationWorkItems { get; } = 100;
-        public int MaxConcurrentTaskActivityWorkItems { get; } = 20;
+        public int TaskOrchestrationDispatcherCount => _options.TaskOrchestrationDispatcherCount;
+        public int MaxConcurrentTaskOrchestrationWorkItems => _options.MaxConcurrentTaskOrchestrationWorkItems;
+        public int MaxConcurrentTaskActivityWorkItems => _options.MaxConcurrentTaskActivityWorkItems;
         public BehaviorOnContinueAsNew EventBehaviourForContinueAsNew => BehaviorOnContinueAsNew.Carryover;
-        public int TaskActivityDispatcherCount => 1;
+        public int TaskActivityDispatcherCount => _options.TaskActivityDispatcherCount;
 
         public GrpcOrchestrationServiceClient(
             OrchestrationServiceClient client,

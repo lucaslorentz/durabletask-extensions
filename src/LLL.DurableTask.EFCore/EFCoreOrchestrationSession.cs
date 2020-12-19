@@ -12,8 +12,7 @@ namespace LLL.DurableTask.EFCore
 {
     public class EFCoreOrchestrationSession : IOrchestrationSession
     {
-        private readonly static TimeSpan _fetchNewMessagesPollingTimeout = TimeSpan.FromSeconds(5);
-        private readonly static TimeSpan _fetchNewMessagesPollingInterval = TimeSpan.FromMilliseconds(100);
+        private readonly EFCoreOrchestrationOptions _options;
 
         private readonly DataConverter _dataConverter = new JsonDataConverter();
 
@@ -21,12 +20,14 @@ namespace LLL.DurableTask.EFCore
         private readonly CancellationToken _stopCancellationToken;
 
         public EFCoreOrchestrationSession(
+            EFCoreOrchestrationOptions options,
             Func<OrchestrationDbContext> dbContextFactory,
             Instance instance,
             Execution execution,
             OrchestrationRuntimeState runtimeState,
             CancellationToken stopCancellationToken)
         {
+            _options = options;
             _dbContextFactory = dbContextFactory;
             Instance = instance;
             Execution = execution;
@@ -36,6 +37,7 @@ namespace LLL.DurableTask.EFCore
 
         public Instance Instance { get; }
         public Execution Execution { get; set; }
+        public Event[] Events { get; set; }
         public OrchestrationRuntimeState RuntimeState { get; set; }
         public List<OrchestratorMessage> Messages { get; } = new List<OrchestratorMessage>();
 
@@ -44,10 +46,7 @@ namespace LLL.DurableTask.EFCore
         public async Task<IList<TaskMessage>> FetchNewOrchestrationMessagesAsync(
             TaskOrchestrationWorkItem workItem)
         {
-            var stoppableCts = CancellationTokenSource.CreateLinkedTokenSource(_stopCancellationToken);
-            stoppableCts.CancelAfter(_fetchNewMessagesPollingTimeout);
-
-            return await PollingHelper.PollAsync(async () =>
+            return await BackoffPollingHelper.PollAsync(async () =>
             {
                 using (var dbContext = _dbContextFactory())
                 {
@@ -55,7 +54,13 @@ namespace LLL.DurableTask.EFCore
                     await dbContext.SaveChangesAsync();
                     return messages;
                 }
-            }, x => x.Count > 0, _fetchNewMessagesPollingInterval, stoppableCts.Token);
+            },
+            x => x.Count > 0,
+            _options.FetchNewMessagesPollingTimeout,
+            _options.PollingInterval.Initial,
+            _options.PollingInterval.Factor,
+            _options.PollingInterval.Max,
+            _stopCancellationToken);
         }
 
         public async Task<IList<TaskMessage>> FetchNewMessagesAsync(
