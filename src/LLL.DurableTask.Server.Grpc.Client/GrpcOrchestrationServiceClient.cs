@@ -34,8 +34,6 @@ namespace LLL.DurableTask.Server.Client
         public BehaviorOnContinueAsNew EventBehaviourForContinueAsNew => BehaviorOnContinueAsNew.Carryover;
         public int TaskActivityDispatcherCount => 1;
 
-        public IList<OrchestrationFeature> Features => throw new NotImplementedException();
-
         public GrpcOrchestrationServiceClient(
             OrchestrationServiceClient client,
             IOptions<GrpcOrchestrationServiceOptions> options,
@@ -72,17 +70,6 @@ namespace LLL.DurableTask.Server.Client
             return Task.CompletedTask;
         }
 
-        public async Task ForceTerminateTaskOrchestrationAsync(string instanceId, string reason)
-        {
-            var request = new ForceTerminateTaskOrchestrationRequest
-            {
-                InstanceId = instanceId,
-                Reason = reason
-            };
-
-            await _client.ForceTerminateTaskOrchestrationAsync(request);
-        }
-
         public int GetDelayInSecondsAfterOnFetchException(Exception exception)
         {
             return DelayAfterFailureInSeconds;
@@ -116,6 +103,15 @@ namespace LLL.DurableTask.Server.Client
         #endregion
 
         #region Client
+
+        public async Task<OrchestrationFeature[]> GetFeatures()
+        {
+            var response = await _client.GetFeaturesAsync(new Empty());
+            return response.Features
+                .Select(f => (OrchestrationFeature)f)
+                .ToArray();
+        }
+
         public async Task CreateTaskOrchestrationAsync(TaskMessage creationMessage)
         {
             await CreateTaskOrchestrationAsync(creationMessage, new OrchestrationStatus[0]);
@@ -173,6 +169,17 @@ namespace LLL.DurableTask.Server.Client
             var response = await _client.GetOrchestrationStateAsync(request);
 
             return _dataConverter.Deserialize<OrchestrationState>(response.State);
+        }
+
+        public async Task ForceTerminateTaskOrchestrationAsync(string instanceId, string reason)
+        {
+            var request = new ForceTerminateTaskOrchestrationRequest
+            {
+                InstanceId = instanceId,
+                Reason = reason
+            };
+
+            await _client.ForceTerminateTaskOrchestrationAsync(request);
         }
 
         public async Task PurgeOrchestrationHistoryAsync(DateTime thresholdDateTimeUtc, OrchestrationStateTimeRangeFilterType timeRangeFilterType)

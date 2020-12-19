@@ -34,6 +34,18 @@ namespace LLL.DurableTask.Server.Grpc.Server
             _extendedOrchestrationServiceClient = extendedOrchestrationServiceClient;
         }
 
+        public override async Task<GetFeaturesResponse> GetFeatures(Empty request, ServerCallContext context)
+        {
+            var features = _extendedOrchestrationServiceClient != null
+                ? await _extendedOrchestrationServiceClient.GetFeatures()
+                : new OrchestrationFeature[0];
+
+            return new GetFeaturesResponse
+            {
+                Features = { features.Select(f => (int)f) }
+            };
+        }
+
         public override async Task<Empty> CreateTaskOrchestration(CreateTaskOrchestrationRequest request, ServerCallContext context)
         {
             var creationMessage = _dataConverter.Deserialize<TaskMessage>(request.CreationMessage);

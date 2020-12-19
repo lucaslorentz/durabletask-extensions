@@ -8,7 +8,8 @@ import "google/protobuf/duration.proto";
 package DurableTaskHub;
 
 service OrchestrationService {
-    //OrchestrationServiceClient
+    // OrchestrationServiceClient
+    rpc GetFeatures(google.protobuf.Empty) returns (GetFeaturesResponse);
     rpc CreateTaskOrchestration (CreateTaskOrchestrationRequest) returns (google.protobuf.Empty);
     rpc ForceTerminateTaskOrchestration (ForceTerminateTaskOrchestrationRequest) returns (google.protobuf.Empty);
     rpc SendTaskOrchestrationMessageBatch (SendTaskOrchestrationMessageBatchRequest) returns (google.protobuf.Empty);
@@ -21,7 +22,7 @@ service OrchestrationService {
     rpc GetOrchestrations (GetOrchestrationsRequest) returns (GetOrchestrationsResponse);
     rpc PurgeInstanceHistory (PurgeInstanceHistoryRequest) returns (PurgeInstanceHistoryResponse);
 
-    //OrchestrationService
+    // OrchestrationService
     rpc LockNextTaskOrchestrationWorkItem (stream TaskOrchestrationRequest) returns (stream TaskOrchestrationResponse);
 
     rpc LockNextTaskActivityWorkItem (LockNextTaskActivityWorkItemRequest) returns (LockNextTaskActivityWorkItemResponse);
@@ -31,6 +32,10 @@ service OrchestrationService {
 }
 
 // Client messages
+message GetFeaturesResponse {
+    repeated int32 features = 1;
+}
+
 message CreateTaskOrchestrationRequest {
     string creationMessage = 1;
     repeated int32 dedupeStatuses = 2;

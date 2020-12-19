@@ -18,12 +18,14 @@ namespace LLL.DurableTaskExtensions.AzureStorage
             _azureStorageOrchestrationService = azureStorageOrchestrationService;
         }
 
-        public IList<OrchestrationFeature> Features { get; } = new OrchestrationFeature[]
-        {
-            OrchestrationFeature.SearchByInstanceId,
-            OrchestrationFeature.SearchByCreatedTime,
-            OrchestrationFeature.SearchByStatus
-        };
+        public Task<OrchestrationFeature[]> GetFeatures() {
+            return Task.FromResult(new OrchestrationFeature[]
+            {
+                OrchestrationFeature.SearchByInstanceId,
+                OrchestrationFeature.SearchByCreatedTime,
+                OrchestrationFeature.SearchByStatus
+            });
+        }
 
         public async Task<OrchestrationQueryResult> GetOrchestrationsAsync(
             OrchestrationQuery query,

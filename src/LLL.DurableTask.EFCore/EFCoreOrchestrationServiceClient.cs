@@ -199,14 +199,17 @@ namespace LLL.DurableTask.EFCore
             }
         }
 
-        public IList<OrchestrationFeature> Features { get; } = new OrchestrationFeature[]
+        public Task<OrchestrationFeature[]> GetFeatures()
         {
-            OrchestrationFeature.SearchByInstanceId,
-            OrchestrationFeature.SearchByName,
-            OrchestrationFeature.SearchByCreatedTime,
-            OrchestrationFeature.SearchByStatus,
-            OrchestrationFeature.QueryCount
-        };
+            return Task.FromResult(new OrchestrationFeature[]
+            {
+                OrchestrationFeature.SearchByInstanceId,
+                OrchestrationFeature.SearchByName,
+                OrchestrationFeature.SearchByCreatedTime,
+                OrchestrationFeature.SearchByStatus,
+                OrchestrationFeature.QueryCount
+            });
+        }
 
         public async Task<OrchestrationQueryResult> GetOrchestrationsAsync(OrchestrationQuery query, CancellationToken cancellationToken = default)
         {

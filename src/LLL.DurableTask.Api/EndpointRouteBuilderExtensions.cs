@@ -19,8 +19,8 @@ namespace Microsoft.Extensions.DependencyInjection
             endpoints.MapGet("/api/v1/features", async context =>
             {
                 var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
-
-                await context.RespondJson(extendedOrchestrationServiceClient.Features);
+                var features = await extendedOrchestrationServiceClient.GetFeatures();
+                await context.RespondJson(features);
             });
 
             endpoints.MapGet("/api/v1/orchestrations", async context =>
