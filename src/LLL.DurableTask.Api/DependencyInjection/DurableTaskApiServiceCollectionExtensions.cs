@@ -1,6 +1,6 @@
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class DurableTaskUiApiServiceCollectionExtensions
+    public static class DurableTaskApiServiceCollectionExtensions
     {
         public static IServiceCollection AddDurableTaskApi(this IServiceCollection services)
         {

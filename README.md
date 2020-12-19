@@ -243,7 +243,7 @@ services.AddDurableTaskApi();
 ...
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapDurableTaskUiApi();
+    endpoints.MapDurableTaskApi();
 });
 ```
 

@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class MvcBuilderExtensions
     {
-        public static void MapDurableTaskUiApi(this AspNetCore.Routing.IEndpointRouteBuilder endpoints)
+        public static void MapDurableTaskApi(this AspNetCore.Routing.IEndpointRouteBuilder endpoints)
         {
             endpoints.MapGet("/api/v1/features", async context =>
             {
