@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LLL.DurableTask.EFCore.MySql.Migrations
 {
     [DbContext(typeof(OrchestrationDbContext))]
-    [Migration("20201025112041_Initial")]
-    partial class Initial
+    [Migration("20201219194457_FKEventToExecution")]
+    partial class FKEventToExecution
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -108,40 +108,6 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                     b.ToTable("Events");
                 });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestratorMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("ExecutionId")
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
-
-                    b.Property<string>("InstanceId")
-                        .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
-
-                    b.Property<string>("Message")
-                        .HasColumnType("longtext CHARACTER SET utf8mb4")
-                        .HasMaxLength(2147483647);
-
-                    b.Property<int>("SequenceNumber")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AvailableAt");
-
-                    b.HasIndex("InstanceId");
-
-                    b.ToTable("OrchestratorMessages");
-                });
-
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
                     b.Property<string>("InstanceId")
@@ -230,33 +196,67 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                     b.ToTable("Instances");
                 });
 
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestratorMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("AvailableAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ExecutionId")
+                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
+                        .HasMaxLength(100);
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
+                        .HasMaxLength(100);
+
+                    b.Property<string>("Message")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4")
+                        .HasMaxLength(2147483647);
+
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AvailableAt");
+
+                    b.HasIndex("InstanceId");
+
+                    b.ToTable("OrchestratorMessages");
+                });
+
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
                 {
-                    b.HasOne("DurableTask.EFCore.Entities.Instance", "Instance")
+                    b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestratorMessage", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
                 {
-                    b.HasOne("DurableTask.EFCore.Entities.Instance", "Instance")
+                    b.HasOne("LLL.DurableTask.EFCore.Entities.Execution", "Execution")
                         .WithMany()
-                        .HasForeignKey("InstanceId")
+                        .HasForeignKey("InstanceId", "ExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
-                    b.HasOne("DurableTask.EFCore.Entities.Instance", "Instance")
+                    b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsMany("DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
+                    b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
                             b1.Property<string>("InstanceId")
                                 .HasColumnType("varchar(100) CHARACTER SET utf8mb4");
@@ -285,6 +285,15 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("InstanceId", "ExecutionId");
                         });
+                });
+
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestratorMessage", b =>
+                {
+                    b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
+                        .WithMany()
+                        .HasForeignKey("InstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

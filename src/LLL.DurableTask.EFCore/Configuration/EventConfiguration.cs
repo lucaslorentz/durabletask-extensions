@@ -13,6 +13,11 @@ namespace LLL.DurableTask.EFCore.Configuration
 
             builder.Property(x => x.InstanceId).HasMaxLength(100).IsRequired();
             builder.Property(x => x.ExecutionId).HasMaxLength(100).IsRequired();
+            builder.HasOne(x => x.Execution)
+                .WithMany()
+                .IsRequired()
+                .HasForeignKey(x => new { x.InstanceId, x.ExecutionId })
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.Property(x => x.SequenceNumber).IsRequired();
 

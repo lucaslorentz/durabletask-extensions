@@ -21,7 +21,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.ActivityMessage", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -78,7 +78,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.ToTable("ActivityMessages");
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.Event", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -110,7 +110,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.ToTable("Events");
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.OrchestratorMessage", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestratorMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -144,7 +144,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.ToTable("OrchestratorMessages");
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.Execution", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
                     b.Property<string>("InstanceId")
                         .HasColumnType("nvarchar(100)")
@@ -201,7 +201,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.ToTable("Executions");
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.Instance", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
                 {
                     b.Property<string>("InstanceId")
                         .HasColumnType("nvarchar(100)")
@@ -232,7 +232,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.ToTable("Instances");
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.ActivityMessage", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
                 {
                     b.HasOne("DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()
@@ -241,7 +241,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.OrchestratorMessage", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestratorMessage", b =>
                 {
                     b.HasOne("DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()
@@ -250,7 +250,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.Execution", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
                     b.HasOne("DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()

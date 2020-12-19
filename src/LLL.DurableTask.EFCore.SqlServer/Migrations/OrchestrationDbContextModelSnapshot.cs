@@ -19,7 +19,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.ActivityMessage", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -76,7 +76,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.ToTable("ActivityMessages");
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.Event", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -108,41 +108,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.ToTable("Events");
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.OrchestratorMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ExecutionId")
-                        .HasColumnType("nvarchar(100)")
-                        .HasMaxLength(100);
-
-                    b.Property<string>("InstanceId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(100)")
-                        .HasMaxLength(100);
-
-                    b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)")
-                        .HasMaxLength(2147483647);
-
-                    b.Property<int>("SequenceNumber")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AvailableAt");
-
-                    b.HasIndex("InstanceId");
-
-                    b.ToTable("OrchestratorMessages");
-                });
-
-            modelBuilder.Entity("DurableTask.EFCore.Entities.Execution", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
                     b.Property<string>("InstanceId")
                         .HasColumnType("nvarchar(100)")
@@ -199,7 +165,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.ToTable("Executions");
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.Instance", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
                 {
                     b.Property<string>("InstanceId")
                         .HasColumnType("nvarchar(100)")
@@ -230,33 +196,67 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.ToTable("Instances");
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.ActivityMessage", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestratorMessage", b =>
                 {
-                    b.HasOne("DurableTask.EFCore.Entities.Instance", "Instance")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AvailableAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExecutionId")
+                        .HasColumnType("nvarchar(100)")
+                        .HasMaxLength(100);
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(100)")
+                        .HasMaxLength(100);
+
+                    b.Property<string>("Message")
+                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(2147483647);
+
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AvailableAt");
+
+                    b.HasIndex("InstanceId");
+
+                    b.ToTable("OrchestratorMessages");
+                });
+
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
+                {
+                    b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.OrchestratorMessage", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
                 {
-                    b.HasOne("DurableTask.EFCore.Entities.Instance", "Instance")
+                    b.HasOne("LLL.DurableTask.EFCore.Entities.Execution", "Execution")
                         .WithMany()
-                        .HasForeignKey("InstanceId")
+                        .HasForeignKey("InstanceId", "ExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("DurableTask.EFCore.Entities.Execution", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
-                    b.HasOne("DurableTask.EFCore.Entities.Instance", "Instance")
+                    b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsMany("DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
+                    b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
                             b1.Property<string>("InstanceId")
                                 .HasColumnType("nvarchar(100)");
@@ -286,6 +286,15 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("InstanceId", "ExecutionId");
                         });
+                });
+
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestratorMessage", b =>
+                {
+                    b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
+                        .WithMany()
+                        .HasForeignKey("InstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
