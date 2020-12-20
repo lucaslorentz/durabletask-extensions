@@ -8,7 +8,6 @@ using DurableTask.Core.History;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
 using LLL.DurableTask.EFCore.Mappers;
-using LLL.DurableTask.EFCore.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
@@ -125,7 +124,7 @@ namespace LLL.DurableTask.EFCore
                 {
                     using (var transaction = await BeginLockTransaction(dbContext))
                     {
-                        var instance = await LockInstance(dbContext, orchestrations);
+                        var instance = await LockNextInstance(dbContext, orchestrations);
 
                         if (instance == null)
                             return null;
@@ -448,7 +447,7 @@ namespace LLL.DurableTask.EFCore
             }
         }
 
-        private async Task<Instance> LockInstance(OrchestrationDbContext dbContext, INameVersionInfo[] orchestrations)
+        private async Task<Instance> LockNextInstance(OrchestrationDbContext dbContext, INameVersionInfo[] orchestrations)
         {
             if (orchestrations == null)
                 return await LockAnyQueueInstance(dbContext);
@@ -457,14 +456,9 @@ namespace LLL.DurableTask.EFCore
                 .Select(nv => QueueMapper.ToQueueName(nv.Name, nv.Version))
                 .ToArray();
 
-            queues.Shuffle();
-
-            foreach (var queue in queues)
-            {
-                var instance = await LockQueueInstance(dbContext, queue);
-                if (instance != null)
-                    return instance;
-            }
+            var instance = await LockQueuesInstance(dbContext, queues);
+            if (instance != null)
+                return instance;
 
             return null;
         }
@@ -478,14 +472,9 @@ namespace LLL.DurableTask.EFCore
                 .Select(nv => QueueMapper.ToQueueName(nv.Name, nv.Version))
                 .ToArray();
 
-            queues.Shuffle();
-
-            foreach (var queue in queues)
-            {
-                var activityMessage = await LockQueueActivityMessage(dbContext, queue);
-                if (activityMessage != null)
-                    return activityMessage;
-            }
+            var activityMessage = await LockQueuesActivityMessage(dbContext, queues);
+            if (activityMessage != null)
+                return activityMessage;
 
             return null;
         }
@@ -496,11 +485,11 @@ namespace LLL.DurableTask.EFCore
 
         protected abstract Task<Instance> LockAnyQueueInstance(OrchestrationDbContext dbContext);
 
-        protected abstract Task<Instance> LockQueueInstance(OrchestrationDbContext dbContext, string queue);
+        protected abstract Task<Instance> LockQueuesInstance(OrchestrationDbContext dbContext, string[] queues);
 
         protected abstract Task<ActivityMessage> LockAnyQueueActivityMessage(OrchestrationDbContext dbContext);
 
-        protected abstract Task<ActivityMessage> LockQueueActivityMessage(OrchestrationDbContext dbContext, string queue);
+        protected abstract Task<ActivityMessage> LockQueuesActivityMessage(OrchestrationDbContext dbContext, string[] queues);
 
         protected abstract Task<int> RenewActivityMessageLock(OrchestrationDbContext dbContext, Guid id, string lockId, DateTime lockedUntilUTC);
 

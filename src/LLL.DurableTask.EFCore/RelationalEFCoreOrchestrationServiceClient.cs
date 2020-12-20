@@ -27,13 +27,13 @@ namespace LLL.DurableTask.EFCore
             switch (timeRangeFilterType)
             {
                 case OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter:
-                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Instances WHERE CreatedTime < {thresholdDateTimeUtc}");
+                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Execution WHERE CreatedTime < {thresholdDateTimeUtc}");
                     break;
                 case OrchestrationStateTimeRangeFilterType.OrchestrationLastUpdatedTimeFilter:
-                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Instances WHERE LastUpdatedTime < {thresholdDateTimeUtc}");
+                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Execution WHERE LastUpdatedTime < {thresholdDateTimeUtc}");
                     break;
                 case OrchestrationStateTimeRangeFilterType.OrchestrationCompletedTimeFilter:
-                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Instances WHERE CompletedTime < {thresholdDateTimeUtc}");
+                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Execution WHERE CompletedTime < {thresholdDateTimeUtc}");
                     break;
             }
         }

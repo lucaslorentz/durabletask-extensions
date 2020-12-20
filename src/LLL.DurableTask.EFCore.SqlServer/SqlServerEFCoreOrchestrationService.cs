@@ -23,6 +23,35 @@ namespace LLL.DurableTask.EFCore.SqlServer
         {
         }
 
+        protected override async Task<Instance> LockAnyQueueInstance(OrchestrationDbContext dbContext)
+        {
+            return (await dbContext.Instances.FromSqlRaw(@"
+                SELECT TOP 1 instances.* FROM orchestratormessages
+                    INNER JOIN instances WITH (UPDLOCK, READPAST) ON orchestratormessages.instanceid = instances.instanceid
+                WHERE
+                    orchestratormessages.availableat <= {0}
+                    AND instances.availableat <= {0}
+                ORDER BY orchestratormessages.availableat
+            ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
+        }
+
+        protected override async Task<Instance> LockQueuesInstance(OrchestrationDbContext dbContext, string[] queues)
+        {
+            var queuesParams = string.Join(",", queues.Select((_, i) => $"{{{i}}}"));
+            var utcNowParam = $"{{{queues.Length}}}";
+            var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
+
+            return (await dbContext.Instances.FromSqlRaw($@"
+                SELECT TOP 1 instances.* FROM orchestratormessages
+                    INNER JOIN instances WITH (UPDLOCK, READPAST) ON orchestratormessages.instanceid = instances.instanceid
+                WHERE
+                    orchestratormessages.availableat <= {utcNowParam}
+                    AND instances.queue IN ({queuesParams})
+                    AND instances.availableat <= {utcNowParam}
+                ORDER BY orchestratormessages.availableat
+            ", parameters).ToArrayAsync()).FirstOrDefault();
+        }
+
         protected override async Task<ActivityMessage> LockAnyQueueActivityMessage(OrchestrationDbContext dbContext)
         {
             return (await dbContext.ActivityMessages.FromSqlRaw(@"
@@ -32,39 +61,19 @@ namespace LLL.DurableTask.EFCore.SqlServer
             ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
         }
 
-        protected override async Task<ActivityMessage> LockQueueActivityMessage(OrchestrationDbContext dbContext, string queue)
+        protected override async Task<ActivityMessage> LockQueuesActivityMessage(OrchestrationDbContext dbContext, string[] queues)
         {
-            return (await dbContext.ActivityMessages.FromSqlRaw(@"
-                SELECT TOP 1 * FROM activitymessages WITH (UPDLOCK, READPAST)
-                WHERE queue = {0}
-                    AND availableat <= {1}
+            var queuesParams = string.Join(",", queues.Select((_, i) => $"{{{i}}}"));
+            var utcNowParam = $"{{{queues.Length}}}";
+            var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
+
+            return (await dbContext.ActivityMessages.FromSqlRaw($@"
+                SELECT TOP 1 * FROM activitymessages
+                WITH (UPDLOCK, READPAST)
+                WHERE queue IN ({queuesParams})
+                    AND availableat <= {utcNowParam}
                 ORDER BY AvailableAt
-            ", queue, DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
-        }
-
-        protected override async Task<Instance> LockAnyQueueInstance(OrchestrationDbContext dbContext)
-        {
-            return (await dbContext.Instances.FromSqlRaw(@"
-                SELECT TOP 1 instances.* FROM orchestratormessages
-                    INNER JOIN instances WITH (UPDLOCK, READPAST) ON orchestratormessages.instanceid = instances.instanceid
-                WHERE
-                    instances.availableat <= {0}
-                    AND orchestratormessages.availableat <= {0}
-                ORDER BY orchestratormessages.availableat
-            ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
-        }
-
-        protected override async Task<Instance> LockQueueInstance(OrchestrationDbContext dbContext, string queue)
-        {
-            return (await dbContext.Instances.FromSqlRaw(@"
-                SELECT TOP 1 instances.* FROM orchestratormessages
-                    INNER JOIN instances WITH (UPDLOCK, READPAST) ON orchestratormessages.instanceid = instances.instanceid
-                WHERE
-                    instances.queue = {0}
-                    AND instances.availableat <= {1}
-                    AND orchestratormessages.availableat <= {1}
-                ORDER BY orchestratormessages.availableat
-            ", queue, DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
+            ", parameters).ToArrayAsync()).FirstOrDefault();
         }
     }
 }

@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using LLL.DurableTask.EFCore.Entities;
 using LLL.DurableTask.EFCore.Mappers;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace LLL.DurableTask.EFCore.SqlServer
