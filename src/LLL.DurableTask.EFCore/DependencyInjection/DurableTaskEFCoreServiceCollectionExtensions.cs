@@ -32,10 +32,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddSingleton<IExtendedOrchestrationService>(p => p.GetRequiredService<EFCoreOrchestrationService>());
             services.AddSingleton<IOrchestrationService>(p => p.GetRequiredService<EFCoreOrchestrationService>());
-            services.AddSingleton<IOrchestrationServiceClient>(p => p.GetRequiredService<EFCoreOrchestrationServiceClient>());
-            services.AddSingleton<IExtendedOrchestrationServiceClient>(p => p.GetRequiredService<EFCoreOrchestrationServiceClient>());
+            services.AddSingleton<IOrchestrationServiceClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
+            services.AddSingleton<IExtendedOrchestrationServiceClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
 
-            services.AddSingleton<OrchestratorMessageMapper>();
+            services.AddSingleton<OrchestrationMessageMapper>();
             services.AddSingleton<ActivityMessageMapper>();
             services.AddSingleton<InstanceMapper>();
             services.AddSingleton<ExecutionMapper>();

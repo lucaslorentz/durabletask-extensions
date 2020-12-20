@@ -11,6 +11,9 @@ namespace LLL.DurableTask.EFCore.Configuration
         {
             builder.HasKey(x => x.InstanceId);
             builder.Property(x => x.InstanceId).HasMaxLength(100).IsRequired();
+            builder.HasOne(x => x.LastExecution).WithMany()
+                .HasForeignKey(x => new { x.InstanceId, x.LastExecutionId })
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.Property(x => x.Queue).HasMaxLength(300).IsRequired();
             builder.Property(x => x.AvailableAt).IsRequired().HasConversion(new UtcDateTimeConverter());

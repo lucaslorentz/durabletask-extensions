@@ -173,7 +173,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("LastExecutionId")
-                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4");
 
                     b.Property<string>("LockId")
                         .IsConcurrencyToken()
@@ -189,12 +189,14 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.HasIndex("AvailableAt");
 
+                    b.HasIndex("InstanceId", "LastExecutionId");
+
                     b.HasIndex("Queue", "AvailableAt");
 
                     b.ToTable("Instances");
                 });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestratorMessage", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -248,12 +250,6 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
-                    b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
-                        .WithMany()
-                        .HasForeignKey("InstanceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
                             b1.Property<string>("InstanceId")
@@ -285,7 +281,15 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         });
                 });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestratorMessage", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
+                {
+                    b.HasOne("LLL.DurableTask.EFCore.Entities.Execution", "LastExecution")
+                        .WithMany()
+                        .HasForeignKey("InstanceId", "LastExecutionId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
                 {
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()

@@ -29,10 +29,10 @@ namespace LLL.DurableTask.EFCore.Mappers
 
         public void UpdateInstance(
             Instance instance,
-            OrchestrationState orchestrationState)
+            OrchestrationRuntimeState runtimeState)
         {
-            instance.LastExecutionId = orchestrationState.OrchestrationInstance.ExecutionId;
-            instance.Queue = QueueMapper.ToQueueName(orchestrationState.Name, orchestrationState.Version);
+            instance.LastExecutionId = runtimeState.OrchestrationInstance.ExecutionId;
+            instance.Queue = QueueMapper.ToQueueName(runtimeState.Name, runtimeState.Version);
         }
     }
 }

@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LLL.DurableTask.EFCore
+namespace LLL.DurableTask.EFCore.Polling
 {
     public static class BackoffPollingHelper
     {
@@ -11,16 +11,14 @@ namespace LLL.DurableTask.EFCore
             Func<Task<T>> valueProvider,
             Func<T, bool> shouldAcceptValue,
             TimeSpan timeout,
-            double minDelay,
-            double factor,
-            double maxDelay,
+            PollingIntervalOptions interval,
             CancellationToken cancellationToken)
         {
             var value = default(T);
 
             var stopwatch = Stopwatch.StartNew();
 
-            var delayEnumerator = new ExponentialBackoff(minDelay, factor, maxDelay);
+            var count = 0;
             do
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -31,31 +29,15 @@ namespace LLL.DurableTask.EFCore
                     || stopwatch.Elapsed >= timeout)
                     break;
 
-                await Task.Delay((int)delayEnumerator.Next());
+                await Task.Delay(CalculateDelay(interval, count++));
             } while (stopwatch.Elapsed < timeout);
 
             return value;
         }
 
-        class ExponentialBackoff
+        private static int CalculateDelay(PollingIntervalOptions interval, int count)
         {
-            private int _count = 0;
-
-            public ExponentialBackoff(double initial, double factor, double max)
-            {
-                Initial = initial;
-                Factor = factor;
-                Max = max;
-            }
-
-            public double Initial { get; }
-            public double Factor { get; }
-            public double Max { get; }
-
-            public double Next()
-            {
-                return Math.Min(Initial * Math.Pow(Factor, _count++), Max);
-            }
+            return (int)Math.Min(interval.Initial * Math.Pow(interval.Factor, count), interval.Max);
         }
     }
 }

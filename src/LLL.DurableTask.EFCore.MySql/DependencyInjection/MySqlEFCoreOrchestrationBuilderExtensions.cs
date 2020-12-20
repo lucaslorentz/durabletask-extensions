@@ -16,7 +16,6 @@ namespace Microsoft.Extensions.DependencyInjection
             Action<MySqlDbContextOptionsBuilder> mysqlOptionsAction = null)
         {
             builder.Services.AddSingleton<EFCoreOrchestrationService, MySqlEFCoreOrchestrationService>();
-            builder.Services.AddSingleton<EFCoreOrchestrationServiceClient, MySqlEFCoreOrchestrationServiceClient>();
 
             return builder.ConfigureDbContext(options =>
             {

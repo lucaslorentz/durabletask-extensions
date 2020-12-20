@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using LLL.DurableTask.EFCore.Mappers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -16,7 +17,7 @@ namespace LLL.DurableTask.EFCore
         protected RelationalEFCoreOrchestrationService(
             IOptions<EFCoreOrchestrationOptions> options,
             Func<OrchestrationDbContext> dbContextFactory,
-            OrchestratorMessageMapper orchestratorMessageMapper,
+            OrchestrationMessageMapper orchestratorMessageMapper,
             ActivityMessageMapper activityMessageMapper,
             InstanceMapper instanceMapper,
             ExecutionMapper executionMapper,
@@ -30,7 +31,7 @@ namespace LLL.DurableTask.EFCore
             await dbContext.Database.MigrateAsync();
         }
 
-        protected override async Task<IDbContextTransaction> BeginLockTransaction(OrchestrationDbContext dbContext)
+        protected override async Task<IDbContextTransaction> BeginTransaction(OrchestrationDbContext dbContext)
         {
             return await dbContext.Database.BeginTransactionAsync(TransactionIsolationLevel);
         }
@@ -43,6 +44,32 @@ namespace LLL.DurableTask.EFCore
         protected override async Task<int> ReleaseActivityMessageLock(OrchestrationDbContext dbContext, Guid id, string lockId)
         {
             return await dbContext.Database.ExecuteSqlInterpolatedAsync($"UPDATE ActivityMessages SET AvailableAt = {DateTime.UtcNow} WHERE Id = {id} AND LockId = {lockId}");
+        }
+
+        protected override async Task PurgeOrchestrationHistoryAsync(
+            OrchestrationDbContext dbContext,
+            DateTime thresholdDateTimeUtc,
+            OrchestrationStateTimeRangeFilterType timeRangeFilterType)
+        {
+            switch (timeRangeFilterType)
+            {
+                case OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter:
+                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Executions WHERE CreatedTime < {thresholdDateTimeUtc}");
+                    break;
+                case OrchestrationStateTimeRangeFilterType.OrchestrationLastUpdatedTimeFilter:
+                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Executions WHERE LastUpdatedTime < {thresholdDateTimeUtc}");
+                    break;
+                case OrchestrationStateTimeRangeFilterType.OrchestrationCompletedTimeFilter:
+                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Executions WHERE CompletedTime < {thresholdDateTimeUtc}");
+                    break;
+            }
+        }
+
+        protected override async Task<int> PurgeInstanceHistoryAsync(
+            OrchestrationDbContext dbContext,
+            string instanceId)
+        {
+            return await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM Executions WHERE InstanceId = {instanceId}");
         }
     }
 }

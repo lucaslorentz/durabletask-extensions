@@ -1,13 +1,37 @@
 ﻿using System;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace LLL.DurableTask.EFCore.MySql.Migrations
+namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 {
     public partial class Initial : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Executions",
+                columns: table => new
+                {
+                    InstanceId = table.Column<string>(maxLength: 100, nullable: false),
+                    ExecutionId = table.Column<string>(maxLength: 100, nullable: false),
+                    Name = table.Column<string>(maxLength: 200, nullable: false),
+                    Version = table.Column<string>(maxLength: 100, nullable: false),
+                    CreatedTime = table.Column<DateTime>(nullable: false),
+                    CompletedTime = table.Column<DateTime>(nullable: false),
+                    LastUpdatedTime = table.Column<DateTime>(nullable: false),
+                    CompressedSize = table.Column<long>(nullable: false),
+                    Size = table.Column<long>(nullable: false),
+                    Status = table.Column<string>(nullable: false),
+                    CustomStatus = table.Column<string>(nullable: true),
+                    ParentInstance = table.Column<string>(maxLength: 2000, nullable: true),
+                    Input = table.Column<string>(nullable: true),
+                    Output = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Executions", x => new { x.InstanceId, x.ExecutionId });
+                });
+
             migrationBuilder.CreateTable(
                 name: "Events",
                 columns: table => new
@@ -21,6 +45,34 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Events", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Events_Executions_InstanceId_ExecutionId",
+                        columns: x => new { x.InstanceId, x.ExecutionId },
+                        principalTable: "Executions",
+                        principalColumns: new[] { "InstanceId", "ExecutionId" },
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ExecutionTags",
+                columns: table => new
+                {
+                    InstanceId = table.Column<string>(nullable: false),
+                    ExecutionId = table.Column<string>(nullable: false),
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(maxLength: 100, nullable: false),
+                    Value = table.Column<string>(maxLength: 2000, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ExecutionTags", x => new { x.InstanceId, x.ExecutionId, x.Id });
+                    table.ForeignKey(
+                        name: "FK_ExecutionTags_Executions_InstanceId_ExecutionId",
+                        columns: x => new { x.InstanceId, x.ExecutionId },
+                        principalTable: "Executions",
+                        principalColumns: new[] { "InstanceId", "ExecutionId" },
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -36,6 +88,12 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Instances", x => x.InstanceId);
+                    table.ForeignKey(
+                        name: "FK_Instances_Executions_InstanceId_LastExecutionId",
+                        columns: x => new { x.InstanceId, x.LastExecutionId },
+                        principalTable: "Executions",
+                        principalColumns: new[] { "InstanceId", "ExecutionId" },
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -65,36 +123,6 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Executions",
-                columns: table => new
-                {
-                    InstanceId = table.Column<string>(maxLength: 100, nullable: false),
-                    ExecutionId = table.Column<string>(maxLength: 100, nullable: false),
-                    Name = table.Column<string>(maxLength: 200, nullable: false),
-                    Version = table.Column<string>(maxLength: 100, nullable: false),
-                    CreatedTime = table.Column<DateTime>(nullable: false),
-                    CompletedTime = table.Column<DateTime>(nullable: false),
-                    LastUpdatedTime = table.Column<DateTime>(nullable: false),
-                    CompressedSize = table.Column<long>(nullable: false),
-                    Size = table.Column<long>(nullable: false),
-                    Status = table.Column<string>(nullable: false),
-                    CustomStatus = table.Column<string>(nullable: true),
-                    ParentInstance = table.Column<string>(maxLength: 2000, nullable: true),
-                    Input = table.Column<string>(nullable: true),
-                    Output = table.Column<string>(nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Executions", x => new { x.InstanceId, x.ExecutionId });
-                    table.ForeignKey(
-                        name: "FK_Executions_Instances_InstanceId",
-                        column: x => x.InstanceId,
-                        principalTable: "Instances",
-                        principalColumn: "InstanceId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "OrchestratorMessages",
                 columns: table => new
                 {
@@ -113,28 +141,6 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         column: x => x.InstanceId,
                         principalTable: "Instances",
                         principalColumn: "InstanceId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ExecutionTags",
-                columns: table => new
-                {
-                    InstanceId = table.Column<string>(nullable: false),
-                    ExecutionId = table.Column<string>(nullable: false),
-                    Id = table.Column<int>(nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(maxLength: 100, nullable: false),
-                    Value = table.Column<string>(maxLength: 2000, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ExecutionTags", x => new { x.InstanceId, x.ExecutionId, x.Id });
-                    table.ForeignKey(
-                        name: "FK_ExecutionTags_Executions_InstanceId_ExecutionId",
-                        columns: x => new { x.InstanceId, x.ExecutionId },
-                        principalTable: "Executions",
-                        principalColumns: new[] { "InstanceId", "ExecutionId" },
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -163,6 +169,11 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 name: "IX_Instances_AvailableAt",
                 table: "Instances",
                 column: "AvailableAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Instances_InstanceId_LastExecutionId",
+                table: "Instances",
+                columns: new[] { "InstanceId", "LastExecutionId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Instances_Queue_AvailableAt",
@@ -195,10 +206,10 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 name: "OrchestratorMessages");
 
             migrationBuilder.DropTable(
-                name: "Executions");
+                name: "Instances");
 
             migrationBuilder.DropTable(
-                name: "Instances");
+                name: "Executions");
         }
     }
 }

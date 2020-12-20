@@ -15,7 +15,6 @@ namespace Microsoft.Extensions.DependencyInjection
             Action<NpgsqlDbContextOptionsBuilder> mysqlOptionsAction = null)
         {
             builder.Services.AddSingleton<EFCoreOrchestrationService, PostgreSQLEFCoreOrchestrationService>();
-            builder.Services.AddSingleton<EFCoreOrchestrationServiceClient, PostgreSQLEFCoreOrchestrationServiceClient>();
 
             return builder.ConfigureDbContext(options =>
             {

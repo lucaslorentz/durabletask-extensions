@@ -6,20 +6,20 @@ using Microsoft.Extensions.Options;
 
 namespace LLL.DurableTask.EFCore.Mappers
 {
-    public class OrchestratorMessageMapper
+    public class OrchestrationMessageMapper
     {
         private readonly EFCoreOrchestrationOptions _options;
 
-        public OrchestratorMessageMapper(IOptions<EFCoreOrchestrationOptions> options)
+        public OrchestrationMessageMapper(IOptions<EFCoreOrchestrationOptions> options)
         {
             _options = options.Value;
         }
 
-        public OrchestratorMessage CreateOrchestratorMessage(
+        public OrchestrationMessage CreateOrchestratorMessage(
             TaskMessage message,
             int sequence)
         {
-            return new OrchestratorMessage
+            return new OrchestrationMessage
             {
                 Id = Guid.NewGuid(),
                 InstanceId = message.OrchestrationInstance.InstanceId,

@@ -1,5 +1,6 @@
 ﻿using System;
 using DurableTask.Core.Serializing;
+using LLL.DurableTask.EFCore.Polling;
 
 namespace LLL.DurableTask.EFCore
 {
@@ -15,19 +16,5 @@ namespace LLL.DurableTask.EFCore
         public TimeSpan ActivtyLockTimeout { get; set; } = TimeSpan.FromMinutes(1);
         public TimeSpan FetchNewMessagesPollingTimeout { get; set; } = TimeSpan.FromSeconds(5);
         public int DelayInSecondsAfterFailure { get; set; } = 5;
-
-        public class PollingIntervalOptions
-        {
-            public PollingIntervalOptions(double initial, double factor, double max)
-            {
-                Initial = initial;
-                Factor = factor;
-                Max = max;
-            }
-
-            public double Initial { get; set; }
-            public double Factor { get; set; }
-            public double Max { get; set; }
-        }
     }
 }

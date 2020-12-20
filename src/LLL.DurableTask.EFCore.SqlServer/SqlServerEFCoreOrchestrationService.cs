@@ -14,7 +14,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
         public SqlServerEFCoreOrchestrationService(
             IOptions<EFCoreOrchestrationOptions> options,
             Func<OrchestrationDbContext> dbContextFactory,
-            OrchestratorMessageMapper orchestratorMessageMapper,
+            OrchestrationMessageMapper orchestratorMessageMapper,
             ActivityMessageMapper activityMessageMapper,
             InstanceMapper instanceMapper,
             ExecutionMapper executionMapper,

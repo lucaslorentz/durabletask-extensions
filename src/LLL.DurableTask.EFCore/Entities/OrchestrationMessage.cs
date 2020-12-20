@@ -2,7 +2,7 @@
 
 namespace LLL.DurableTask.EFCore.Entities
 {
-    public class OrchestratorMessage
+    public class OrchestrationMessage
     {
         public Guid Id { get; set; }
 

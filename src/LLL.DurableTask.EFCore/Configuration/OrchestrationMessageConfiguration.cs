@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LLL.DurableTask.EFCore.Configuration
 {
-    public class OrchestratorMessageConfiguration : IEntityTypeConfiguration<OrchestratorMessage>
+    public class OrchestrationMessageConfiguration : IEntityTypeConfiguration<OrchestrationMessage>
     {
-        public void Configure(EntityTypeBuilder<OrchestratorMessage> builder)
+        public void Configure(EntityTypeBuilder<OrchestrationMessage> builder)
         {
             builder.HasKey(x => x.Id);
             builder.Property(x => x.Id).IsRequired();

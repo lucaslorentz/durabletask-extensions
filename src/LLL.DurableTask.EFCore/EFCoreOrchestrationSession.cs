@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Serializing;
 using LLL.DurableTask.EFCore.Entities;
+using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
 
 namespace LLL.DurableTask.EFCore
@@ -39,7 +40,7 @@ namespace LLL.DurableTask.EFCore
         public Execution Execution { get; set; }
         public Event[] Events { get; set; }
         public OrchestrationRuntimeState RuntimeState { get; set; }
-        public List<OrchestratorMessage> Messages { get; } = new List<OrchestratorMessage>();
+        public List<OrchestrationMessage> Messages { get; } = new List<OrchestrationMessage>();
 
         public bool Released { get; set; }
 
@@ -57,9 +58,7 @@ namespace LLL.DurableTask.EFCore
             },
             x => x.Count > 0,
             _options.FetchNewMessagesPollingTimeout,
-            _options.PollingInterval.Initial,
-            _options.PollingInterval.Factor,
-            _options.PollingInterval.Max,
+            _options.PollingInterval,
             _stopCancellationToken);
         }
 

@@ -7,8 +7,6 @@ namespace LLL.DurableTask.EFCore.Entities
     public class Execution
     {
         public string InstanceId { get; set; }
-        public Instance Instance { get; set; }
-
         public string ExecutionId { get; set; }
 
         public string Name { get; set; }
