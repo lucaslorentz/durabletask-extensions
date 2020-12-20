@@ -21,8 +21,10 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  ButtonGroup,
+  Grid,
 } from "@material-ui/core";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import {
   Link as RouterLink,
   useRouteMatch,
@@ -37,6 +39,9 @@ import { LineBuilder } from "./Line";
 import { RaiseEvent } from "./RaiseEvent";
 import { Terminate } from "./Terminate";
 import DeleteIcon from "@material-ui/icons/Delete";
+import MenuItem from "@material-ui/core/MenuItem";
+import Menu from "@material-ui/core/Menu";
+import { ArrowDropDown, Sync } from "@material-ui/icons";
 
 type RouteParams = {
   instanceId: string;
@@ -54,6 +59,14 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+const autoRefreshOptions = [
+  { value: undefined, label: "Off" },
+  { value: 5, label: "5 seconds" },
+  { value: 10, label: "10 seconds" },
+  { value: 20, label: "20 seconds" },
+  { value: 30, label: "30 seconds" },
+];
+
 export function Orchestration() {
   const classes = useStyles();
 
@@ -63,15 +76,40 @@ export function Orchestration() {
     parse: Number,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useQueryState<
+    number | undefined
+  >("refreshInterval", undefined, {
+    parse: parseInt,
+  });
+  const [autoRefreshAnchor, setAutoRefreshAnchor] = useState<
+    HTMLElement | undefined
+  >();
+  const [triggeredRefreshes, triggerRefresh] = useReducer((x) => x + 1, 0);
+  const [loadedCount, incrementLoadedCount] = useReducer((x) => x + 1, 0);
 
   const route = useRouteMatch<RouteParams>();
 
   const { instanceId, executionId } = route.params;
 
   useEffect(() => {
+    setState(undefined);
+    setEventsHistory([]);
+  }, [instanceId, executionId]);
+
+  useEffect(() => {
+    if (!autoRefreshInterval) return;
+
+    const timeout = setTimeout(
+      () => triggerRefresh(),
+      autoRefreshInterval * 1000
+    );
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [autoRefreshInterval, loadedCount]);
+
+  useEffect(() => {
     (async () => {
-      setState(undefined);
-      setEventsHistory([]);
       setIsLoading(true);
 
       let url = `/api/v1/orchestrations/${instanceId}`;
@@ -90,8 +128,9 @@ export function Orchestration() {
       setState(state);
       setEventsHistory(history);
       setIsLoading(false);
+      incrementLoadedCount();
     })();
-  }, [instanceId, executionId]);
+  }, [instanceId, executionId, triggeredRefreshes]);
 
   const filteredEvents = eventsHistory.filter(
     (e) =>
@@ -148,26 +187,74 @@ export function Orchestration() {
           </Button>
         </DialogActions>
       </Dialog>
-      <Box marginBottom={1} display="flex">
-        <Box flex={1}>
+      <Grid container spacing={4} alignItems="center">
+        <Grid item xs>
           <Breadcrumbs aria-label="breadcrumb">
             <Link component={RouterLink} to="/orchestrations">
               Orchestrations
             </Link>
-            <Typography color="textPrimary">{instanceId}</Typography>
+            {executionId ? (
+              <Link component={RouterLink} to={`/orchestrations/${instanceId}`}>
+                {instanceId}
+              </Link>
+            ) : (
+              <Typography color="textPrimary">{instanceId}</Typography>
+            )}
+            {executionId && (
+              <Typography color="textPrimary">{executionId}</Typography>
+            )}
           </Breadcrumbs>
-        </Box>
-        <Box>
+        </Grid>
+        <Grid item>
+          <ButtonGroup color="primary" size="small">
+            <Button onClick={() => triggerRefresh()} title="Refresh">
+              <Sync />
+            </Button>
+            <Button onClick={(e) => setAutoRefreshAnchor(e.currentTarget)}>
+              {autoRefreshInterval ? `${autoRefreshInterval} seconds` : "Off"}
+              <ArrowDropDown />
+            </Button>
+          </ButtonGroup>
+          <Menu
+            anchorEl={autoRefreshAnchor}
+            keepMounted
+            getContentAnchorEl={null}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            open={Boolean(autoRefreshAnchor)}
+            onClose={() => setAutoRefreshAnchor(undefined)}
+          >
+            {autoRefreshOptions.map((option, index) => (
+              <MenuItem
+                key={index}
+                selected={autoRefreshInterval === option.value}
+                onClick={() => {
+                  setAutoRefreshInterval(option.value);
+                  setAutoRefreshAnchor(undefined);
+                }}
+              >
+                {option.label}
+              </MenuItem>
+            ))}
+          </Menu>
+        </Grid>
+        <Grid item>
           <Button
-            variant="contained"
+            variant="outlined"
             startIcon={<DeleteIcon />}
             onClick={handlePurgeClick}
             size="small"
           >
             Purge
           </Button>
-        </Box>
-      </Box>
+        </Grid>
+      </Grid>
       <Box height={4} marginBottom={1}>
         {isLoading && <LinearProgress />}
       </Box>
@@ -197,7 +284,14 @@ export function Orchestration() {
                 <TableRow>
                   <TableCell>ExecutionId</TableCell>
                   <TableCell>
-                    {state.orchestrationInstance.executionId}
+                    {executionId ?? (
+                      <Link
+                        component={RouterLink}
+                        to={`/orchestrations/${state.orchestrationInstance.instanceId}/${state.orchestrationInstance.executionId}`}
+                      >
+                        {state.orchestrationInstance.executionId}
+                      </Link>
+                    )}
                   </TableCell>
                 </TableRow>
                 <TableRow>

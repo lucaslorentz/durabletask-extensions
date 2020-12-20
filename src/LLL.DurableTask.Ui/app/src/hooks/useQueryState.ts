@@ -64,7 +64,7 @@ export function useQueryState<T>(
     getLocationValue(history.location, name, initialValue, multiple, parse)
   );
 
-  const lastQueryJson = useRef<string>();
+  const lastValueJson = useRef<string>(JSON.stringify(stateValue));
 
   useEffect(() => {
     return history.listen((location) => {
@@ -76,8 +76,8 @@ export function useQueryState<T>(
         parse
       );
       const locationValueJson = JSON.stringify(locationValue);
-      if (lastQueryJson.current === locationValueJson) return;
-      lastQueryJson.current = locationValueJson;
+      if (lastValueJson.current === locationValueJson) return;
+      lastValueJson.current = locationValueJson;
       setStateValue(locationValue);
     });
   }, [history, name, initialValue, multiple, parse]);
@@ -125,10 +125,7 @@ function getLocationValue<T>(
   parse?: any
 ): any {
   const searchParams = new URLSearchParams(location.search);
-  if (!searchParams.has(name)) return initialValue;
-
   const values = searchParams.getAll(name);
-
   if (values.length === 0) {
     return initialValue;
   } else if (multiple) {
