@@ -4,8 +4,9 @@ syntax = "proto3";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
 
-package DurableTaskHub;
+package DurableTaskGrpc;
 
 service OrchestrationService {
     // OrchestrationServiceClient
@@ -37,12 +38,12 @@ message GetFeaturesResponse {
 }
 
 message CreateTaskOrchestrationRequest {
-    string creationMessage = 1;
-    repeated int32 dedupeStatuses = 2;
+    string creation_message = 1;
+    repeated int32 dedupe_statuses = 2;
 }
 
 message ForceTerminateTaskOrchestrationRequest {
-    string instanceId = 1;
+    string instance_id = 1;
     string reason = 2;
 }
 
@@ -51,8 +52,8 @@ message SendTaskOrchestrationMessageBatchRequest {
 }
 
 message GetOrchestrationHistoryRequest {
-    string instanceId = 1;
-    string executionId = 2;
+    string instance_id = 1;
+    string execution_id = 2;
 }
 
 message GetOrchestrationHistoryResponse {
@@ -60,8 +61,8 @@ message GetOrchestrationHistoryResponse {
 }
 
 message GetOrchestrationStateRequest {
-    string instanceId = 1;
-    string executionId = 2;
+    string instance_id = 1;
+    string execution_id = 2;
 }
 
 message GetOrchestrationStateResponse {
@@ -69,8 +70,8 @@ message GetOrchestrationStateResponse {
 }
 
 message GetOrchestrationInstanceStateRequest {
-    string instanceId = 1;
-    bool allExecutions = 2;
+    string instance_id = 1;
+    bool all_executions = 2;
 }
 
 message GetOrchestrationInstanceStateResponse {
@@ -78,7 +79,7 @@ message GetOrchestrationInstanceStateResponse {
 }
 
 message WaitForOrchestrationRequest {
-    string instanceId = 1;
+    string instance_id = 1;
     string executionId = 2;
     google.protobuf.Duration timeout = 3;
 }
@@ -88,8 +89,8 @@ message WaitForOrchestrationResponse {
 }
 
 message PurgeOrchestrationHistoryRequest {
-    google.protobuf.Timestamp thresholdDateTimeUtc = 1;
-    OrchestrationTimeFilterType timeRangeFilterType = 2;
+    google.protobuf.Timestamp threshold_date_time_utc = 1;
+    OrchestrationTimeFilterType time_range_filter_type = 2;
 }
 
 enum OrchestrationTimeFilterType {
@@ -100,81 +101,84 @@ enum OrchestrationTimeFilterType {
 
 message GetOrchestrationsRequest {
     int32 top = 1;
-    string continuationToken = 2;
-    string instanceId = 3;
+    string continuation_token = 2;
+    string instance_id = 3;
     string name = 4;
-    google.protobuf.Timestamp createdTimeFrom = 5;
-    google.protobuf.Timestamp createdTimeTo = 6;
-    repeated int32 runtimeStatus = 7;
+    google.protobuf.Timestamp created_time_from = 5;
+    google.protobuf.Timestamp created_time_to = 6;
+    repeated int32 runtime_status = 7;
 }
 
 message GetOrchestrationsResponse {
     repeated string states = 1;
-    bool countIsNull = 2;
-    int64 count = 3;
-    string continuationToken = 4;
+    google.protobuf.Int64Value count = 2;
+    string continuation_token = 3;
 }
 
 message PurgeInstanceHistoryRequest {
-    string instanceId = 1;
+    string instance_id = 1;
 }
 
 message PurgeInstanceHistoryResponse {
-    int32 instancesDeleted = 1;
+    int32 instances_deleted = 1;
 }
 
 // Orchestration messages
 message TaskOrchestrationRequest {
-    oneof Message {
-        LockNextTaskOrchestrationWorkItemRequest lockRequest = 1;
-        RenewTaskOrchestrationWorkItemLockRequest renewRequest = 2;
-        CompleteTaskOrchestrationWorkItemRequest completeRequest = 3;
-        FetchNewOrchestrationMessagesRequest fetchRequest = 4;
-        ReleaseTaskOrchestrationWorkItemRequest releaseRequest = 5;
-        AbandonTaskOrchestrationWorkItemLockRequest abandonRequest = 6;
+    oneof message {
+        LockNextTaskOrchestrationWorkItemRequest lock_request = 1;
+        RenewTaskOrchestrationWorkItemLockRequest renew_request = 2;
+        CompleteTaskOrchestrationWorkItemRequest complete_request = 3;
+        FetchNewOrchestrationMessagesRequest fetch_request = 4;
+        ReleaseTaskOrchestrationWorkItemRequest release_request = 5;
+        AbandonTaskOrchestrationWorkItemLockRequest abandon_request = 6;
     };
 }
 
 message TaskOrchestrationResponse {
-    oneof Message {
-        bool lockResponseIsNull = 1;
-        LockNextTaskOrchestrationWorkItemResponse lockResponse = 2;
-        RenewTaskOrchestrationWorkItemLockResponse renewResponse = 3;
-        CompleteTaskOrchestrationWorkItemResponse completeResponse = 4;
-        bool fetchResponseIsNull = 5;
-        FetchNewOrchestrationMessagesResponse fetchResponse = 6;
-        ReleaseTaskOrchestrationWorkItemResponse releaseResponse = 7;
-        AbandonTaskOrchestrationWorkItemLockResponse abandonResponse = 8;
+    oneof message {
+        LockNextTaskOrchestrationWorkItemResponse lock_response = 1;
+        RenewTaskOrchestrationWorkItemLockResponse renew_response = 2;
+        CompleteTaskOrchestrationWorkItemResponse complete_response = 3;
+        FetchNewOrchestrationMessagesResponse fetch_response = 4;
+        ReleaseTaskOrchestrationWorkItemResponse release_response = 5;
+        AbandonTaskOrchestrationWorkItemLockResponse abandon_response = 6;
     };
 }
 
 message LockNextTaskOrchestrationWorkItemRequest {
-    google.protobuf.Duration receiveTimeout = 1;
+    google.protobuf.Duration receive_timeout = 1;
     repeated NameVersion orchestrations = 2;
-    bool allOrchestrations = 3;
+    bool all_orchestrations = 3;
 }
 
 message LockNextTaskOrchestrationWorkItemResponse {
-    string instanceId = 1;
+    oneof optional_work_item {
+        TaskOrchestrationWorkItem work_item = 1;
+    }   
+}
+
+message TaskOrchestrationWorkItem {
+    string instance_id = 1;
     repeated string events = 2;
-    google.protobuf.Timestamp lockedUntilUtc = 3;
-    repeated string newMessages = 4;
+    google.protobuf.Timestamp locked_until_utc = 3;
+    repeated string new_messages = 4;
 }
 
 message RenewTaskOrchestrationWorkItemLockRequest {
 }
 
 message RenewTaskOrchestrationWorkItemLockResponse {
-    google.protobuf.Timestamp lockedUntilUtc = 1;
+    google.protobuf.Timestamp locked_until_utc = 1;
 }
 
 message CompleteTaskOrchestrationWorkItemRequest {
-    repeated string newEvents = 4;
-    repeated string outboundMessages = 5;
-    repeated string orchestratorMessages = 6;
-    repeated string timerMessages = 7;
-    string continuedAsNewMessage = 8;
-    string orchestrationState = 9;
+    repeated string new_events = 4;
+    repeated string outbound_messages = 5;
+    repeated string orchestrator_messages = 6;
+    repeated string timer_messages = 7;
+    string continued_as_new_message = 8;
+    string orchestration_state = 9;
 }
 
 message CompleteTaskOrchestrationWorkItemResponse {
@@ -184,7 +188,13 @@ message FetchNewOrchestrationMessagesRequest {
 }
 
 message FetchNewOrchestrationMessagesResponse {
-    repeated string newMessages = 1;
+    oneof optional_new_messages {
+        OrchestrationMessages new_messages = 1;
+    };
+}
+
+message OrchestrationMessages {
+    repeated string messages = 1;
 }
 
 message ReleaseTaskOrchestrationWorkItemRequest {
@@ -201,47 +211,38 @@ message AbandonTaskOrchestrationWorkItemLockResponse {
 
 // Activity messages
 message LockNextTaskActivityWorkItemRequest {
-    google.protobuf.Duration receiveTimeout = 1;
+    google.protobuf.Duration receive_timeout = 1;
     repeated NameVersion activities = 2;
-    bool allActivities = 3;
+    bool all_activities = 3;
 }
 
 message LockNextTaskActivityWorkItemResponse {
-    oneof response {
-        bool isNull = 1;
-        LockNextTaskActivityWorkItemResponseValue value = 2;
+    oneof optional_work_item {
+        TaskActivityWorkItem work_item = 1;
     }
 }
 
-message LockNextTaskActivityWorkItemResponseValue {
+message TaskActivityWorkItem {
     string id = 1;
-    google.protobuf.Timestamp lockedUntilUtc = 2;
+    google.protobuf.Timestamp locked_until_utc = 2;
     string taskMessage = 3;
 }
 
 message RenewTaskActivityWorkItemLockRequest {
-    string id = 1;
-    google.protobuf.Timestamp lockedUntilUtc = 2;
-    string taskMessage = 3;
+    TaskActivityWorkItem work_item = 1;
 }
 
 message RenewTaskActivityWorkItemLockResponse {
-    string id = 1;
-    google.protobuf.Timestamp lockedUntilUtc = 2;
-    string taskMessage = 3;
+    TaskActivityWorkItem work_item = 1;
 }
 
 message CompleteTaskActivityWorkItemRequest {
-    string id = 1;
-    google.protobuf.Timestamp lockedUntilUtc = 2;
-    string taskMessage = 3;
-    string responseMessage = 4;
+    TaskActivityWorkItem work_item = 1;
+    string responseMessage = 2;
 }
 
 message AbandonTaskActivityWorkItemRequest {
-    string id = 1;
-    google.protobuf.Timestamp lockedUntilUtc = 2;
-    string taskMessage = 3;
+    TaskActivityWorkItem work_item = 1;
 }
 
 message NameVersion {

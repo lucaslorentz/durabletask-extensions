@@ -3,7 +3,7 @@ using DurableTask.Core;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.Server.Client;
 using Microsoft.Extensions.Options;
-using static DurableTaskHub.OrchestrationService;
+using static DurableTaskGrpc.OrchestrationService;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -19,10 +19,8 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<GrpcOrchestrationService>();
             services.AddSingleton<IOrchestrationService>(p => p.GetRequiredService<GrpcOrchestrationService>());
             services.AddSingleton<IExtendedOrchestrationService>(p => p.GetRequiredService<GrpcOrchestrationService>());
-
-            services.AddSingleton<GrpcOrchestrationServiceClient>();
-            services.AddSingleton<IOrchestrationServiceClient>(p => p.GetRequiredService<GrpcOrchestrationServiceClient>());
-            services.AddSingleton<IExtendedOrchestrationServiceClient>(p => p.GetRequiredService<GrpcOrchestrationServiceClient>());
+            services.AddSingleton<IOrchestrationServiceClient>(p => p.GetRequiredService<GrpcOrchestrationService>());
+            services.AddSingleton<IExtendedOrchestrationServiceClient>(p => p.GetRequiredService<GrpcOrchestrationService>());
 
             return services.AddGrpcClient<OrchestrationServiceClient>((s, o) =>
             {

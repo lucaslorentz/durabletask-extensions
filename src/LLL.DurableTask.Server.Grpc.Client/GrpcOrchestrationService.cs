@@ -6,17 +6,19 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using DurableTask.Core.Serializing;
-using DurableTaskHub;
+using DurableTaskGrpc;
 using Google.Protobuf.WellKnownTypes;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.Server.Grpc.Client.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using static DurableTaskHub.OrchestrationService;
+using static DurableTaskGrpc.OrchestrationService;
+using TaskActivityWorkItem = DurableTask.Core.TaskActivityWorkItem;
+using TaskOrchestrationWorkItem = DurableTask.Core.TaskOrchestrationWorkItem;
 
 namespace LLL.DurableTask.Server.Client
 {
-    public class GrpcOrchestrationService :
+    public partial class GrpcOrchestrationService :
         IOrchestrationService,
         IExtendedOrchestrationService
     {
@@ -68,17 +70,6 @@ namespace LLL.DurableTask.Server.Client
         public Task DeleteAsync(bool deleteInstanceStore)
         {
             return Task.CompletedTask;
-        }
-
-        public async Task ForceTerminateTaskOrchestrationAsync(string instanceId, string reason)
-        {
-            var request = new ForceTerminateTaskOrchestrationRequest
-            {
-                InstanceId = instanceId,
-                Reason = reason
-            };
-
-            await _client.ForceTerminateTaskOrchestrationAsync(request);
         }
 
         public int GetDelayInSecondsAfterOnFetchException(Exception exception)
@@ -163,22 +154,23 @@ namespace LLL.DurableTask.Server.Client
                 if (!await stream.ResponseStream.MoveNext(cancellationToken))
                     throw new Exception("Session aborted");
 
-                if (stream.ResponseStream.Current.LockResponseIsNull)
-                    return null;
+                if (stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.LockResponse)
+                    throw new Exception("Didn't receive lock response");
 
                 var lockResponse = stream.ResponseStream.Current.LockResponse;
-                if (lockResponse == null)
-                    throw new Exception("Didn't receive lock response");
+
+                if (lockResponse.WorkItem == null)
+                    return null;
 
                 return new TaskOrchestrationWorkItem
                 {
-                    InstanceId = lockResponse.InstanceId,
+                    InstanceId = lockResponse.WorkItem.InstanceId,
                     OrchestrationRuntimeState = new OrchestrationRuntimeState(
-                        lockResponse.Events
+                        lockResponse.WorkItem.Events
                             .Select(e => _dataConverter.Deserialize<HistoryEvent>(e))
                             .ToArray()),
-                    LockedUntilUtc = lockResponse.LockedUntilUtc.ToDateTime(),
-                    NewMessages = lockResponse.NewMessages.Select(m => _dataConverter.Deserialize<TaskMessage>(m)).ToArray(),
+                    LockedUntilUtc = lockResponse.WorkItem.LockedUntilUtc.ToDateTime(),
+                    NewMessages = lockResponse.WorkItem.NewMessages.Select(m => _dataConverter.Deserialize<TaskMessage>(m)).ToArray(),
                     Session = new GrpcOrchestrationSession(stream, _logger)
                 };
             }
@@ -262,34 +254,22 @@ namespace LLL.DurableTask.Server.Client
 
             var response = await _client.LockNextTaskActivityWorkItemAsync(request);
 
-            if (response.IsNull)
+            if (response.WorkItem == null)
                 return null;
 
-            return new TaskActivityWorkItem
-            {
-                Id = response.Value.Id,
-                LockedUntilUtc = response.Value.LockedUntilUtc.ToDateTime(),
-                TaskMessage = _dataConverter.Deserialize<TaskMessage>(response.Value.TaskMessage)
-            };
+            return ToDurableTaskWorkItem(response.WorkItem);
         }
 
         public async Task<TaskActivityWorkItem> RenewTaskActivityWorkItemLockAsync(TaskActivityWorkItem workItem)
         {
             var request = new RenewTaskActivityWorkItemLockRequest
             {
-                Id = workItem.Id,
-                LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
-                TaskMessage = _dataConverter.Serialize(workItem.TaskMessage)
+                WorkItem = ToGrpcWorkItem(workItem)
             };
 
             var response = await _client.RenewTaskActivityWorkItemLockAsync(request);
 
-            return new TaskActivityWorkItem
-            {
-                Id = response.Id,
-                LockedUntilUtc = response.LockedUntilUtc.ToDateTime(),
-                TaskMessage = _dataConverter.Deserialize<TaskMessage>(response.TaskMessage)
-            };
+            return ToDurableTaskWorkItem(response.WorkItem);
         }
 
         public async Task CompleteTaskActivityWorkItemAsync(
@@ -298,9 +278,7 @@ namespace LLL.DurableTask.Server.Client
         {
             var request = new CompleteTaskActivityWorkItemRequest
             {
-                Id = workItem.Id,
-                LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
-                TaskMessage = _dataConverter.Serialize(workItem.TaskMessage),
+                WorkItem = ToGrpcWorkItem(workItem),
                 ResponseMessage = _dataConverter.Serialize(responseMessage)
             };
 
@@ -311,12 +289,30 @@ namespace LLL.DurableTask.Server.Client
         {
             var request = new AbandonTaskActivityWorkItemRequest
             {
+                WorkItem = ToGrpcWorkItem(workItem)
+            };
+
+            await _client.AbandonTaskActivityWorkItemAsync(request);
+        }
+
+        private DurableTaskGrpc.TaskActivityWorkItem ToGrpcWorkItem(TaskActivityWorkItem workItem)
+        {
+            return new DurableTaskGrpc.TaskActivityWorkItem
+            {
                 Id = workItem.Id,
                 LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
                 TaskMessage = _dataConverter.Serialize(workItem.TaskMessage)
             };
+        }
 
-            await _client.AbandonTaskActivityWorkItemAsync(request);
+        private TaskActivityWorkItem ToDurableTaskWorkItem(DurableTaskGrpc.TaskActivityWorkItem grpcWorkItem)
+        {
+            return new TaskActivityWorkItem
+            {
+                Id = grpcWorkItem.Id,
+                LockedUntilUtc = grpcWorkItem.LockedUntilUtc.ToDateTime(),
+                TaskMessage = _dataConverter.Deserialize<TaskMessage>(grpcWorkItem.TaskMessage)
+            };
         }
 
         #endregion

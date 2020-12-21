@@ -4,106 +4,17 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using DurableTask.Core.Serializing;
-using DurableTaskHub;
+using DurableTaskGrpc;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using LLL.DurableTask.Core;
-using LLL.DurableTask.Server.Grpc.Client.Internal;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using static DurableTaskHub.OrchestrationService;
 
 namespace LLL.DurableTask.Server.Client
 {
-    public class GrpcOrchestrationServiceClient :
+    public partial class GrpcOrchestrationService :
         IOrchestrationServiceClient,
         IExtendedOrchestrationServiceClient
     {
-        private const int DelayAfterFailureInSeconds = 5;
-
-        private readonly DataConverter _dataConverter = new GrpcJsonDataConverter();
-
-        private readonly OrchestrationServiceClient _client;
-        private readonly ILogger _logger;
-        private readonly GrpcOrchestrationServiceOptions _options;
-
-        public int TaskOrchestrationDispatcherCount => _options.TaskOrchestrationDispatcherCount;
-        public int MaxConcurrentTaskOrchestrationWorkItems => _options.MaxConcurrentTaskOrchestrationWorkItems;
-        public int MaxConcurrentTaskActivityWorkItems => _options.MaxConcurrentTaskActivityWorkItems;
-        public BehaviorOnContinueAsNew EventBehaviourForContinueAsNew => BehaviorOnContinueAsNew.Carryover;
-        public int TaskActivityDispatcherCount => _options.TaskActivityDispatcherCount;
-
-        public GrpcOrchestrationServiceClient(
-            OrchestrationServiceClient client,
-            IOptions<GrpcOrchestrationServiceOptions> options,
-            ILogger<GrpcOrchestrationSession> logger)
-        {
-            _options = options.Value;
-            _client = client;
-            _logger = logger;
-        }
-
-        #region Setup
-        public Task CreateAsync()
-        {
-            return CreateAsync(false);
-        }
-
-        public Task CreateAsync(bool recreateInstanceStore)
-        {
-            return Task.CompletedTask;
-        }
-
-        public Task CreateIfNotExistsAsync()
-        {
-            return Task.CompletedTask;
-        }
-
-        public Task DeleteAsync()
-        {
-            return DeleteAsync(false);
-        }
-
-        public Task DeleteAsync(bool deleteInstanceStore)
-        {
-            return Task.CompletedTask;
-        }
-
-        public int GetDelayInSecondsAfterOnFetchException(Exception exception)
-        {
-            return DelayAfterFailureInSeconds;
-        }
-
-        public int GetDelayInSecondsAfterOnProcessException(Exception exception)
-        {
-            return DelayAfterFailureInSeconds;
-        }
-
-
-        public bool IsMaxMessageCountExceeded(int currentMessageCount, OrchestrationRuntimeState runtimeState)
-        {
-            return false;
-        }
-
-        public Task StartAsync()
-        {
-            return Task.CompletedTask;
-        }
-
-        public Task StopAsync()
-        {
-            return Task.CompletedTask;
-        }
-
-        public Task StopAsync(bool isForced)
-        {
-            return Task.CompletedTask;
-        }
-        #endregion
-
-        #region Client
-
         public async Task<OrchestrationFeature[]> GetFeatures()
         {
             var response = await _client.GetFeaturesAsync(new Empty());
@@ -248,7 +159,7 @@ namespace LLL.DurableTask.Server.Client
                 Orchestrations = response.States
                     .Select(s => _dataConverter.Deserialize<OrchestrationState>(s))
                     .ToArray(),
-                Count = response.CountIsNull ? default(long?) : response.Count,
+                Count = response.Count,
                 ContinuationToken = response.ContinuationToken
             };
         }
@@ -267,6 +178,5 @@ namespace LLL.DurableTask.Server.Client
                 InstancesDeleted = result.InstancesDeleted
             };
         }
-        #endregion
     }
 }

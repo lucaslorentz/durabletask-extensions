@@ -5,10 +5,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Serializing;
+using DurableTaskGrpc;
 using LLL.DurableTask.Server.Grpc.Client.Internal;
-using DurableTaskHub;
 using Microsoft.Extensions.Logging;
-using HubGRPCOrchestrationStream = Grpc.Core.AsyncDuplexStreamingCall<DurableTaskHub.TaskOrchestrationRequest, DurableTaskHub.TaskOrchestrationResponse>;
+using TaskOrchestrationStream = Grpc.Core.AsyncDuplexStreamingCall<DurableTaskGrpc.TaskOrchestrationRequest, DurableTaskGrpc.TaskOrchestrationResponse>;
+using TaskOrchestrationWorkItem = DurableTask.Core.TaskOrchestrationWorkItem;
 
 namespace LLL.DurableTask.Server.Client
 {
@@ -22,11 +23,11 @@ namespace LLL.DurableTask.Server.Client
 
         private readonly DataConverter _dataConverter = new GrpcJsonDataConverter();
 
-        private readonly HubGRPCOrchestrationStream _stream;
+        private readonly TaskOrchestrationStream _stream;
         private readonly ILogger _logger;
 
         public GrpcOrchestrationSession(
-            HubGRPCOrchestrationStream stream,
+            TaskOrchestrationStream stream,
             ILogger logger)
         {
             _stream = stream;
@@ -45,12 +46,12 @@ namespace LLL.DurableTask.Server.Client
             var cts = new CancellationTokenSource(_renewResponseTimeout);
 
             if (!await _stream.ResponseStream.MoveNext(cts.Token))
-                throw new Exception();
+                throw new Exception("Session aborted");
 
-            var renewResponse = _stream.ResponseStream.Current.RenewResponse;
-            if (renewResponse == null)
+            if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.RenewResponse)
                 throw new Exception("Unexpected response");
 
+            var renewResponse = _stream.ResponseStream.Current.RenewResponse;
             workItem.LockedUntilUtc = renewResponse.LockedUntilUtc.ToDateTime();
         }
 
@@ -80,7 +81,11 @@ namespace LLL.DurableTask.Server.Client
 
             var cts = new CancellationTokenSource(_completeResponseTimeout);
 
-            await _stream.ResponseStream.MoveNext(cts.Token);
+            if (!await _stream.ResponseStream.MoveNext(cts.Token))
+                throw new Exception("Session aborted");
+
+            if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.CompleteResponse)
+                throw new Exception("Unexpected response");
         }
 
         public async Task<IList<TaskMessage>> FetchNewOrchestrationMessagesAsync(
@@ -98,32 +103,16 @@ namespace LLL.DurableTask.Server.Client
             if (!await _stream.ResponseStream.MoveNext(cts.Token))
                 throw new Exception("Session aborted");
 
-            if (_stream.ResponseStream.Current.FetchResponseIsNull)
-                return null;
+            if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.FetchResponse)
+                throw new Exception("Unexpected response");
 
             var fetchResponse = _stream.ResponseStream.Current.FetchResponse;
-            if (fetchResponse == null)
-                throw new Exception("Didn't receive fetch response");
+            if (fetchResponse.NewMessages == null)
+                return null;
 
-            return fetchResponse.NewMessages
+            return fetchResponse.NewMessages.Messages
                 .Select(x => _dataConverter.Deserialize<TaskMessage>(x))
                 .ToArray();
-        }
-
-        public async Task Release(TaskOrchestrationWorkItem workItem)
-        {
-            var request = new TaskOrchestrationRequest
-            {
-                ReleaseRequest = new ReleaseTaskOrchestrationWorkItemRequest()
-            };
-
-            await _stream.RequestStream.WriteAsync(request);
-
-            var cts = new CancellationTokenSource(_releaseResponseTimeout);
-
-            await _stream.ResponseStream.MoveNext(cts.Token);
-
-            _stream.Dispose();
         }
 
         public async Task Abandon(TaskOrchestrationWorkItem workItem)
@@ -137,7 +126,39 @@ namespace LLL.DurableTask.Server.Client
 
             var cts = new CancellationTokenSource(_abandonResponseTimeout);
 
+            if (!await _stream.ResponseStream.MoveNext(cts.Token))
+                throw new Exception("Session aborted");
+
+            if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.AbandonResponse)
+                throw new Exception("Unexpected response");
+        }
+
+        public async Task Release(TaskOrchestrationWorkItem workItem)
+        {
+            if (_stream == null)
+                return;
+
+            var request = new TaskOrchestrationRequest
+            {
+                ReleaseRequest = new ReleaseTaskOrchestrationWorkItemRequest()
+            };
+
+            await _stream.RequestStream.WriteAsync(request);
+
+            var cts = new CancellationTokenSource(_releaseResponseTimeout);
+
+            if (!await _stream.ResponseStream.MoveNext(cts.Token))
+                throw new Exception("Session aborted");
+
+            if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.ReleaseResponse)
+                throw new Exception("Unexpected response");
+
+            await _stream.RequestStream.CompleteAsync();
+
+            // Last read to close stream
             await _stream.ResponseStream.MoveNext(cts.Token);
+
+            _stream.Dispose();
         }
     }
 }

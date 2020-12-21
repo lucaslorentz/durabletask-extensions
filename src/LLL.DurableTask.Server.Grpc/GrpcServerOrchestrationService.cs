@@ -4,12 +4,13 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using DurableTask.Core.Serializing;
-using DurableTaskHub;
+using DurableTaskGrpc;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.Server.Grpc.Server.Internal;
-using static DurableTaskHub.OrchestrationService;
+using static DurableTaskGrpc.OrchestrationService;
+using TaskActivityWorkItem = DurableTask.Core.TaskActivityWorkItem;
 
 namespace LLL.DurableTask.Server.Grpc.Server
 {
@@ -150,8 +151,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
             var response = new GetOrchestrationsResponse
             {
                 States = { queryResult.Orchestrations.Select(s => _dataConverter.Serialize(s)) },
-                CountIsNull = queryResult.Count == null,
-                Count = queryResult.Count ?? default,
+                Count = queryResult.Count,
                 ContinuationToken = queryResult.ContinuationToken ?? string.Empty
             };
 
@@ -179,169 +179,151 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
         public override async Task LockNextTaskOrchestrationWorkItem(IAsyncStreamReader<TaskOrchestrationRequest> requestStream, IServerStreamWriter<TaskOrchestrationResponse> responseStream, ServerCallContext context)
         {
-            if (!await requestStream.MoveNext(context.CancellationToken))
-                throw new Exception("Session closed");
+            global::DurableTask.Core.TaskOrchestrationWorkItem workItem = null;
 
-            var lockRequest = requestStream.Current.LockRequest;
-            if (lockRequest == null)
-                throw new Exception("Expected lock request");
-
-            var orchestrations = lockRequest.Orchestrations.Select(x => new NameVersion(x.Name, x.Version)).ToArray();
-
-            var workItem = lockRequest.AllOrchestrations switch
+            // Receive and reply each message
+            await foreach (var message in requestStream.ReadAllAsync())
             {
-                false => await (_extendedOrchestrationService ?? throw new NotSupportedException("Distributed orchestration is not supported"))
-                    .LockNextTaskOrchestrationWorkItemAsync(
-                        lockRequest.ReceiveTimeout.ToTimeSpan(),
-                        orchestrations,
-                        context.CancellationToken),
-                true => await _orchestrationService.LockNextTaskOrchestrationWorkItemAsync(
-                    lockRequest.ReceiveTimeout.ToTimeSpan(),
-                    context.CancellationToken)
-            };
-
-            var lockResponse = new TaskOrchestrationResponse
-            {
-                LockResponse = workItem == null
-                    ? new LockNextTaskOrchestrationWorkItemResponse()
-                    : new LockNextTaskOrchestrationWorkItemResponse
-                    {
-                        InstanceId = workItem.InstanceId,
-                        LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
-                        Events = { workItem.OrchestrationRuntimeState.Events.Select(_dataConverter.Serialize) },
-                        NewMessages = { workItem.NewMessages.Select(_dataConverter.Serialize) }
-                    }
-            };
-
-            await responseStream.WriteAsync(lockResponse);
-
-            while (await requestStream.MoveNext())
-            {
-                var renewRequest = requestStream.Current.RenewRequest;
-                var fetchRequest = requestStream.Current.FetchRequest;
-                var completeRequest = requestStream.Current.CompleteRequest;
-                var releaseRequest = requestStream.Current.ReleaseRequest;
-                var abandonRequest = requestStream.Current.AbandonRequest;
-
-                if (renewRequest != null)
+                switch (message.MessageCase)
                 {
-                    await _orchestrationService.RenewTaskOrchestrationWorkItemLockAsync(workItem);
+                    case TaskOrchestrationRequest.MessageOneofCase.LockRequest:
+                        var lockRequest = message.LockRequest;
+                        var orchestrations = lockRequest.Orchestrations.Select(x => new NameVersion(x.Name, x.Version)).ToArray();
 
-                    var renewResponse = new TaskOrchestrationResponse
-                    {
-                        RenewResponse = new RenewTaskOrchestrationWorkItemLockResponse
+                        workItem = lockRequest.AllOrchestrations switch
                         {
-                            LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc)
-                        }
-                    };
-
-                    await responseStream.WriteAsync(renewResponse);
-                }
-                else if (completeRequest != null)
-                {
-                    var outboundMessages = completeRequest.OutboundMessages.Select(x => _dataConverter.Deserialize<TaskMessage>(x)).ToArray();
-                    var timerMessages = completeRequest.TimerMessages.Select(x => _dataConverter.Deserialize<TaskMessage>(x)).ToArray();
-                    var orchestratorMessages = completeRequest.OrchestratorMessages.Select(x => _dataConverter.Deserialize<TaskMessage>(x)).ToArray();
-                    var continuedAsNewMessage = _dataConverter.Deserialize<TaskMessage>(completeRequest.ContinuedAsNewMessage);
-                    var orchestrationState = _dataConverter.Deserialize<OrchestrationState>(completeRequest.OrchestrationState);
-
-                    var newEvents = completeRequest.NewEvents.Select(x => _dataConverter.Deserialize<HistoryEvent>(x)).ToArray();
-
-                    var executionStartedEvent = newEvents
-                        .OfType<ExecutionStartedEvent>()
-                        .FirstOrDefault();
-
-                    var isNewExecution = executionStartedEvent != null
-                        && workItem.OrchestrationRuntimeState != null
-                        && workItem.OrchestrationRuntimeState.OrchestrationInstance != null
-                        && executionStartedEvent.OrchestrationInstance.ExecutionId != workItem.OrchestrationRuntimeState.OrchestrationInstance.ExecutionId;
-
-                    if (isNewExecution)
-                    {
-                        workItem.OrchestrationRuntimeState = new OrchestrationRuntimeState();
-                    }
-
-                    foreach (var newEvent in newEvents)
-                        workItem.OrchestrationRuntimeState.AddEvent(newEvent);
-
-                    await _orchestrationService.CompleteTaskOrchestrationWorkItemAsync(
-                        workItem,
-                        workItem.OrchestrationRuntimeState,
-                        outboundMessages,
-                        orchestratorMessages,
-                        timerMessages,
-                        continuedAsNewMessage,
-                        orchestrationState);
-
-                    workItem.OrchestrationRuntimeState.NewEvents.Clear();
-
-                    await responseStream.WriteAsync(new TaskOrchestrationResponse
-                    {
-                        CompleteResponse = new CompleteTaskOrchestrationWorkItemResponse()
-                    });
-                }
-                else if (fetchRequest != null)
-                {
-                    if (workItem.Session == null)
-                    {
-                        var fetchResponse = new TaskOrchestrationResponse
-                        {
-                            FetchResponseIsNull = true
+                            false => await (_extendedOrchestrationService ?? throw new NotSupportedException("Distributed orchestration is not supported"))
+                                .LockNextTaskOrchestrationWorkItemAsync(
+                                    lockRequest.ReceiveTimeout.ToTimeSpan(),
+                                    orchestrations,
+                                    context.CancellationToken),
+                            true => await _orchestrationService.LockNextTaskOrchestrationWorkItemAsync(
+                                lockRequest.ReceiveTimeout.ToTimeSpan(),
+                                context.CancellationToken)
                         };
 
-                        await responseStream.WriteAsync(fetchResponse);
-                    }
-                    else
-                    {
-                        var newMessages = await workItem.Session.FetchNewOrchestrationMessagesAsync(workItem);
+                        var lockResponse = new TaskOrchestrationResponse
+                        {
+                            LockResponse = new LockNextTaskOrchestrationWorkItemResponse
+                            {
+                                WorkItem = workItem == null ? null : new DurableTaskGrpc.TaskOrchestrationWorkItem
+                                {
+                                    InstanceId = workItem.InstanceId,
+                                    LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
+                                    Events = { workItem.OrchestrationRuntimeState.Events.Select(_dataConverter.Serialize) },
+                                    NewMessages = { workItem.NewMessages.Select(_dataConverter.Serialize) }
+                                }
+                            }
+                        };
 
-                        if (newMessages == null)
+                        await responseStream.WriteAsync(lockResponse);
+                        break;
+                    case TaskOrchestrationRequest.MessageOneofCase.RenewRequest:
+                        var renewRequest = message.RenewRequest;
+                        await _orchestrationService.RenewTaskOrchestrationWorkItemLockAsync(workItem);
+
+                        var renewResponse = new TaskOrchestrationResponse
+                        {
+                            RenewResponse = new RenewTaskOrchestrationWorkItemLockResponse
+                            {
+                                LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc)
+                            }
+                        };
+
+                        await responseStream.WriteAsync(renewResponse);
+                        break;
+                    case TaskOrchestrationRequest.MessageOneofCase.CompleteRequest:
+                        var completeRequest = message.CompleteRequest;
+                        var outboundMessages = completeRequest.OutboundMessages.Select(x => _dataConverter.Deserialize<TaskMessage>(x)).ToArray();
+                        var timerMessages = completeRequest.TimerMessages.Select(x => _dataConverter.Deserialize<TaskMessage>(x)).ToArray();
+                        var orchestratorMessages = completeRequest.OrchestratorMessages.Select(x => _dataConverter.Deserialize<TaskMessage>(x)).ToArray();
+                        var continuedAsNewMessage = _dataConverter.Deserialize<TaskMessage>(completeRequest.ContinuedAsNewMessage);
+                        var orchestrationState = _dataConverter.Deserialize<OrchestrationState>(completeRequest.OrchestrationState);
+
+                        var newEvents = completeRequest.NewEvents.Select(x => _dataConverter.Deserialize<HistoryEvent>(x)).ToArray();
+
+                        var executionStartedEvent = newEvents
+                            .OfType<ExecutionStartedEvent>()
+                            .FirstOrDefault();
+
+                        var isNewExecution = executionStartedEvent != null
+                            && workItem.OrchestrationRuntimeState != null
+                            && workItem.OrchestrationRuntimeState.OrchestrationInstance != null
+                            && executionStartedEvent.OrchestrationInstance.ExecutionId != workItem.OrchestrationRuntimeState.OrchestrationInstance.ExecutionId;
+
+                        if (isNewExecution)
+                        {
+                            workItem.OrchestrationRuntimeState = new OrchestrationRuntimeState();
+                        }
+
+                        foreach (var newEvent in newEvents)
+                            workItem.OrchestrationRuntimeState.AddEvent(newEvent);
+
+                        await _orchestrationService.CompleteTaskOrchestrationWorkItemAsync(
+                            workItem,
+                            workItem.OrchestrationRuntimeState,
+                            outboundMessages,
+                            orchestratorMessages,
+                            timerMessages,
+                            continuedAsNewMessage,
+                            orchestrationState);
+
+                        workItem.OrchestrationRuntimeState.NewEvents.Clear();
+
+                        await responseStream.WriteAsync(new TaskOrchestrationResponse
+                        {
+                            CompleteResponse = new CompleteTaskOrchestrationWorkItemResponse()
+                        });
+                        break;
+                    case TaskOrchestrationRequest.MessageOneofCase.FetchRequest:
+                        var fetchRequest = message.FetchRequest;
+                        if (workItem.Session == null)
                         {
                             var fetchResponse = new TaskOrchestrationResponse
                             {
-                                FetchResponseIsNull = true
+                                FetchResponse = new FetchNewOrchestrationMessagesResponse
+                                {
+                                    NewMessages = null
+                                }
                             };
 
                             await responseStream.WriteAsync(fetchResponse);
                         }
                         else
                         {
+                            var newMessages = await workItem.Session.FetchNewOrchestrationMessagesAsync(workItem);
+
                             var fetchResponse = new TaskOrchestrationResponse
                             {
                                 FetchResponse = new FetchNewOrchestrationMessagesResponse
                                 {
-                                    NewMessages = { newMessages.Select(_dataConverter.Serialize) }
+                                    NewMessages = newMessages == null ? null : new OrchestrationMessages
+                                    {
+                                        Messages = { newMessages.Select(_dataConverter.Serialize) }
+                                    }
                                 }
                             };
 
                             await responseStream.WriteAsync(fetchResponse);
                         }
-                    }
+                        break;
+                    case TaskOrchestrationRequest.MessageOneofCase.ReleaseRequest:
+                        var releaseRequest = message.ReleaseRequest;
+                        await _orchestrationService.ReleaseTaskOrchestrationWorkItemAsync(workItem);
+                        await responseStream.WriteAsync(new TaskOrchestrationResponse
+                        {
+                            ReleaseResponse = new ReleaseTaskOrchestrationWorkItemResponse()
+                        });
+                        break;
+                    case TaskOrchestrationRequest.MessageOneofCase.AbandonRequest:
+                        var abandonRequest = message.AbandonRequest;
+                        await _orchestrationService.AbandonTaskOrchestrationWorkItemAsync(workItem);
+                        await responseStream.WriteAsync(new TaskOrchestrationResponse
+                        {
+                            AbandonResponse = new AbandonTaskOrchestrationWorkItemLockResponse()
+                        });
+                        break;
                 }
-                else if (releaseRequest != null)
-                {
-                    await _orchestrationService.ReleaseTaskOrchestrationWorkItemAsync(workItem);
-
-                    await responseStream.WriteAsync(new TaskOrchestrationResponse
-                    {
-                        ReleaseResponse = new ReleaseTaskOrchestrationWorkItemResponse()
-                    });
-
-                    break;
-                }
-                else if (abandonRequest != null)
-                {
-                    await _orchestrationService.AbandonTaskOrchestrationWorkItemAsync(workItem);
-
-                    await responseStream.WriteAsync(new TaskOrchestrationResponse
-                    {
-                        AbandonResponse = new AbandonTaskOrchestrationWorkItemLockResponse()
-                    });
-
-                    break;
-                }
-
-                context.CancellationToken.ThrowIfCancellationRequested();
             }
         }
 
@@ -363,13 +345,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
             var response = new LockNextTaskActivityWorkItemResponse
             {
-                IsNull = workItem == null,
-                Value = workItem == null ? null : new LockNextTaskActivityWorkItemResponseValue
-                {
-                    Id = workItem.Id,
-                    LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
-                    TaskMessage = _dataConverter.Serialize(workItem.TaskMessage)
-                }
+                WorkItem = workItem == null ? null : ToGrpcWorkItem(workItem)
             };
 
             return response;
@@ -377,20 +353,13 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
         public override async Task<RenewTaskActivityWorkItemLockResponse> RenewTaskActivityWorkItemLock(RenewTaskActivityWorkItemLockRequest request, ServerCallContext context)
         {
-            var workItem = new TaskActivityWorkItem
-            {
-                Id = request.Id,
-                LockedUntilUtc = request.LockedUntilUtc.ToDateTime(),
-                TaskMessage = _dataConverter.Deserialize<TaskMessage>(request.TaskMessage)
-            };
+            var workItem = ToDurableTaskWorkItem(request.WorkItem);
 
             var newWorkItem = await _orchestrationService.RenewTaskActivityWorkItemLockAsync(workItem);
 
             var response = new RenewTaskActivityWorkItemLockResponse
             {
-                Id = newWorkItem.Id,
-                LockedUntilUtc = Timestamp.FromDateTime(newWorkItem.LockedUntilUtc),
-                TaskMessage = _dataConverter.Serialize(newWorkItem.TaskMessage)
+                WorkItem = ToGrpcWorkItem(newWorkItem)
             };
 
             return response;
@@ -399,12 +368,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
         public override async Task<Empty> CompleteTaskActivityWorkItem(
             CompleteTaskActivityWorkItemRequest request, ServerCallContext context)
         {
-            var workItem = new TaskActivityWorkItem
-            {
-                Id = request.Id,
-                LockedUntilUtc = request.LockedUntilUtc.ToDateTime(),
-                TaskMessage = _dataConverter.Deserialize<TaskMessage>(request.TaskMessage)
-            };
+            var workItem = ToDurableTaskWorkItem(request.WorkItem);
 
             var responseMessage = _dataConverter.Deserialize<TaskMessage>(request.ResponseMessage);
 
@@ -415,16 +379,31 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
         public override async Task<Empty> AbandonTaskActivityWorkItem(AbandonTaskActivityWorkItemRequest request, ServerCallContext context)
         {
-            var workItem = new TaskActivityWorkItem
-            {
-                Id = request.Id,
-                LockedUntilUtc = request.LockedUntilUtc.ToDateTime(),
-                TaskMessage = _dataConverter.Deserialize<TaskMessage>(request.TaskMessage)
-            };
+            var workItem = ToDurableTaskWorkItem(request.WorkItem);
 
             await _orchestrationService.AbandonTaskActivityWorkItemAsync(workItem);
 
             return new Empty();
+        }
+
+        private DurableTaskGrpc.TaskActivityWorkItem ToGrpcWorkItem(TaskActivityWorkItem workItem)
+        {
+            return new DurableTaskGrpc.TaskActivityWorkItem
+            {
+                Id = workItem.Id,
+                LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
+                TaskMessage = _dataConverter.Serialize(workItem.TaskMessage)
+            };
+        }
+
+        private TaskActivityWorkItem ToDurableTaskWorkItem(DurableTaskGrpc.TaskActivityWorkItem grpcWorkItem)
+        {
+            return new TaskActivityWorkItem
+            {
+                Id = grpcWorkItem.Id,
+                LockedUntilUtc = grpcWorkItem.LockedUntilUtc.ToDateTime(),
+                TaskMessage = _dataConverter.Deserialize<TaskMessage>(grpcWorkItem.TaskMessage)
+            };
         }
     }
 }
