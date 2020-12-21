@@ -13,6 +13,16 @@ namespace LLL.DurableTask.Api
 {
     static class HttpContextExtensions
     {
+        private static new JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
+        {
+            DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+            ContractResolver = new DefaultContractResolver
+            {
+                NamingStrategy = new CamelCaseNamingStrategy()
+            },
+            Converters = { new StringEnumConverter() }
+        };
+
         public static T ParseQuery<T>(this HttpContext context)
             where T : new()
         {
@@ -62,7 +72,7 @@ namespace LLL.DurableTask.Api
         {
             using var reader = new StreamReader(context.Request.Body, Encoding.UTF8);
             var json = await reader.ReadToEndAsync();
-            return JsonConvert.DeserializeObject<T>(json);
+            return JsonConvert.DeserializeObject<T>(json, _serializerSettings);
         }
 
         public static async Task RespondJson(
@@ -70,14 +80,7 @@ namespace LLL.DurableTask.Api
             object data,
             int statusCode = 200)
         {
-            var json = JsonConvert.SerializeObject(data, new Newtonsoft.Json.JsonSerializerSettings
-            {
-                ContractResolver = new DefaultContractResolver
-                {
-                    NamingStrategy = new CamelCaseNamingStrategy()
-                },
-                Converters = { new StringEnumConverter() }
-            });
+            var json = JsonConvert.SerializeObject(data, _serializerSettings);
 
             context.Response.StatusCode = statusCode;
             context.Response.ContentType = "application/json";

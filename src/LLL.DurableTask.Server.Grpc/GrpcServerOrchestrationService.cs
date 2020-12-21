@@ -3,34 +3,39 @@ using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
-using DurableTask.Core.Serializing;
 using DurableTaskGrpc;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using LLL.DurableTask.Core;
-using LLL.DurableTask.Server.Grpc.Server.Internal;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using static DurableTaskGrpc.OrchestrationService;
 using TaskActivityWorkItem = DurableTask.Core.TaskActivityWorkItem;
+using TaskOrchestrationWorkItem = DurableTask.Core.TaskOrchestrationWorkItem;
 
 namespace LLL.DurableTask.Server.Grpc.Server
 {
     public class GrpcServerOrchestrationService : OrchestrationServiceBase
     {
-        private readonly DataConverter _dataConverter = new GrpcJsonDataConverter();
-
+        private readonly GrpcServerOrchestrationServiceOptions _options;
         private readonly IOrchestrationService _orchestrationService;
         private readonly IOrchestrationServiceClient _orchestrationServiceClient;
+        private readonly ILogger<GrpcServerOrchestrationService> _logger;
         private readonly IExtendedOrchestrationService _extendedOrchestrationService;
         private readonly IExtendedOrchestrationServiceClient _extendedOrchestrationServiceClient;
 
         public GrpcServerOrchestrationService(
+            IOptions<GrpcServerOrchestrationServiceOptions> options,
             IOrchestrationService orchestrationService,
             IOrchestrationServiceClient orchestrationServiceClient,
+            ILogger<GrpcServerOrchestrationService> logger,
             IExtendedOrchestrationService distributedOrchestrationService = null,
             IExtendedOrchestrationServiceClient extendedOrchestrationServiceClient = null)
         {
+            _options = options.Value;
             _orchestrationService = orchestrationService;
             _orchestrationServiceClient = orchestrationServiceClient;
+            _logger = logger;
             _extendedOrchestrationService = distributedOrchestrationService;
             _extendedOrchestrationServiceClient = extendedOrchestrationServiceClient;
         }
@@ -49,7 +54,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
         public override async Task<Empty> CreateTaskOrchestration(CreateTaskOrchestrationRequest request, ServerCallContext context)
         {
-            var creationMessage = _dataConverter.Deserialize<TaskMessage>(request.CreationMessage);
+            var creationMessage = _options.DataConverter.Deserialize<TaskMessage>(request.CreationMessage);
             var dedupeStatuses = request.DedupeStatuses.Count > 0
                 ? request.DedupeStatuses.Select(x => (OrchestrationStatus)x).ToArray()
                 : null;
@@ -88,7 +93,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
             var response = new GetOrchestrationInstanceStateResponse
             {
-                States = { states.Select(s => _dataConverter.Serialize(s)) }
+                States = { states.Select(s => _options.DataConverter.Serialize(s)) }
             };
 
             return response;
@@ -102,7 +107,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
             var response = new GetOrchestrationStateResponse
             {
-                State = _dataConverter.Serialize(state)
+                State = state == null ? string.Empty : _options.DataConverter.Serialize(state)
             };
 
             return response;
@@ -127,7 +132,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
             var response = new WaitForOrchestrationResponse
             {
-                State = _dataConverter.Serialize(state)
+                State = state == null ? string.Empty : _options.DataConverter.Serialize(state)
             };
 
             return response;
@@ -150,7 +155,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
             var response = new GetOrchestrationsResponse
             {
-                States = { queryResult.Orchestrations.Select(s => _dataConverter.Serialize(s)) },
+                States = { queryResult.Orchestrations.Select(s => _options.DataConverter.Serialize(s)) },
                 Count = queryResult.Count,
                 ContinuationToken = queryResult.ContinuationToken ?? string.Empty
             };
@@ -170,7 +175,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
         public override async Task<Empty> SendTaskOrchestrationMessageBatch(SendTaskOrchestrationMessageBatchRequest request, ServerCallContext context)
         {
-            var messages = request.Messages.Select(x => _dataConverter.Deserialize<TaskMessage>(x)).ToArray();
+            var messages = request.Messages.Select(x => _options.DataConverter.Deserialize<TaskMessage>(x)).ToArray();
 
             await _orchestrationServiceClient.SendTaskOrchestrationMessageBatchAsync(messages);
 
@@ -179,10 +184,10 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
         public override async Task LockNextTaskOrchestrationWorkItem(IAsyncStreamReader<TaskOrchestrationRequest> requestStream, IServerStreamWriter<TaskOrchestrationResponse> responseStream, ServerCallContext context)
         {
-            global::DurableTask.Core.TaskOrchestrationWorkItem workItem = null;
+            TaskOrchestrationWorkItem workItem = null;
 
             // Receive and reply each message
-            await foreach (var message in requestStream.ReadAllAsync())
+            await foreach (var message in requestStream.ReadAllAsync(context.CancellationToken))
             {
                 switch (message.MessageCase)
                 {
@@ -210,8 +215,8 @@ namespace LLL.DurableTask.Server.Grpc.Server
                                 {
                                     InstanceId = workItem.InstanceId,
                                     LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
-                                    Events = { workItem.OrchestrationRuntimeState.Events.Select(_dataConverter.Serialize) },
-                                    NewMessages = { workItem.NewMessages.Select(_dataConverter.Serialize) }
+                                    Events = { workItem.OrchestrationRuntimeState.Events.Select(_options.DataConverter.Serialize) },
+                                    NewMessages = { workItem.NewMessages.Select(_options.DataConverter.Serialize) }
                                 }
                             }
                         };
@@ -234,13 +239,15 @@ namespace LLL.DurableTask.Server.Grpc.Server
                         break;
                     case TaskOrchestrationRequest.MessageOneofCase.CompleteRequest:
                         var completeRequest = message.CompleteRequest;
-                        var outboundMessages = completeRequest.OutboundMessages.Select(x => _dataConverter.Deserialize<TaskMessage>(x)).ToArray();
-                        var timerMessages = completeRequest.TimerMessages.Select(x => _dataConverter.Deserialize<TaskMessage>(x)).ToArray();
-                        var orchestratorMessages = completeRequest.OrchestratorMessages.Select(x => _dataConverter.Deserialize<TaskMessage>(x)).ToArray();
-                        var continuedAsNewMessage = _dataConverter.Deserialize<TaskMessage>(completeRequest.ContinuedAsNewMessage);
-                        var orchestrationState = _dataConverter.Deserialize<OrchestrationState>(completeRequest.OrchestrationState);
+                        var outboundMessages = completeRequest.OutboundMessages.Select(x => _options.DataConverter.Deserialize<TaskMessage>(x)).ToArray();
+                        var timerMessages = completeRequest.TimerMessages.Select(x => _options.DataConverter.Deserialize<TaskMessage>(x)).ToArray();
+                        var orchestratorMessages = completeRequest.OrchestratorMessages.Select(x => _options.DataConverter.Deserialize<TaskMessage>(x)).ToArray();
+                        var continuedAsNewMessage = string.IsNullOrEmpty(completeRequest.ContinuedAsNewMessage)
+                            ? null
+                            : _options.DataConverter.Deserialize<TaskMessage>(completeRequest.ContinuedAsNewMessage);
+                        var orchestrationState = _options.DataConverter.Deserialize<OrchestrationState>(completeRequest.OrchestrationState);
 
-                        var newEvents = completeRequest.NewEvents.Select(x => _dataConverter.Deserialize<HistoryEvent>(x)).ToArray();
+                        var newEvents = completeRequest.NewEvents.Select(x => _options.DataConverter.Deserialize<HistoryEvent>(x)).ToArray();
 
                         var executionStartedEvent = newEvents
                             .OfType<ExecutionStartedEvent>()
@@ -299,7 +306,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
                                 {
                                     NewMessages = newMessages == null ? null : new OrchestrationMessages
                                     {
-                                        Messages = { newMessages.Select(_dataConverter.Serialize) }
+                                        Messages = { newMessages.Select(_options.DataConverter.Serialize) }
                                     }
                                 }
                             };
@@ -370,7 +377,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
         {
             var workItem = ToDurableTaskWorkItem(request.WorkItem);
 
-            var responseMessage = _dataConverter.Deserialize<TaskMessage>(request.ResponseMessage);
+            var responseMessage = _options.DataConverter.Deserialize<TaskMessage>(request.ResponseMessage);
 
             await _orchestrationService.CompleteTaskActivityWorkItemAsync(workItem, responseMessage);
 
@@ -392,7 +399,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
             {
                 Id = workItem.Id,
                 LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
-                TaskMessage = _dataConverter.Serialize(workItem.TaskMessage)
+                TaskMessage = _options.DataConverter.Serialize(workItem.TaskMessage)
             };
         }
 
@@ -402,7 +409,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
             {
                 Id = grpcWorkItem.Id,
                 LockedUntilUtc = grpcWorkItem.LockedUntilUtc.ToDateTime(),
-                TaskMessage = _dataConverter.Deserialize<TaskMessage>(grpcWorkItem.TaskMessage)
+                TaskMessage = _options.DataConverter.Deserialize<TaskMessage>(grpcWorkItem.TaskMessage)
             };
         }
     }

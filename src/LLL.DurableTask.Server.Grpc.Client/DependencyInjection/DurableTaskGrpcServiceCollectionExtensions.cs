@@ -11,20 +11,20 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IHttpClientBuilder AddDurableTaskServerStorageGrpc(
             this IServiceCollection services,
-            Action<GrpcOrchestrationServiceOptions> configure)
+            Action<GrpcClientOrchestrationServiceOptions> configure)
         {
-            services.AddOptions<GrpcOrchestrationServiceOptions>()
+            services.AddOptions<GrpcClientOrchestrationServiceOptions>()
                 .Configure(configure);
 
-            services.AddSingleton<GrpcOrchestrationService>();
-            services.AddSingleton<IOrchestrationService>(p => p.GetRequiredService<GrpcOrchestrationService>());
-            services.AddSingleton<IExtendedOrchestrationService>(p => p.GetRequiredService<GrpcOrchestrationService>());
-            services.AddSingleton<IOrchestrationServiceClient>(p => p.GetRequiredService<GrpcOrchestrationService>());
-            services.AddSingleton<IExtendedOrchestrationServiceClient>(p => p.GetRequiredService<GrpcOrchestrationService>());
+            services.AddSingleton<GrpcClientOrchestrationService>();
+            services.AddSingleton<IOrchestrationService>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
+            services.AddSingleton<IExtendedOrchestrationService>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
+            services.AddSingleton<IOrchestrationServiceClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
+            services.AddSingleton<IExtendedOrchestrationServiceClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
 
             return services.AddGrpcClient<OrchestrationServiceClient>((s, o) =>
             {
-                var options = s.GetRequiredService<IOptions<GrpcOrchestrationServiceOptions>>().Value;
+                var options = s.GetRequiredService<IOptions<GrpcClientOrchestrationServiceOptions>>().Value;
                 o.Address = options.BaseAddress;
             });
         }

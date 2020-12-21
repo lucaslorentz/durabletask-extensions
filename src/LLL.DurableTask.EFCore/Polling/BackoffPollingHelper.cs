@@ -14,10 +14,9 @@ namespace LLL.DurableTask.EFCore.Polling
             PollingIntervalOptions interval,
             CancellationToken cancellationToken)
         {
-            var value = default(T);
+            T value;
 
             var stopwatch = Stopwatch.StartNew();
-
             var count = 0;
             do
             {

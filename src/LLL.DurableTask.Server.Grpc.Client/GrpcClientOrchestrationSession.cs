@@ -4,16 +4,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using DurableTask.Core.Serializing;
 using DurableTaskGrpc;
-using LLL.DurableTask.Server.Grpc.Client.Internal;
 using Microsoft.Extensions.Logging;
 using TaskOrchestrationStream = Grpc.Core.AsyncDuplexStreamingCall<DurableTaskGrpc.TaskOrchestrationRequest, DurableTaskGrpc.TaskOrchestrationResponse>;
 using TaskOrchestrationWorkItem = DurableTask.Core.TaskOrchestrationWorkItem;
 
 namespace LLL.DurableTask.Server.Client
 {
-    public class GrpcOrchestrationSession : IOrchestrationSession
+    public class GrpcClientOrchestrationSession : IOrchestrationSession
     {
         private static readonly TimeSpan _renewResponseTimeout = TimeSpan.FromSeconds(20);
         private static readonly TimeSpan _completeResponseTimeout = TimeSpan.FromSeconds(20);
@@ -21,15 +19,16 @@ namespace LLL.DurableTask.Server.Client
         private static readonly TimeSpan _releaseResponseTimeout = TimeSpan.FromSeconds(20);
         private static readonly TimeSpan _abandonResponseTimeout = TimeSpan.FromSeconds(20);
 
-        private readonly DataConverter _dataConverter = new GrpcJsonDataConverter();
-
+        private readonly GrpcClientOrchestrationServiceOptions _options;
         private readonly TaskOrchestrationStream _stream;
         private readonly ILogger _logger;
 
-        public GrpcOrchestrationSession(
+        public GrpcClientOrchestrationSession(
+            GrpcClientOrchestrationServiceOptions options,
             TaskOrchestrationStream stream,
             ILogger logger)
         {
+            _options = options;
             _stream = stream;
             _logger = logger;
         }
@@ -68,12 +67,14 @@ namespace LLL.DurableTask.Server.Client
             {
                 CompleteRequest = new CompleteTaskOrchestrationWorkItemRequest
                 {
-                    NewEvents = { newOrchestrationRuntimeState.NewEvents.Select(_dataConverter.Serialize) },
-                    OutboundMessages = { outboundMessages.Select(_dataConverter.Serialize) },
-                    OrchestratorMessages = { orchestratorMessages.Select(_dataConverter.Serialize) },
-                    TimerMessages = { timerMessages.Select(_dataConverter.Serialize) },
-                    ContinuedAsNewMessage = _dataConverter.Serialize(continuedAsNewMessage),
-                    OrchestrationState = _dataConverter.Serialize(orchestrationState)
+                    NewEvents = { newOrchestrationRuntimeState.NewEvents.Select(_options.DataConverter.Serialize) },
+                    OutboundMessages = { outboundMessages.Select(_options.DataConverter.Serialize) },
+                    OrchestratorMessages = { orchestratorMessages.Select(_options.DataConverter.Serialize) },
+                    TimerMessages = { timerMessages.Select(_options.DataConverter.Serialize) },
+                    ContinuedAsNewMessage = continuedAsNewMessage == null
+                        ? string.Empty
+                        : _options.DataConverter.Serialize(continuedAsNewMessage),
+                    OrchestrationState = _options.DataConverter.Serialize(orchestrationState)
                 }
             };
 
@@ -111,7 +112,7 @@ namespace LLL.DurableTask.Server.Client
                 return null;
 
             return fetchResponse.NewMessages.Messages
-                .Select(x => _dataConverter.Deserialize<TaskMessage>(x))
+                .Select(x => _options.DataConverter.Deserialize<TaskMessage>(x))
                 .ToArray();
         }
 
@@ -135,9 +136,6 @@ namespace LLL.DurableTask.Server.Client
 
         public async Task Release(TaskOrchestrationWorkItem workItem)
         {
-            if (_stream == null)
-                return;
-
             var request = new TaskOrchestrationRequest
             {
                 ReleaseRequest = new ReleaseTaskOrchestrationWorkItemRequest()

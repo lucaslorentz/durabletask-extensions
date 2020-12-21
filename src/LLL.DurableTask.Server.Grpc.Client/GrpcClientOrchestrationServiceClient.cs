@@ -11,7 +11,7 @@ using LLL.DurableTask.Core;
 
 namespace LLL.DurableTask.Server.Client
 {
-    public partial class GrpcOrchestrationService :
+    public partial class GrpcClientOrchestrationService :
         IOrchestrationServiceClient,
         IExtendedOrchestrationServiceClient
     {
@@ -32,7 +32,7 @@ namespace LLL.DurableTask.Server.Client
         {
             var request = new CreateTaskOrchestrationRequest
             {
-                CreationMessage = _dataConverter.Serialize(creationMessage)
+                CreationMessage = _options.DataConverter.Serialize(creationMessage)
             };
 
             if (dedupeStatuses != null)
@@ -65,7 +65,7 @@ namespace LLL.DurableTask.Server.Client
             var response = await _client.GetOrchestrationInstanceStateAsync(request);
 
             return response.States
-                .Select(s => _dataConverter.Deserialize<OrchestrationState>(s))
+                .Select(s => _options.DataConverter.Deserialize<OrchestrationState>(s))
                 .ToArray();
         }
 
@@ -79,7 +79,7 @@ namespace LLL.DurableTask.Server.Client
 
             var response = await _client.GetOrchestrationStateAsync(request);
 
-            return _dataConverter.Deserialize<OrchestrationState>(response.State);
+            return string.IsNullOrEmpty(response.State) ? null : _options.DataConverter.Deserialize<OrchestrationState>(response.State);
         }
 
         public async Task ForceTerminateTaskOrchestrationAsync(string instanceId, string reason)
@@ -97,7 +97,7 @@ namespace LLL.DurableTask.Server.Client
         {
             var request = new PurgeOrchestrationHistoryRequest
             {
-                ThresholdDateTimeUtc = Timestamp.FromDateTime(thresholdDateTimeUtc),
+                ThresholdDateTimeUtc = ToTimestamp(thresholdDateTimeUtc),
                 TimeRangeFilterType = (OrchestrationTimeFilterType)timeRangeFilterType
             };
 
@@ -113,7 +113,7 @@ namespace LLL.DurableTask.Server.Client
         {
             var request = new SendTaskOrchestrationMessageBatchRequest
             {
-                Messages = { messages.Select(_dataConverter.Serialize) }
+                Messages = { messages.Select(_options.DataConverter.Serialize) }
             };
 
             await _client.SendTaskOrchestrationMessageBatchAsync(request);
@@ -132,7 +132,7 @@ namespace LLL.DurableTask.Server.Client
 
             var response = await _client.WaitForOrchestrationAsync(request, callOptions);
 
-            return _dataConverter.Deserialize<OrchestrationState>(response.State);
+            return string.IsNullOrEmpty(response.State) ? null : _options.DataConverter.Deserialize<OrchestrationState>(response.State);
         }
 
         public async Task<OrchestrationQueryResult> GetOrchestrationsAsync(OrchestrationQuery query, CancellationToken cancellationToken = default)
@@ -143,8 +143,8 @@ namespace LLL.DurableTask.Server.Client
                 ContinuationToken = query.ContinuationToken ?? string.Empty,
                 InstanceId = query.InstanceId ?? string.Empty,
                 Name = query.Name ?? string.Empty,
-                CreatedTimeFrom = query.CreatedTimeFrom?.ToTimestamp(),
-                CreatedTimeTo = query.CreatedTimeTo?.ToTimestamp()
+                CreatedTimeFrom = ToTimestamp(query.CreatedTimeFrom),
+                CreatedTimeTo = ToTimestamp(query.CreatedTimeTo)
             };
 
             if (query.RuntimeStatus != null)
@@ -157,7 +157,7 @@ namespace LLL.DurableTask.Server.Client
             return new OrchestrationQueryResult
             {
                 Orchestrations = response.States
-                    .Select(s => _dataConverter.Deserialize<OrchestrationState>(s))
+                    .Select(s => _options.DataConverter.Deserialize<OrchestrationState>(s))
                     .ToArray(),
                 Count = response.Count,
                 ContinuationToken = response.ContinuationToken

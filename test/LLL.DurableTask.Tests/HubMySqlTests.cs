@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using FluentAssertions;
 using LLL.DurableTask.Server.Tests.Activities;
 using LLL.DurableTask.Server.Tests.Orchestrations;
 using Microsoft.AspNetCore.Builder;
@@ -91,6 +92,10 @@ namespace LLL.DurableTask.Server.Tests
             });
 
             var state = await taskHubClient.WaitForOrchestrationAsync(instance, TimeSpan.FromSeconds(30));
+
+            state.Should().NotBeNull();
+            state.Output.Should().Be("{\"Value\":1}");
+            state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
 
             try { await clientHost.StopAsync(); } catch (OperationCanceledException) { }
             await clientHost.WaitForShutdownAsync();

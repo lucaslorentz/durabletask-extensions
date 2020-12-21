@@ -5,11 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
-using DurableTask.Core.Serializing;
 using DurableTaskGrpc;
 using Google.Protobuf.WellKnownTypes;
 using LLL.DurableTask.Core;
-using LLL.DurableTask.Server.Grpc.Client.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using static DurableTaskGrpc.OrchestrationService;
@@ -18,28 +16,24 @@ using TaskOrchestrationWorkItem = DurableTask.Core.TaskOrchestrationWorkItem;
 
 namespace LLL.DurableTask.Server.Client
 {
-    public partial class GrpcOrchestrationService :
+    public partial class GrpcClientOrchestrationService :
         IOrchestrationService,
         IExtendedOrchestrationService
     {
-        private const int DelayAfterFailureInSeconds = 5;
-
-        private readonly DataConverter _dataConverter = new GrpcJsonDataConverter();
-
+        private readonly GrpcClientOrchestrationServiceOptions _options;
         private readonly OrchestrationServiceClient _client;
         private readonly ILogger _logger;
-        private readonly GrpcOrchestrationServiceOptions _options;
 
-        public int TaskOrchestrationDispatcherCount => 1;
-        public int MaxConcurrentTaskOrchestrationWorkItems { get; } = 100;
-        public int MaxConcurrentTaskActivityWorkItems { get; } = 20;
+        public int TaskOrchestrationDispatcherCount => _options.TaskOrchestrationDispatcherCount;
+        public int MaxConcurrentTaskOrchestrationWorkItems => _options.MaxConcurrentTaskOrchestrationWorkItems;
+        public int MaxConcurrentTaskActivityWorkItems => _options.MaxConcurrentTaskActivityWorkItems;
         public BehaviorOnContinueAsNew EventBehaviourForContinueAsNew => BehaviorOnContinueAsNew.Carryover;
-        public int TaskActivityDispatcherCount => 1;
+        public int TaskActivityDispatcherCount => _options.TaskActivityDispatcherCount;
 
-        public GrpcOrchestrationService(
+        public GrpcClientOrchestrationService(
+            IOptions<GrpcClientOrchestrationServiceOptions> options,
             OrchestrationServiceClient client,
-            IOptions<GrpcOrchestrationServiceOptions> options,
-            ILogger<GrpcOrchestrationSession> logger)
+            ILogger<GrpcClientOrchestrationSession> logger)
         {
             _options = options.Value;
             _client = client;
@@ -74,12 +68,12 @@ namespace LLL.DurableTask.Server.Client
 
         public int GetDelayInSecondsAfterOnFetchException(Exception exception)
         {
-            return DelayAfterFailureInSeconds;
+            return _options.DelayInSecondsAfterFailure;
         }
 
         public int GetDelayInSecondsAfterOnProcessException(Exception exception)
         {
-            return DelayAfterFailureInSeconds;
+            return _options.DelayInSecondsAfterFailure;
         }
 
 
@@ -132,7 +126,7 @@ namespace LLL.DurableTask.Server.Client
             bool allOrchesrations,
             CancellationToken cancellationToken)
         {
-            var stream = _client.LockNextTaskOrchestrationWorkItem();
+            var stream = _client.LockNextTaskOrchestrationWorkItem(cancellationToken: cancellationToken);
 
             try
             {
@@ -167,11 +161,11 @@ namespace LLL.DurableTask.Server.Client
                     InstanceId = lockResponse.WorkItem.InstanceId,
                     OrchestrationRuntimeState = new OrchestrationRuntimeState(
                         lockResponse.WorkItem.Events
-                            .Select(e => _dataConverter.Deserialize<HistoryEvent>(e))
+                            .Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e))
                             .ToArray()),
                     LockedUntilUtc = lockResponse.WorkItem.LockedUntilUtc.ToDateTime(),
-                    NewMessages = lockResponse.WorkItem.NewMessages.Select(m => _dataConverter.Deserialize<TaskMessage>(m)).ToArray(),
-                    Session = new GrpcOrchestrationSession(stream, _logger)
+                    NewMessages = lockResponse.WorkItem.NewMessages.Select(m => _options.DataConverter.Deserialize<TaskMessage>(m)).ToArray(),
+                    Session = new GrpcClientOrchestrationSession(_options, stream, _logger)
                 };
             }
             catch
@@ -183,7 +177,7 @@ namespace LLL.DurableTask.Server.Client
 
         public async Task RenewTaskOrchestrationWorkItemLockAsync(TaskOrchestrationWorkItem workItem)
         {
-            await (workItem.Session as GrpcOrchestrationSession).Renew(workItem);
+            await (workItem.Session as GrpcClientOrchestrationSession).Renew(workItem);
         }
 
         public async Task CompleteTaskOrchestrationWorkItemAsync(
@@ -195,7 +189,7 @@ namespace LLL.DurableTask.Server.Client
             TaskMessage continuedAsNewMessage,
             OrchestrationState orchestrationState)
         {
-            await (workItem.Session as GrpcOrchestrationSession).Complete(
+            await (workItem.Session as GrpcClientOrchestrationSession).Complete(
                 workItem,
                 newOrchestrationRuntimeState,
                 outboundMessages,
@@ -207,12 +201,12 @@ namespace LLL.DurableTask.Server.Client
 
         public async Task ReleaseTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem)
         {
-            await (workItem.Session as GrpcOrchestrationSession).Release(workItem);
+            await (workItem.Session as GrpcClientOrchestrationSession).Release(workItem);
         }
 
         public async Task AbandonTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem)
         {
-            await (workItem.Session as GrpcOrchestrationSession).Abandon(workItem);
+            await (workItem.Session as GrpcClientOrchestrationSession).Abandon(workItem);
         }
 
         #endregion
@@ -252,7 +246,7 @@ namespace LLL.DurableTask.Server.Client
                 AllActivities = allActivities
             };
 
-            var response = await _client.LockNextTaskActivityWorkItemAsync(request);
+            var response = await _client.LockNextTaskActivityWorkItemAsync(request, cancellationToken: cancellationToken);
 
             if (response.WorkItem == null)
                 return null;
@@ -279,7 +273,7 @@ namespace LLL.DurableTask.Server.Client
             var request = new CompleteTaskActivityWorkItemRequest
             {
                 WorkItem = ToGrpcWorkItem(workItem),
-                ResponseMessage = _dataConverter.Serialize(responseMessage)
+                ResponseMessage = _options.DataConverter.Serialize(responseMessage)
             };
 
             await _client.CompleteTaskActivityWorkItemAsync(request);
@@ -300,8 +294,8 @@ namespace LLL.DurableTask.Server.Client
             return new DurableTaskGrpc.TaskActivityWorkItem
             {
                 Id = workItem.Id,
-                LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
-                TaskMessage = _dataConverter.Serialize(workItem.TaskMessage)
+                LockedUntilUtc = ToTimestamp(workItem.LockedUntilUtc),
+                TaskMessage = _options.DataConverter.Serialize(workItem.TaskMessage)
             };
         }
 
@@ -311,10 +305,33 @@ namespace LLL.DurableTask.Server.Client
             {
                 Id = grpcWorkItem.Id,
                 LockedUntilUtc = grpcWorkItem.LockedUntilUtc.ToDateTime(),
-                TaskMessage = _dataConverter.Deserialize<TaskMessage>(grpcWorkItem.TaskMessage)
+                TaskMessage = _options.DataConverter.Deserialize<TaskMessage>(grpcWorkItem.TaskMessage)
             };
         }
 
         #endregion
+
+        private Timestamp ToTimestamp(DateTime? dateTime)
+        {
+            if (dateTime == null)
+                return null;
+
+            return ToTimestamp(dateTime.Value);
+        }
+
+        private Timestamp ToTimestamp(DateTime dateTime)
+        {
+            switch (dateTime.Kind)
+            {
+                case DateTimeKind.Local:
+                    dateTime = dateTime.ToUniversalTime();
+                    break;
+                case DateTimeKind.Unspecified:
+                    dateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+                    break;
+            }
+
+            return dateTime.ToTimestamp();
+        }
     }
 }
