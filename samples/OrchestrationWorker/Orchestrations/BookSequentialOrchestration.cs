@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
+using LLL.DurableTask.Worker.Attributes;
 using static OrchestrationWorker.Orchestrations.BookSequentialOrchestration;
 
 namespace OrchestrationWorker.Orchestrations
 {
+    [Orchestration(Name = "BookSequential", Version = "v1")]
     public class BookSequentialOrchestration : DistributedTaskOrchestration<BookSequentialResult, BookSequentialInput>
     {
         public override async Task<BookSequentialResult> RunTask(OrchestrationContext context, BookSequentialInput input)

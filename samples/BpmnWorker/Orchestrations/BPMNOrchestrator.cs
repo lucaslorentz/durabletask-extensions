@@ -12,12 +12,14 @@ using BpmnWorker.Activities;
 using BpmnWorker.Providers;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
+using LLL.DurableTask.Worker.Attributes;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Spec.BPMN.MODEL;
 
 namespace BpmnWorker.Orchestrations
 {
+    [Orchestration(Name = "BPMN")]
     public class BPMNOrchestrator : DistributedTaskOrchestration<object, BPMNOrchestratorInput, JObject, object>
     {
         private readonly IBPMNProvider _bpmnProvider;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
@@ -86,10 +87,18 @@ namespace LLL.DurableTask.Server.Tests
 
             var taskHubClient = clientHost.Services.GetRequiredService<TaskHubClient>();
 
-            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(FibonacciRecursiveOrchestration.Name, FibonacciRecursiveOrchestration.Version, new FibonacciRecursiveOrchestration.Input
-            {
-                Number = 2
-            });
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                FibonacciRecursiveOrchestration.Name, FibonacciRecursiveOrchestration.Version,
+                Guid.NewGuid().ToString(),
+                new FibonacciRecursiveOrchestration.Input
+                {
+                    Number = 2
+                },
+                new Dictionary<string, string>
+                {
+                    { "Tag1", "Value1" },
+                    { "Tag2", "Value2" }
+                });
 
             var state = await taskHubClient.WaitForOrchestrationAsync(instance, TimeSpan.FromSeconds(30));
 
@@ -97,9 +106,9 @@ namespace LLL.DurableTask.Server.Tests
             state.Output.Should().Be("{\"Value\":1}");
             state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
 
-            try { await clientHost.StopAsync(); } catch (OperationCanceledException) { }
+            await clientHost.StopAsync();
             await clientHost.WaitForShutdownAsync();
-            try { await serverHost.StopAsync(); } catch (OperationCanceledException) { }
+            await serverHost.StopAsync();
             await serverHost.WaitForShutdownAsync();
         }
     }

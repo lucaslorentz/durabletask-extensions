@@ -41,7 +41,8 @@ namespace LLL.DurableTask.Server.Tests
                     {
                         services.AddGrpc();
 
-                        services.AddDurableTaskServer(builder => {
+                        services.AddDurableTaskServer(builder =>
+                        {
                             builder.AddGrpcEndpoints();
                         });
 
@@ -105,9 +106,9 @@ namespace LLL.DurableTask.Server.Tests
             state.Output.Should().Be("{\"Value\":1}");
             state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
 
-            try { await clientHost.StopAsync(); } catch (OperationCanceledException) { }
+            await clientHost.StopAsync();
             await clientHost.WaitForShutdownAsync();
-            try { await serverHost.StopAsync(); } catch (OperationCanceledException) { }
+            await serverHost.StopAsync();
             await serverHost.WaitForShutdownAsync();
         }
     }

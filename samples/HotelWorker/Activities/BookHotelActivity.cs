@@ -1,10 +1,12 @@
 ﻿using System;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
+using LLL.DurableTask.Worker.Attributes;
 using Microsoft.Extensions.Logging;
 
 namespace HotelWorker.Activities
 {
+    [Activity(Name = "BookHotel", Version = "v1")]
     public class BookHotelActivity : DistributedTaskActivity<BookHotelInput, BookHotelResult>
     {
         private readonly ILogger<BookHotelActivity> _logger;

@@ -1,10 +1,12 @@
 ﻿using System;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
+using LLL.DurableTask.Worker.Attributes;
 using Microsoft.Extensions.Logging;
 
 namespace FlightWorker.Activities
 {
+    [Activity(Name = "BookFlight", Version = "v1")]
     public class BookFlightActivity : DistributedTaskActivity<BookFlightInput, BookFlightResult>
     {
         private readonly ILogger<BookFlightActivity> _logger;

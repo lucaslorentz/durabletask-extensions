@@ -1,10 +1,12 @@
 ﻿using System;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
+using LLL.DurableTask.Worker.Attributes;
 using Microsoft.Extensions.Logging;
 
 namespace FlightWorker.Activities
 {
+    [Activity(Name = "CancelFlight", Version = "v1")]
     public class CancelFlightActivity : DistributedTaskActivity<CancelFlightInput, CancelFlightResult>
     {
         private readonly ILogger<CancelFlightActivity> _logger;

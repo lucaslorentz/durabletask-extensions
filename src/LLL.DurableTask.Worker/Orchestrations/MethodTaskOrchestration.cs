@@ -1,18 +1,16 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 
 namespace LLL.DurableTask.Worker.Orchestrations
 {
-    public class ReflectionTaskOrchestration : TaskOrchestration
+    public class MethodTaskOrchestration : TaskOrchestration
     {
         private readonly MethodInfo _methodInfo;
 
-        public ReflectionTaskOrchestration(
+        public MethodTaskOrchestration(
             object instance,
             MethodInfo methodInfo)
         {

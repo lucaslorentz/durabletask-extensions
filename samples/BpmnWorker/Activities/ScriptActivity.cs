@@ -2,11 +2,13 @@
 using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
+using LLL.DurableTask.Worker.Attributes;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace BpmnWorker.Activities
 {
+    [Activity(Name = "Script")]
     public class ScriptActivity : DistributedAsyncTaskActivity<ScriptActivity.Input, object>
     {
         private readonly IScriptExecutor _scriptExecutor;

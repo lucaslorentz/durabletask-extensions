@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             foreach (var type in assembly.GetTypes())
             {
-                var typeOrchestrationAttribute = type.GetCustomAttribute<ActivityAttribute>();
+                var typeOrchestrationAttribute = type.GetCustomAttribute<OrchestrationAttribute>();
                 if (typeOrchestrationAttribute != null)
                 {
                     builder.AddOrchestration(type, typeOrchestrationAttribute.Name, typeOrchestrationAttribute.Version);
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.DependencyInjection
             string version = null)
         {
             return builder.AddOrchestration(
-                p => new ReflectionTaskOrchestration(ActivatorUtilities.GetServiceOrCreateInstance(p, type), methodInfo),
+                p => new MethodTaskOrchestration(ActivatorUtilities.GetServiceOrCreateInstance(p, type), methodInfo),
                 name ?? NameVersionHelper.GetDefaultName(methodInfo),
                 version ?? NameVersionHelper.GetDefaultVersion(methodInfo));
         }
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.DependencyInjection
             string version = null)
         {
             return builder.AddActivity(
-                p => new ReflectionTaskActivity(ActivatorUtilities.GetServiceOrCreateInstance(p, type), methodInfo),
+                p => new MethodTaskActivity(ActivatorUtilities.GetServiceOrCreateInstance(p, type), methodInfo),
                 name ?? NameVersionHelper.GetDefaultName(methodInfo),
                 version ?? NameVersionHelper.GetDefaultVersion(methodInfo));
         }

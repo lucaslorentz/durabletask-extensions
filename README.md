@@ -17,7 +17,7 @@ Scope:
 
 ## Motivation
 
-[Durable Task Framework](https://github.com/Azure/durabletask) is an open source framework that provides a foundation for workflow-as-code in .NET platform.
+[Durable Task Framework](https://github.com/Azure/durabletask) is an open source framework that provides a foundation for workflow as code in .NET platform.
 
 [Azure Durable Functions](https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview)  connects Durable Task Framework to Azure serverless platform, making it simpler to create workflows as code.
 
@@ -166,9 +166,32 @@ Configuration:
 ```C#
 services.AddDurableTaskWorker(builder =>
 {
+    // Add orchestration with default name and version
+    builder.AddOrchestration<BookParallel>();
+
+    // Add orchestration with specific name and version
     builder.AddOrchestration<BookParallel>("BookParallel", "v1");
+
+    // Add activity with default name and version
+    builder.AddActivity<BookHotelActivity>();
+
+    // Add activity with specific name and version
     builder.AddActivity<BookHotelActivity>("BookHotel", "v1");
-    builder.AddActivity<CancelHotelActivity>("CancelHotel", "v1");
+});
+```
+
+Or you can also scan an assembly to add all orchestrations and/or activities marked with attributes [OrchestrationAttribute](src/LLL.DurableTask.Worker/Attributes/OrchestrationAttribute.cs) or [ActivityAttribute](src/LLL.DurableTask.Worker/Attributes/ActivityAttribute.cs):
+```C#
+services.AddDurableTaskWorker(builder =>
+{
+    // Adds all orchestrations and activities from assembly
+    builder.AddFromAssembly(typeof(Startup).Assembly);
+
+    // Add only orchestrationsfrom assembly
+    builder.AddOrchestrationsFromAssembly(typeof(Startup).Assembly);
+    
+    // Add only orchestrationsfrom assembly
+    builder.AddActivitiesFromAssembly(typeof(Startup).Assembly);
 });
 ```
 
@@ -294,7 +317,7 @@ The sample was built to demonstrate a microservices architecture with the follow
 
 ### Runinng the sample
 
-1. Configure a EFCore storage at the [server](samples/Server/Startup.cs#37)
+1. Configure a EFCore storage at the [server](samples/Server/Startup.cs#L37)
 2. Simultaneously run all the projects listed above
 3. Open the UI at https://localhost:5002
 4. Create the following test orchestrations and watch them be executed

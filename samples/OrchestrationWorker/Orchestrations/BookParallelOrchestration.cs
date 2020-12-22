@@ -4,10 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
+using LLL.DurableTask.Worker.Attributes;
 using static OrchestrationWorker.Orchestrations.BookParallelOrchestration;
 
 namespace OrchestrationWorker.Orchestrations
 {
+    [Orchestration(Name = "BookParallel", Version = "v1")]
     public class BookParallelOrchestration : DistributedTaskOrchestration<BookParallelResult, BookParallelInput>
     {
         public override async Task<BookParallelResult> RunTask(OrchestrationContext context, BookParallelInput input)

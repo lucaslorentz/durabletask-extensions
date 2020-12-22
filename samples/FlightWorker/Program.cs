@@ -39,8 +39,7 @@ namespace FlightWorker
 
             services.AddDurableTaskWorker(builder =>
             {
-                builder.AddActivity<BookFlightActivity>("BookFlight", "v1");
-                builder.AddActivity<CancelFlightActivity>("CancelFlight", "v1");
+                builder.AddFromAssembly(typeof(Program).Assembly);
             });
         }
     }

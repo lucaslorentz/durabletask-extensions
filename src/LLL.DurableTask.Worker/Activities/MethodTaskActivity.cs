@@ -8,11 +8,11 @@ using Newtonsoft.Json.Linq;
 
 namespace LLL.DurableTask.Worker.Orchestrations
 {
-    public class ReflectionTaskActivity : TaskActivity
+    public class MethodTaskActivity : TaskActivity
     {
         private readonly MethodInfo _methodInfo;
 
-        public ReflectionTaskActivity(
+        public MethodTaskActivity(
             object instance,
             MethodInfo methodInfo)
         {

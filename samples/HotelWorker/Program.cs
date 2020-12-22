@@ -39,8 +39,7 @@ namespace HotelWorker
 
             services.AddDurableTaskWorker(builder =>
             {
-                builder.AddActivity<BookHotelActivity>("BookHotel", "v1");
-                builder.AddActivity<CancelHotelActivity>("CancelHotel", "v1");
+                builder.AddFromAssembly(typeof(Program).Assembly);
             });
         }
     }

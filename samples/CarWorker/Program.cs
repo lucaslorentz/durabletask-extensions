@@ -39,8 +39,7 @@ namespace CarWorker
 
             services.AddDurableTaskWorker(builder =>
             {
-                builder.AddActivity<BookCarActivity>("BookCar", "v1");
-                builder.AddActivity<CancelCarActivity>("CancelCar", "v1");
+                builder.AddFromAssembly(typeof(Program).Assembly);
             });
         }
     }

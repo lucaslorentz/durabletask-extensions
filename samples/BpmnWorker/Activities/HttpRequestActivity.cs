@@ -6,10 +6,12 @@ using System.Text;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
+using LLL.DurableTask.Worker.Attributes;
 using Newtonsoft.Json;
 
 namespace BpmnWorker.Activities
 {
+    [Activity(Name = "HttpRequest")]
     public class HttpRequestActivity : DistributedAsyncTaskActivity<HttpRequestActivity.Input, HttpRequestActivity.Output>
     {
         protected override async Task<Output> ExecuteAsync(TaskContext context, Input input)

@@ -40,12 +40,9 @@ namespace WorkflowApi
                 ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             });
 
-            services.AddDurableTaskWorker(config =>
+            services.AddDurableTaskWorker(builder =>
             {
-                config.AddOrchestration<BPMNOrchestrator>("BPMN");
-                config.AddActivity<EmptyActivity>("Empty");
-                config.AddActivity<ScriptActivity>("Script");
-                config.AddActivity<HttpRequestActivity>("HttpRequest");
+                builder.AddFromAssembly(typeof(Program).Assembly);
             });
 
             services.AddSingleton<IBPMNProvider, LocalFileBPMNProvider>();

@@ -39,8 +39,7 @@ namespace OrchestrationWorker
 
             services.AddDurableTaskWorker(builder =>
             {
-                builder.AddOrchestration<BookSequentialOrchestration>("BookSequential", "v1");
-                builder.AddOrchestration<BookParallelOrchestration>("BookParallel", "v1");
+                builder.AddFromAssembly(typeof(Program).Assembly);
             });
         }
     }

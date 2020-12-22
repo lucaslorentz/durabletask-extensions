@@ -13,7 +13,7 @@ namespace LLL.DurableTask.Api
 {
     static class HttpContextExtensions
     {
-        private static new JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
+        private static JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
         {
             DateTimeZoneHandling = DateTimeZoneHandling.Utc,
             ContractResolver = new DefaultContractResolver

@@ -1,10 +1,12 @@
 ﻿using System;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
+using LLL.DurableTask.Worker.Attributes;
 using Microsoft.Extensions.Logging;
 
 namespace CarWorker.Activities
 {
+    [Activity(Name = "BookCar", Version = "v1")]
     public class BookCarActivity : DistributedTaskActivity<BookCarInput, BookCarResult>
     {
         private readonly ILogger<BookCarActivity> _logger;
