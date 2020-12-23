@@ -276,6 +276,8 @@ Beautifull UI to manage orchestrations built with React + Material UI.
 
 Take a look in the [screenshots](readme/screenshots.md). History visualization is my favorite :-)
 
+The UI is hosted by default under /tasks path of your api.
+
 Configuration:
 ```C#
 services.AddDurableTaskUI();
@@ -319,7 +321,7 @@ The sample was built to demonstrate a microservices architecture with the follow
 
 1. Configure a EFCore storage at the [server](samples/Server/Startup.cs#L37)
 2. Simultaneously run all the projects listed above
-3. Open the UI at https://localhost:5002
+3. Open the UI at https://localhost:5002/tasks
 4. Create the following test orchestrations and watch them be executed
     | Name | Version | InstanceId | Input |
     | --- | --- | --- | --- |
