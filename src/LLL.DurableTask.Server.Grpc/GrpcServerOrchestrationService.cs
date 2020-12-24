@@ -29,14 +29,14 @@ namespace LLL.DurableTask.Server.Grpc.Server
             IOrchestrationService orchestrationService,
             IOrchestrationServiceClient orchestrationServiceClient,
             ILogger<GrpcServerOrchestrationService> logger,
-            IExtendedOrchestrationService distributedOrchestrationService = null,
+            IExtendedOrchestrationService extendedOrchestrationService = null,
             IExtendedOrchestrationServiceClient extendedOrchestrationServiceClient = null)
         {
             _options = options.Value;
             _orchestrationService = orchestrationService;
             _orchestrationServiceClient = orchestrationServiceClient;
             _logger = logger;
-            _extendedOrchestrationService = distributedOrchestrationService;
+            _extendedOrchestrationService = extendedOrchestrationService;
             _extendedOrchestrationServiceClient = extendedOrchestrationServiceClient;
         }
 
@@ -195,17 +195,12 @@ namespace LLL.DurableTask.Server.Grpc.Server
                         var lockRequest = message.LockRequest;
                         var orchestrations = lockRequest.Orchestrations.Select(x => new NameVersion(x.Name, x.Version)).ToArray();
 
-                        workItem = lockRequest.AllOrchestrations switch
-                        {
-                            false => await (_extendedOrchestrationService ?? throw new NotSupportedException("Distributed orchestration is not supported"))
-                                .LockNextTaskOrchestrationWorkItemAsync(
-                                    lockRequest.ReceiveTimeout.ToTimeSpan(),
-                                    orchestrations,
-                                    context.CancellationToken),
-                            true => await _orchestrationService.LockNextTaskOrchestrationWorkItemAsync(
-                                lockRequest.ReceiveTimeout.ToTimeSpan(),
-                                context.CancellationToken)
-                        };
+                        workItem = await (lockRequest.AllOrchestrations
+                            ? _orchestrationService
+                                .LockNextTaskOrchestrationWorkItemAsync(lockRequest.ReceiveTimeout.ToTimeSpan(), context.CancellationToken)
+                            : (_extendedOrchestrationService ?? throw DistributedWorkersNotSupported())
+                                .LockNextTaskOrchestrationWorkItemAsync(lockRequest.ReceiveTimeout.ToTimeSpan(), orchestrations, context.CancellationToken)
+                        );
 
                         var lockResponse = new TaskOrchestrationResponse
                         {
@@ -338,17 +333,11 @@ namespace LLL.DurableTask.Server.Grpc.Server
         {
             var activities = request.Activities.Select(x => new NameVersion(x.Name, x.Version)).ToArray();
 
-            var workItem = request.AllActivities switch
-            {
-                false => await (_extendedOrchestrationService ?? throw new NotSupportedException("Distributed activity is not supported"))
-                    .LockNextTaskActivityWorkItem(
-                        request.ReceiveTimeout.ToTimeSpan(),
-                        activities,
-                        context.CancellationToken),
-                true => await _orchestrationService.LockNextTaskActivityWorkItem(
-                    request.ReceiveTimeout.ToTimeSpan(),
-                    context.CancellationToken)
-            };
+            var workItem = await (request.AllActivities
+                ? _orchestrationService
+                    .LockNextTaskActivityWorkItem(request.ReceiveTimeout.ToTimeSpan(), context.CancellationToken)
+                : (_extendedOrchestrationService ?? throw DistributedWorkersNotSupported())
+                    .LockNextTaskActivityWorkItem(request.ReceiveTimeout.ToTimeSpan(), activities, context.CancellationToken));
 
             var response = new LockNextTaskActivityWorkItemResponse
             {
@@ -411,6 +400,11 @@ namespace LLL.DurableTask.Server.Grpc.Server
                 LockedUntilUtc = grpcWorkItem.LockedUntilUtc.ToDateTime(),
                 TaskMessage = _options.DataConverter.Deserialize<TaskMessage>(grpcWorkItem.TaskMessage)
             };
+        }
+
+        private Exception DistributedWorkersNotSupported()
+        {
+            return new NotSupportedException("Distributed workers is not supported by storage implementation");
         }
     }
 }

@@ -50,8 +50,10 @@ namespace LLL.DurableTask.Worker.Services
         public async Task<TaskOrchestrationWorkItem> LockNextTaskOrchestrationWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
         {
             var workItem = await (_hasAllOrchestrations
-                ? _innerOrchestrationService.LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, cancellationToken)
-                : _innerExtenedOrchestrationService.LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, _orchestrations, cancellationToken)
+                ? _innerOrchestrationService
+                    .LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, cancellationToken)
+                : (_innerExtenedOrchestrationService ?? throw DistributedWorkersNotSupported())
+                    .LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, _orchestrations, cancellationToken)
             );
 
             if (workItem != null)
@@ -139,11 +141,14 @@ namespace LLL.DurableTask.Worker.Services
             return _innerOrchestrationService.IsMaxMessageCountExceeded(currentMessageCount, runtimeState);
         }
 
-        public Task<TaskActivityWorkItem> LockNextTaskActivityWorkItem(TimeSpan receiveTimeout, CancellationToken cancellationToken)
+        public async Task<TaskActivityWorkItem> LockNextTaskActivityWorkItem(TimeSpan receiveTimeout, CancellationToken cancellationToken)
         {
-            return _hasAllActivities
-                ? _innerOrchestrationService.LockNextTaskActivityWorkItem(receiveTimeout, cancellationToken)
-                : _innerExtenedOrchestrationService.LockNextTaskActivityWorkItem(receiveTimeout, _activities, cancellationToken);
+            return await (_hasAllActivities
+                ? _innerOrchestrationService
+                    .LockNextTaskActivityWorkItem(receiveTimeout, cancellationToken)
+                : (_innerExtenedOrchestrationService ?? throw DistributedWorkersNotSupported())
+                    .LockNextTaskActivityWorkItem(receiveTimeout, _activities, cancellationToken)
+            );
         }
 
         public Task<TaskActivityWorkItem> RenewTaskActivityWorkItemLockAsync(TaskActivityWorkItem workItem)
@@ -169,6 +174,11 @@ namespace LLL.DurableTask.Worker.Services
         public Task StopAsync(bool isForced)
         {
             return _innerOrchestrationService.StopAsync(isForced);
+        }
+
+        private Exception DistributedWorkersNotSupported()
+        {
+            return new NotSupportedException("Distributed workers is not supported by storage implementation");
         }
     }
 }

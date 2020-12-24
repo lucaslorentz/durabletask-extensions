@@ -311,6 +311,8 @@ namespace LLL.DurableTask.EFCore
 
         public Task StartAsync()
         {
+            if (_stopCts.IsCancellationRequested)
+                _stopCts = new CancellationTokenSource();
             return Task.CompletedTask;
         }
 
@@ -322,7 +324,6 @@ namespace LLL.DurableTask.EFCore
         public Task StopAsync(bool isForced)
         {
             _stopCts.Cancel();
-            _stopCts = new CancellationTokenSource();
             return Task.CompletedTask;
         }
 
