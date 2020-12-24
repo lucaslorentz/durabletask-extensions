@@ -14,8 +14,8 @@ export function useDynamicRefs(
     const values: Record<string | number, any> = {};
     const callbacks: Record<string | number, (v: any) => void> = {};
     ref.current = [
-      (name) => values[name],
-      (name) => {
+      (name: string | number) => values[name],
+      (name: string | number) => {
         if (name in callbacks) return callbacks[name];
         return (callbacks[name] = (value) => {
           values[name] = value;

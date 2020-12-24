@@ -9,13 +9,6 @@ export class LineBuilder {
   }
 
   lineTo(left: number, top: number) {
-    if (this.commands.length === 0) {
-      this.commands.push(`M ${left} ${top}`);
-      this.left = left;
-      this.top = top;
-      return;
-    }
-
     var controlPoint1 = {
       left: this.left,
       top: (this.top + top) / 2,
@@ -36,6 +29,12 @@ export class LineBuilder {
       `Q ${controlPoint2.left} ${controlPoint2.top} ${left} ${top}`
     );
 
+    this.left = left;
+    this.top = top;
+  }
+
+  moveTo(left: number, top: number) {
+    this.commands.push(`M ${left} ${top}`);
     this.left = left;
     this.top = top;
   }

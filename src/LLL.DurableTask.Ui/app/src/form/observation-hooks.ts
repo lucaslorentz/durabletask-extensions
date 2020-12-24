@@ -62,7 +62,7 @@ export function useObserverEffect<T>(
 
     disposeLast();
 
-    const { deactivate: stop, dispose } = proxyContext.activate(schedule);
+    const { deactivate, dispose } = proxyContext.activate(schedule);
 
     lastDispose.current = dispose;
 
@@ -70,6 +70,6 @@ export function useObserverEffect<T>(
 
     await maybePromise;
 
-    stop();
+    deactivate();
   }
 }
