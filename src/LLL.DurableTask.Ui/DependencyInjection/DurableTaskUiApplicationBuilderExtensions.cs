@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Net.Http.Headers;
 
@@ -10,14 +6,6 @@ namespace Microsoft.AspNetCore.Builder
 {
     public static class DurableTaskUiApplicationBuilderExtensions
     {
-        private static readonly HashSet<string> _noCacheExtensions = new[]
-        {
-            ".htm",
-            ".html"
-        }.ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        private const int _cacheDurationInSeconds = 60 * 60 * 24 * 365;
-
         public static IApplicationBuilder UseDurableTaskUI(this IApplicationBuilder builder, PathString pathMatch)
         {
             return builder.Map(pathMatch, pathBuilder =>
@@ -40,10 +28,11 @@ namespace Microsoft.AspNetCore.Builder
                     FileProvider = fileProvider,
                     OnPrepareResponse = ctx =>
                     {
-                        if (!_noCacheExtensions.Contains(Path.GetExtension(ctx.File.Name)))
-                        {
-                            ctx.Context.Response.Headers[HeaderNames.CacheControl] = "public,max-age=" + _cacheDurationInSeconds;
-                        }
+                        // CRA recommendations: https://create-react-app.dev/docs/production-build/#static-file-caching
+                        if (ctx.Context.Request.Path.StartsWithSegments("/static"))
+                            ctx.Context.Response.Headers[HeaderNames.CacheControl] = "max-age=31536000";
+                        else
+                            ctx.Context.Response.Headers[HeaderNames.CacheControl] = "no-cache";
                     }
                 });
         }
