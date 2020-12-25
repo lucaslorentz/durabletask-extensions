@@ -56,7 +56,7 @@ namespace Api
                     .DisableAuthorization();
             });
 
-            app.UseDurableTaskUI();
+            app.UseDurableTaskUi();
         }
     }
 }

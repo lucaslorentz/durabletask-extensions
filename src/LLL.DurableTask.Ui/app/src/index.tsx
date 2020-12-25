@@ -7,13 +7,16 @@ import * as serviceWorker from "./serviceWorker";
 import { createBrowserHashHistory } from "./createBrowserHashHistory";
 import { ThemeProvider } from "@material-ui/core/styles";
 import { customTheme } from "./CustomTheme";
+import { ConfigurationLoader } from "./ConfigurationLoader";
 
 ReactDOM.render(
   // <React.StrictMode>
   <ThemeProvider theme={customTheme}>
-    <Router history={createBrowserHashHistory()}>
-      <App />
-    </Router>
+    <ConfigurationLoader>
+      <Router history={createBrowserHashHistory()}>
+        <App />
+      </Router>
+    </ConfigurationLoader>
   </ThemeProvider>,
   // </React.StrictMode>
   document.getElementById("root")

@@ -19,6 +19,7 @@ import {
   CreateOrchestrationRequest,
   OrchestrationInstance,
 } from "../../models/ApiModels";
+import { apiAxios } from "../../apiAxios";
 
 const schema = yup
   .object({
@@ -64,15 +65,12 @@ export function Create() {
       }, {} as Record<string, string>),
     };
 
-    var response = await fetch(`/api/v1/orchestrations`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(request),
-    }).then<OrchestrationInstance>((r) => r.json());
+    var response = await apiAxios.post<OrchestrationInstance>(
+      `/v1/orchestrations`,
+      request
+    );
 
-    history.push(`/orchestrations/${response.instanceId}`);
+    history.push(`/orchestrations/${response.data.instanceId}`);
   }
 
   return (

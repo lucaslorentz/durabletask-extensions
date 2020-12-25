@@ -6,20 +6,21 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
 } from "@material-ui/core";
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useWindowSize } from "react-use";
 import { useDynamicRefs } from "../../hooks/useDynamicRefs";
+import { HistoryEvent } from "../../models/ApiModels";
 import { LineBuilder } from "./LineBuilder";
 
 type Props = {
-  eventsHistory: any[];
+  historyEvents: HistoryEvent[];
 };
 
 export function HistoryTable(props: Props) {
-  const { eventsHistory } = props;
+  const { historyEvents: eventsHistory } = props;
 
   const filteredEvents = eventsHistory.filter(
     (e) =>

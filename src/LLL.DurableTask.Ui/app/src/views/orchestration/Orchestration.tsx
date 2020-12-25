@@ -26,8 +26,9 @@ import {
   useHistory,
   useRouteMatch,
 } from "react-router-dom";
+import { apiAxios } from "../../apiAxios";
 import { useQueryState } from "../../hooks/useQueryState";
-import { OrchestrationState } from "../../models/ApiModels";
+import { HistoryEvent, OrchestrationState } from "../../models/ApiModels";
 import { HistoryTable } from "./HistoryTable";
 import { RaiseEvent } from "./RaiseEvent";
 import { State } from "./State";
@@ -50,7 +51,7 @@ type TabValue = "state" | "history" | "raise_event" | "terminate" | "json";
 
 export function Orchestration() {
   const [state, setState] = useState<OrchestrationState | undefined>(undefined);
-  const [eventsHistory, setEventsHistory] = useState<any[]>([]);
+  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
   const [tab, setTab] = useQueryState<TabValue>("tab", "state");
   const [isLoading, setIsLoading] = useState(false);
   const [autoRefreshInterval, setAutoRefreshInterval] = useQueryState<
@@ -70,7 +71,7 @@ export function Orchestration() {
 
   useEffect(() => {
     setState(undefined);
-    setEventsHistory([]);
+    setHistoryEvents([]);
   }, [instanceId, executionId]);
 
   useEffect(() => {
@@ -87,21 +88,19 @@ export function Orchestration() {
     (async () => {
       setIsLoading(true);
 
-      let url = `/api/v1/orchestrations/${instanceId}`;
+      let url = `/v1/orchestrations/${instanceId}`;
       if (executionId) {
         url = `${url}/${executionId}`;
       }
 
-      var state = await fetch(url).then(
-        (r) => r.json() as Promise<OrchestrationState>
+      var stateResponse = await apiAxios.get<OrchestrationState>(url);
+
+      var historyResponse = await apiAxios.get<HistoryEvent[]>(
+        `/v1/orchestrations/${instanceId}/${stateResponse.data.orchestrationInstance.executionId}/history`
       );
 
-      var history = await fetch(
-        `/api/v1/orchestrations/${instanceId}/${state.orchestrationInstance.executionId}/history`
-      ).then((r) => r.json());
-
-      setState(state);
-      setEventsHistory(history);
+      setState(stateResponse.data);
+      setHistoryEvents(historyResponse.data);
       setIsLoading(false);
       incrementLoadedCount();
     })();
@@ -113,16 +112,7 @@ export function Orchestration() {
     setShowConfirmPurge(true);
   }
   async function handleConfirmPurgeClick() {
-    var response = await fetch(`/api/v1/orchestrations/${instanceId}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (response.status >= 400) {
-      throw new Error("Invalid response");
-    }
+    await apiAxios.delete(`/v1/orchestrations/${instanceId}`);
 
     setShowConfirmPurge(false);
 
@@ -241,7 +231,7 @@ export function Orchestration() {
               <State state={state} definedExecutionId={Boolean(executionId)} />
             )}
             {tab === "history" && (
-              <HistoryTable eventsHistory={eventsHistory} />
+              <HistoryTable historyEvents={historyEvents} />
             )}
             {tab === "raise_event" && (
               <Box padding={2}>
@@ -257,7 +247,7 @@ export function Orchestration() {
               <Box padding={2}>
                 <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
                   {JSON.stringify(
-                    { state: state, history: eventsHistory },
+                    { state: state, history: historyEvents },
                     null,
                     2
                   )}

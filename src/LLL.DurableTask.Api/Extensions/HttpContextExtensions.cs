@@ -81,10 +81,8 @@ namespace LLL.DurableTask.Api.Extensions
             int statusCode = 200)
         {
             var json = JsonConvert.SerializeObject(data, _serializerSettings);
-
             context.Response.StatusCode = statusCode;
-            context.Response.ContentType = "application/json";
-            context.Response.ContentLength = Encoding.UTF8.GetByteCount(json);
+            context.Response.ContentType = "application/json; charset=utf-8";
             await context.Response.WriteAsync(json);
         }
     }

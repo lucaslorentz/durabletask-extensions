@@ -342,9 +342,9 @@ Take a look in the [screenshots](readme/screenshots.md). History visualization i
 Configuration:
 
 ```C#
-services.AddDurableTaskUI();
+services.AddDurableTaskUi();
 ...
-app.UseDurableTaskUI();
+app.UseDurableTaskUi();
 ```
 
 ## Compose components to build your own architecture

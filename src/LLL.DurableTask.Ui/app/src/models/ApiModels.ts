@@ -41,6 +41,25 @@ export interface OrchestrationInstance {
   executionId: string;
 }
 
+export type HistoryEvent = {
+  timestamp: string;
+  eventType: string;
+  eventId: number;
+  isPlayed: boolean;
+  orchestrationInstance?: OrchestrationInstance;
+  parentInstance?: ParentInstance;
+  name?: string;
+  version?: string;
+  tags?: Record<string, string>;
+  correlation?: string;
+  scheduledStartTime?: string;
+  taskScheduledId?: number;
+  orchestrationStatus?: OrchestrationStatus;
+  reason?: string;
+  input?: string;
+  result?: string;
+};
+
 export interface ParentInstance {
   orchestrationInstance: OrchestrationInstance;
   name: string;

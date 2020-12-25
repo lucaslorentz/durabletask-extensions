@@ -4,11 +4,11 @@ import {
   AccordionSummary,
   Box,
   Breadcrumbs,
+  Button,
   Chip,
   FormControl,
   Grid,
   IconButton,
-  Button,
   InputLabel,
   LinearProgress,
   Link,
@@ -30,17 +30,18 @@ import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import FirstPageIcon from "@material-ui/icons/FirstPage";
-import { default as React, useState, useCallback } from "react";
+import RefreshIcon from "@material-ui/icons/Refresh";
+import { default as React, useCallback, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { useFeatures } from "../../data/useFeatures";
+import { apiAxios } from "../../apiAxios";
 import { useDebouncedEffect } from "../../hooks/useDebouncedEffect";
+import { useFeatures } from "../../hooks/useFeatures";
 import { useLocationState } from "../../hooks/useLocationState";
 import { useQueryState } from "../../hooks/useQueryState";
 import {
   OrchestrationsResult,
   OrchestrationStatus,
 } from "../../models/ApiModels";
-import RefreshIcon from "@material-ui/icons/Refresh";
 
 const useStyles = makeStyles((theme) => ({
   chips: {
@@ -113,9 +114,10 @@ export function Orchestrations() {
     }
     var query = params.entries().next().done ? "" : `?${params.toString()}`;
     setIsLoading(true);
-    var response = await fetch(`/api/v1/orchestrations${query}`);
-    var data = (await response.json()) as OrchestrationsResult;
-    setResult(data);
+    var response = await apiAxios.get<OrchestrationsResult>(
+      `/v1/orchestrations${query}`
+    );
+    setResult(response.data);
     setIsLoading(false);
   }, [
     instanceId,

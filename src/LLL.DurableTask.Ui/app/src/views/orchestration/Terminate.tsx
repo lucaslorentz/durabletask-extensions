@@ -1,10 +1,11 @@
 import { Button, Grid } from "@material-ui/core";
 import React from "react";
 import * as yup from "yup";
-import { useForm } from "../../form/form-hooks";
+import { apiAxios } from "../../apiAxios";
 import { TextField } from "../../form/fields";
-import { TerminateRequest } from "../../models/ApiModels";
+import { useForm } from "../../form/form-hooks";
 import { Observe } from "../../form/observation-components";
+import { TerminateRequest } from "../../models/ApiModels";
 
 type Props = {
   instanceId: string;
@@ -29,20 +30,7 @@ export function Terminate(props: Props) {
       reason: form.value.reason,
     };
 
-    var response = await fetch(
-      `/api/v1/orchestrations/${instanceId}/terminate`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(request),
-      }
-    );
-
-    if (response.status >= 400) {
-      throw new Error("Invalid response");
-    }
+    await apiAxios.post(`/v1/orchestrations/${instanceId}/terminate`, request);
 
     form.value = { reason: "" };
 

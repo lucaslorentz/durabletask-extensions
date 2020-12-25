@@ -1,10 +1,11 @@
 import { Button, Grid } from "@material-ui/core";
 import React from "react";
 import * as yup from "yup";
-import { useForm } from "../../form/form-hooks";
-import { RaiseEventRequest } from "../../models/ApiModels";
+import { apiAxios } from "../../apiAxios";
 import { TextField } from "../../form/fields";
+import { useForm } from "../../form/form-hooks";
 import { Observe } from "../../form/observation-components";
+import { RaiseEventRequest } from "../../models/ApiModels";
 
 type Props = {
   instanceId: string;
@@ -46,20 +47,7 @@ export function RaiseEvent(props: Props) {
       eventData: form.value.eventData ? JSON.parse(form.value.eventData) : null,
     };
 
-    var response = await fetch(
-      `/api/v1/orchestrations/${instanceId}/raiseevent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(request),
-      }
-    );
-
-    if (response.status >= 400) {
-      throw new Error("Invalid response");
-    }
+    await apiAxios.post(`/v1/orchestrations/${instanceId}/raiseevent`, request);
 
     form.reset();
 

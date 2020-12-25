@@ -1,12 +1,12 @@
 import { useAsync } from "react-use";
+import { apiAxios } from "../apiAxios";
 import { Feature } from "../models/ApiModels";
 
 export function useFeatures() {
   return useAsync(async () => {
-    var response = await fetch(`/api/v1/features`);
-    var data = (await response.json()) as Feature[];
+    var response = await apiAxios.get<Feature[]>(`/v1/features`);
     const features: Partial<Record<Feature, true>> = {};
-    data.forEach((f) => (features[f] = true));
+    response.data.forEach((f) => (features[f] = true));
     return features;
   }, []);
 }
