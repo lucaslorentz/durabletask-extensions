@@ -22,7 +22,7 @@ namespace LLL.DurableTask.Api.Endpoints
         {
             var endpoints = new List<IEndpointConventionBuilder>();
 
-            endpoints.Add(builder.MapGet(prefix.Add("/v1/orchestrations"), async context =>
+            endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations", async context =>
             {
                 var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
 
@@ -33,7 +33,7 @@ namespace LLL.DurableTask.Api.Endpoints
                 await context.RespondJson(result);
             }).WithDisplayName("Get Orchestrations").RequireAuthorization(DurableTaskPolicy.Read));
 
-            endpoints.Add(builder.MapPost(prefix.Add("/v1/orchestrations"), async context =>
+            endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations", async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -52,7 +52,7 @@ namespace LLL.DurableTask.Api.Endpoints
                 await context.RespondJson(instance, 201);
             }).WithDisplayName("Create Orchestration").RequireAuthorization(DurableTaskPolicy.Create));
 
-            endpoints.Add(builder.MapGet(prefix.Add("/v1/orchestrations/{instanceId}"), async context =>
+            endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}", async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -62,7 +62,7 @@ namespace LLL.DurableTask.Api.Endpoints
                 await context.RespondJson(state);
             }).WithDisplayName("Get orchestration last state").RequireAuthorization(DurableTaskPolicy.Read));
 
-            endpoints.Add(builder.MapGet(prefix.Add("/v1/orchestrations/{instanceId}/{executionId}"), async context =>
+            endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}/{executionId}", async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -74,7 +74,7 @@ namespace LLL.DurableTask.Api.Endpoints
                 await context.RespondJson(state);
             }).WithDisplayName("Get execution state").RequireAuthorization(DurableTaskPolicy.Read));
 
-            endpoints.Add(builder.MapGet(prefix.Add("/v1/orchestrations/{instanceId}/{executionId}/history"), async context =>
+            endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}/{executionId}/history", async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -97,7 +97,7 @@ namespace LLL.DurableTask.Api.Endpoints
                 await context.RespondJson(events);
             }).WithDisplayName("Get execution history").RequireAuthorization(DurableTaskPolicy.Read));
 
-            endpoints.Add(builder.MapPost(prefix.Add("/v1/orchestrations/{instanceId}/terminate"), async context =>
+            endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/terminate", async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -115,7 +115,7 @@ namespace LLL.DurableTask.Api.Endpoints
                 await context.RespondJson(new { });
             }).WithDisplayName("Terminate orchestration").RequireAuthorization(DurableTaskPolicy.Terminate));
 
-            endpoints.Add(builder.MapPost(prefix.Add("/v1/orchestrations/{instanceId}/raiseevent"), async context =>
+            endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/raiseevent", async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -133,7 +133,7 @@ namespace LLL.DurableTask.Api.Endpoints
                 await context.RespondJson(new { });
             }).WithDisplayName("Raise orchestration event").RequireAuthorization(DurableTaskPolicy.RaiseEvent));
 
-            endpoints.Add(builder.MapDelete(prefix.Add("/v1/orchestrations/{instanceId}"), async context =>
+            endpoints.Add(builder.MapDelete(prefix + "/v1/orchestrations/{instanceId}", async context =>
             {
                 var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
 

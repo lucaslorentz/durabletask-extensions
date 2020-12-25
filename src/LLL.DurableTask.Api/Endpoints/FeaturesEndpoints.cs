@@ -15,7 +15,7 @@ namespace LLL.DurableTask.Api.Endpoints
         {
             var endpoints = new List<IEndpointConventionBuilder>();
 
-            endpoints.Add(builder.MapGet(prefix.Add("/v1/features"), async context =>
+            endpoints.Add(builder.MapGet(prefix + "/v1/features", async context =>
             {
                 var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
 
