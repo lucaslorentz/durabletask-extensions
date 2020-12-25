@@ -1,29 +1,28 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using DurableTask.Core;
 using DurableTask.Core.History;
-using LLL.DurableTask.Api;
 using LLL.DurableTask.Api.Converters;
+using LLL.DurableTask.Api.Extensions;
 using LLL.DurableTask.Api.Models;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.Server.Api.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace LLL.DurableTask.Api.Endpoints
 {
-    public static class MvcBuilderExtensions
+    public static class OrchestrationEndpoints
     {
-        public static void MapDurableTaskApi(this AspNetCore.Routing.IEndpointRouteBuilder endpoints)
+        public static IReadOnlyList<IEndpointConventionBuilder> MapOrchestrationEndpoints(
+            this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder builder,
+            PathString prefix)
         {
-            endpoints.MapGet("/api/v1/features", async context =>
-            {
-                var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
-                var features = await extendedOrchestrationServiceClient.GetFeatures();
-                await context.RespondJson(features);
-            });
+            var endpoints = new List<IEndpointConventionBuilder>();
 
-            endpoints.MapGet("/api/v1/orchestrations", async context =>
+            endpoints.Add(builder.MapGet(prefix.Add("/v1/orchestrations"), async context =>
             {
                 var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
 
@@ -32,9 +31,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 var result = await extendedOrchestrationServiceClient.GetOrchestrationsAsync(query);
 
                 await context.RespondJson(result);
-            });
+            }).WithDisplayName("Get Orchestrations").RequireAuthorization(DurableTaskPolicy.Read));
 
-            endpoints.MapPost("/api/v1/orchestrations", async context =>
+            endpoints.Add(builder.MapPost(prefix.Add("/v1/orchestrations"), async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -48,12 +47,12 @@ namespace Microsoft.Extensions.DependencyInjection
                     request.Tags);
 
                 var typedHeaders = context.Response.GetTypedHeaders();
-                typedHeaders.Location = new Uri($"/api/v1/orchestrations/{instance.InstanceId}", System.UriKind.Relative);
+                typedHeaders.Location = new Uri($"/v1/orchestrations/{instance.InstanceId}", System.UriKind.Relative);
 
                 await context.RespondJson(instance, 201);
-            });
+            }).WithDisplayName("Create Orchestration").RequireAuthorization(DurableTaskPolicy.Create));
 
-            endpoints.MapGet("/api/v1/orchestrations/{instanceId}", async context =>
+            endpoints.Add(builder.MapGet(prefix.Add("/v1/orchestrations/{instanceId}"), async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -61,9 +60,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 var state = await taskHubClient.GetOrchestrationStateAsync(instanceId);
 
                 await context.RespondJson(state);
-            });
+            }).WithDisplayName("Get orchestration last state").RequireAuthorization(DurableTaskPolicy.Read));
 
-            endpoints.MapGet("/api/v1/orchestrations/{instanceId}/{executionId}", async context =>
+            endpoints.Add(builder.MapGet(prefix.Add("/v1/orchestrations/{instanceId}/{executionId}"), async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -73,9 +72,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 var state = await taskHubClient.GetOrchestrationStateAsync(instanceId, executionId);
 
                 await context.RespondJson(state);
-            });
+            }).WithDisplayName("Get execution state").RequireAuthorization(DurableTaskPolicy.Read));
 
-            endpoints.MapGet("/api/v1/orchestrations/{instanceId}/{executionId}/history", async context =>
+            endpoints.Add(builder.MapGet(prefix.Add("/v1/orchestrations/{instanceId}/{executionId}/history"), async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -96,9 +95,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 });
 
                 await context.RespondJson(events);
-            });
+            }).WithDisplayName("Get execution history").RequireAuthorization(DurableTaskPolicy.Read));
 
-            endpoints.MapPost("/api/v1/orchestrations/{instanceId}/terminate", async context =>
+            endpoints.Add(builder.MapPost(prefix.Add("/v1/orchestrations/{instanceId}/terminate"), async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -114,9 +113,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 await taskHubClient.TerminateInstanceAsync(orchestrationInstance, request.Reason);
 
                 await context.RespondJson(new { });
-            });
+            }).WithDisplayName("Terminate orchestration").RequireAuthorization(DurableTaskPolicy.Terminate));
 
-            endpoints.MapPost("/api/v1/orchestrations/{instanceId}/raiseevent", async context =>
+            endpoints.Add(builder.MapPost(prefix.Add("/v1/orchestrations/{instanceId}/raiseevent"), async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
@@ -132,9 +131,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 await taskHubClient.RaiseEventAsync(orchestrationInstance, request.EventName, request.EventData);
 
                 await context.RespondJson(new { });
-            });
+            }).WithDisplayName("Raise orchestration event").RequireAuthorization(DurableTaskPolicy.RaiseEvent));
 
-            endpoints.MapDelete("/api/v1/orchestrations/{instanceId}", async context =>
+            endpoints.Add(builder.MapDelete(prefix.Add("/v1/orchestrations/{instanceId}"), async context =>
             {
                 var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
 
@@ -143,7 +142,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 var result = await extendedOrchestrationServiceClient.PurgeInstanceHistoryAsync(instanceId);
 
                 await context.RespondJson(new { });
-            });
+            }).WithDisplayName("Purge orchestration").RequireAuthorization(DurableTaskPolicy.Purge));
+
+            return endpoints;
         }
     }
 }

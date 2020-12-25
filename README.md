@@ -7,6 +7,7 @@
 This project aims to extend [Durable Task Framework](https://github.com/Azure/durabletask) with more features and make it easier to use.
 
 Scope:
+
 - More interfaces defining storage features
 - Dependency injection integration
 - EF Core MySql/PostgreSQL/SqlServer storages
@@ -19,7 +20,7 @@ Scope:
 
 [Durable Task Framework](https://github.com/Azure/durabletask) is an open source framework that provides a foundation for workflow as code in .NET platform.
 
-[Azure Durable Functions](https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview)  connects Durable Task Framework to Azure serverless platform, making it simpler to create workflows as code.
+[Azure Durable Functions](https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview) connects Durable Task Framework to Azure serverless platform, making it simpler to create workflows as code.
 
 The concepts of Durable Functions led to the development of [Cadence](https://cadenceworkflow.io/). A platform that brings Durable Functions to other programming languages and extends it with concepts for better microservices orchestration, like tasks lists and distributed workers.
 
@@ -32,16 +33,18 @@ NOTE: Cadence was recently forked by one of it's creators and [Temporal](https:/
 ### LLL.DurableTask.Core [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Core)](https://www.nuget.org/packages/LLL.DurableTask.Core/)
 
 Extends Durable Task Core with more interfaces and features:
+
 - [IExtendedOrchestrationService](src/LLL.DurableTask.Core/IExtendedOrchestrationService.cs):
-    - Lock and execute specific orchestrations
-    - Lock and execute specific activities
+  - Lock and execute specific orchestrations
+  - Lock and execute specific activities
 - [IExtendedOrchestrationServiceClient](src/LLL.DurableTask.Core/IExtendedOrchestrationServiceClient.cs):
-    - Search orchestrations
-    - Purge orchestration instance history
+  - Search orchestrations
+  - Purge orchestration instance history
 
 ### LLL.DurableTask.AzureStorage [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.AzureStorage)](https://www.nuget.org/packages/LLL.DurableTask.AzureStorage/)
 
 Extends Durable Task Azure storage with:
+
 - Dependency Injection
 - Adapter implementing IExtendedOrchestrationServiceClient interface
 
@@ -52,6 +55,7 @@ Supported features:
 - Storing activity input: no
 
 Configuration:
+
 ```C#
 services.AddDurableTaskAzureStorage(options =>
 {
@@ -63,6 +67,7 @@ services.AddDurableTaskAzureStorage(options =>
 ### LLL.DurableTask.Emulator [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Emulator)](https://www.nuget.org/packages/LLL.DurableTask.Emulator/)
 
 Extends Durable Task Emulator storage with:
+
 - Dependency Injection
 
 Supported features:
@@ -72,6 +77,7 @@ Supported features:
 - Storing activity input: no
 
 Configuration:
+
 ```C#
 services.AddDurableTaskEmulatorStorage();
 ```
@@ -93,6 +99,7 @@ Supported features:
 Extension to EFCore storage with migrations and queries specific to MySql.
 
 Configuration:
+
 ```C#
 services.AddDurableTaskEFCoreStorage()
     .UseMySql("YOUR_CONNECTION_STRING");
@@ -103,6 +110,7 @@ services.AddDurableTaskEFCoreStorage()
 Extension to EFCore storage with migrations and queries specific to PostgreSQL.
 
 Configuration:
+
 ```C#
 services.AddDurableTaskEFCoreStorage()
     .UseNpgsql("YOUR_CONNECTION_STRING");
@@ -113,6 +121,7 @@ services.AddDurableTaskEFCoreStorage()
 Extension to EFCore storage with migrations and queries specific to Sql Server.
 
 Configuration:
+
 ```C#
 services.AddDurableTaskEFCoreStorage()
     .UseSqlServer("YOUR_CONNECTION_STRING");
@@ -181,6 +190,7 @@ services.AddDurableTaskWorker(builder =>
 ```
 
 Or you can also scan an assembly to add all orchestrations and/or activities marked with attributes [OrchestrationAttribute](src/LLL.DurableTask.Worker/Attributes/OrchestrationAttribute.cs) or [ActivityAttribute](src/LLL.DurableTask.Worker/Attributes/ActivityAttribute.cs):
+
 ```C#
 services.AddDurableTaskWorker(builder =>
 {
@@ -189,7 +199,7 @@ services.AddDurableTaskWorker(builder =>
 
     // Add only orchestrationsfrom assembly
     builder.AddOrchestrationsFromAssembly(typeof(Startup).Assembly);
-    
+
     // Add only orchestrationsfrom assembly
     builder.AddActivitiesFromAssembly(typeof(Startup).Assembly);
 });
@@ -225,6 +235,7 @@ The chatty orchestration execution communication is done with bidirectional stre
 Activity execution and all remaining communication is done with non streamed rpc.
 
 Configuration:
+
 ```C#
 services.AddDurableTaskServer(builder =>
 {
@@ -244,6 +255,7 @@ Durable Task storage implementation using server GRPC endpoints.
 Supports same features as the storage configured in the server.
 
 Configuration:
+
 ```C#
 services.AddDurableTaskServerGrpcStorage(options =>
 {
@@ -261,14 +273,65 @@ Depends on:
 - Client
 
 Configuration:
+
 ```C#
+// Add Durable Task Api services
 services.AddDurableTaskApi();
 ...
 app.UseEndpoints(endpoints =>
 {
+    // Map Durable Task Api endpoints under /api prefix
+    // Example of endpoint path: /api/v1/orchestrations
     endpoints.MapDurableTaskApi();
 });
 ```
+
+Alternatively you can define your own prefix:
+
+```C#
+app.UseEndpoints(endpoints =>
+{
+    // Map Durable Task Api endpoints under /tasks-api prefix
+    // Example of endpoint path: /tasks-api/v1/orchestrations
+    endpoints.MapDurableTaskApi("/tasks-api");
+});
+```
+
+#### Authorization
+
+The API is integrated by default with [ASP.NET Core Authorization Policies](https://docs.microsoft.com/en-us/aspnet/core/security/authorization/policies?view=aspnetcore-3.1). You must configure all Durable task policies and their requirements, like the example below using role based requirements:
+
+```C#
+services.AddAuthorization(c =>
+{
+    c.AddPolicy(DurableTaskPolicy.Read, p => p.RequireRole("Reader"));
+    c.AddPolicy(DurableTaskPolicy.Create, p => p.RequireRole("Administrator"));
+    c.AddPolicy(DurableTaskPolicy.Terminate, p => p.RequireRole("Administrator"));
+    c.AddPolicy(DurableTaskPolicy.RaiseEvent, p => p.RequireRole("Administrator"));
+    c.AddPolicy(DurableTaskPolicy.Purge, p => p.RequireRole("Administrator"));
+});
+```
+
+Another alternative, not recommended for production environments, is to disable authorization integration after you map the endpoints:
+
+```C#
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapDurableTaskApi()
+        .DisableAuthorization();
+});
+```
+
+#### Cross-Origin Requests (CORS)
+
+CORS configuration is required if you run Durable Task API and Durable Task UI from different domains.
+
+To configure CORS, please follow [Enable Cross-Origin Requests (CORS) in ASP.NET Core
+](https://docs.microsoft.com/en-us/aspnet/core/security/cors).
+
+Durable Task API requires http methods: **GET, POST, DELETE.**
+
+*Note that the documentation mentions isses when configuring Cors with endpoint routing. Until that issue is fixed you might need to configure cors policy globally instead of only for Durable Task Api.*
 
 ### LLL.DurableTask.Ui [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Ui)](https://www.nuget.org/packages/LLL.DurableTask.Ui/)
 
@@ -276,9 +339,8 @@ Beautifull UI to manage orchestrations built with React + Material UI.
 
 Take a look in the [screenshots](readme/screenshots.md). History visualization is my favorite :-)
 
-The UI is hosted by default under /tasks path of your api.
-
 Configuration:
+
 ```C#
 services.AddDurableTaskUI();
 ...
@@ -321,14 +383,14 @@ The sample was built to demonstrate a microservices architecture with the follow
 
 1. Configure a EFCore storage at the [server](samples/Server/Startup.cs#L37)
 2. Simultaneously run all the projects listed above
-3. Open the UI at https://localhost:5002/tasks
+3. Open the UI at https://localhost:5002/
 4. Create the following test orchestrations and watch them be executed
-    | Name | Version | InstanceId | Input |
-    | --- | --- | --- | --- |
-    | BookParallel | v1 | (Empty) | (Empty) |
-    | BookSequential | v1 | (Empty) | (Empty) |
-    | BPMN | (Empty) | (Empty) | { "name": "BookParallel" }
-    | BPMN | (Empty) | (Empty) | { "name": "BookSequential" }
-    | BPMN | (Empty) | (Empty) | { "name": "Bonus" }
+   | Name | Version | InstanceId | Input |
+   | --- | --- | --- | --- |
+   | BookParallel | v1 | (Empty) | (Empty) |
+   | BookSequential | v1 | (Empty) | (Empty) |
+   | BPMN | (Empty) | (Empty) | { "name": "BookParallel" }
+   | BPMN | (Empty) | (Empty) | { "name": "BookSequential" }
+   | BPMN | (Empty) | (Empty) | { "name": "Bonus" }
 
 Note: The Orchestration state screen doesn't refresh automatically yet. Reload the page to see progress in workflow execution.

@@ -48,16 +48,12 @@ namespace Api
                 app.UseDeveloperExceptionPage();
             }
 
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                app.UseHttpsRedirection();
-            }
-
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapDurableTaskApi();
+                endpoints.MapDurableTaskApi()
+                    .DisableAuthorization();
             });
 
             app.UseDurableTaskUI();
