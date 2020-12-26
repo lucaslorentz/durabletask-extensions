@@ -202,7 +202,7 @@ export function useForm<T>(schema: Schema<T>, valueFactory: () => T): Form<T> {
       }
     },
     [],
-    500,
+    250,
     () => {
       form.pendingValidation = true;
     }

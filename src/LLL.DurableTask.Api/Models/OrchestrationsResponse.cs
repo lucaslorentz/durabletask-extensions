@@ -2,7 +2,7 @@
 
 namespace LLL.DurableTask.Server.Api.Models
 {
-    public class OrchestrationsResult
+    public class OrchestrationsResponse
     {
         public IList<Orchestration> Orchestrations { get; set; }
         public long? Count { get; set; }

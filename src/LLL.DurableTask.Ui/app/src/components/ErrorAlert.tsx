@@ -1,4 +1,5 @@
 import React from "react";
+import Alert from "@material-ui/lab/Alert";
 
 type Props = {
   error: unknown;
@@ -9,5 +10,5 @@ export function ErrorAlert(props: Props) {
 
   if (!error) return null;
 
-  return <div>{String(error)}</div>;
+  return <Alert severity="error">{String(error)}</Alert>;
 }

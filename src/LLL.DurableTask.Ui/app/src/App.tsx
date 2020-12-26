@@ -1,19 +1,27 @@
 import {
   Box,
   Button,
-  Container,
-  makeStyles,
   CircularProgress,
+  Container,
+  Grid,
+  makeStyles,
+  Menu,
+  MenuItem,
 } from "@material-ui/core";
 import AppBar from "@material-ui/core/AppBar";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
+import { Person } from "@material-ui/icons";
 import React, { Suspense } from "react";
-import { Redirect, Route, Switch, Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, Redirect, Switch } from "react-router-dom";
+import { useAuth } from "./AuthProvider";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { useConfiguration } from "./ConfigurationProvider";
+import { useEntrypoint } from "./EntrypointProvider";
+import { Create } from "./views/create";
 import { Orchestration } from "./views/orchestration";
 import { Orchestrations } from "./views/orchestrations";
-import { Create } from "./views/create";
 
 const useStyles = makeStyles((theme) => ({
   title: {
@@ -24,36 +32,130 @@ const useStyles = makeStyles((theme) => ({
 export function App() {
   const classes = useStyles();
 
+  const configuration = useConfiguration();
+
+  const auth = useAuth();
+
+  const entrypoint = useEntrypoint();
+
+  const [userAnchorEl, setUserAnchorEl] = React.useState<
+    HTMLButtonElement | undefined
+  >(undefined);
+
+  function openUserMenu(event: React.MouseEvent<HTMLButtonElement>) {
+    setUserAnchorEl(event.currentTarget);
+  }
+
+  function closeUserMenu() {
+    setUserAnchorEl(undefined);
+  }
+
+  let userName: string | undefined;
+  if (auth.user) {
+    userName =
+      (configuration.userNameClaims ?? ["preferred_username", "name", "sub"])
+        .map((claim) => auth.user!.profile?.[claim])
+        .find(Boolean) ?? "Authenticated";
+  }
+
   return (
     <div>
       <CssBaseline />
       <AppBar position="static" elevation={0}>
         <Toolbar>
-          <Typography variant="h6" className={classes.title}>
-            Durable Task UI
-          </Typography>
-          <Button component={RouterLink} to="/create" color="inherit">
-            Create
-          </Button>
-          <Button component={RouterLink} to="/orchestrations" color="inherit">
-            Orchestrations
-          </Button>
+          <Grid container alignItems="center">
+            <Grid item>
+              <Typography variant="h6" className={classes.title}>
+                Durable Task UI
+              </Typography>
+            </Grid>
+            {entrypoint.endpoints.OrchestrationsCreate.authorized && (
+              <Grid item>
+                <Button component={RouterLink} to="/create" color="inherit">
+                  Create
+                </Button>
+              </Grid>
+            )}
+            {entrypoint.endpoints.OrchestrationsList.authorized && (
+              <Grid item>
+                <Button
+                  component={RouterLink}
+                  to="/orchestrations"
+                  color="inherit"
+                >
+                  Orchestrations
+                </Button>
+              </Grid>
+            )}
+            {auth.enabled && (
+              <Grid item style={{ marginLeft: "auto" }}>
+                {userName ? (
+                  <>
+                    <Button
+                      color="inherit"
+                      onClick={openUserMenu}
+                      startIcon={<Person />}
+                    >
+                      {userName}
+                    </Button>
+                    <Menu
+                      id="menu-appbar"
+                      anchorEl={userAnchorEl}
+                      getContentAnchorEl={null}
+                      open={Boolean(userAnchorEl)}
+                      keepMounted
+                      anchorOrigin={{
+                        vertical: "bottom",
+                        horizontal: "right",
+                      }}
+                      transformOrigin={{
+                        vertical: "top",
+                        horizontal: "right",
+                      }}
+                      onClose={closeUserMenu}
+                    >
+                      <MenuItem onClick={auth.signOut}>Sign out</MenuItem>
+                    </Menu>
+                  </>
+                ) : (
+                  <Button color="inherit" onClick={auth.signIn}>
+                    Sign in
+                  </Button>
+                )}
+              </Grid>
+            )}
+          </Grid>
         </Toolbar>
       </AppBar>
       <Container maxWidth="xl">
         <Box marginTop={3}>
           <Suspense fallback={<CircularProgress />}>
             <Switch>
-              <Route path="/orchestrations" exact>
+              <ProtectedRoute
+                requiredEndpoints={["OrchestrationsList"]}
+                path="/orchestrations"
+                exact
+              >
                 <Orchestrations />
-              </Route>
-              <Route path="/orchestrations/:instanceId/:executionId?">
+              </ProtectedRoute>
+              <ProtectedRoute
+                requiredEndpoints={[
+                  "OrchestrationsGet",
+                  "OrchestrationsGetExecution",
+                ]}
+                path="/orchestrations/:instanceId/:executionId?"
+              >
                 <Orchestration />
-              </Route>
-              <Route path="/create">
+              </ProtectedRoute>
+              <ProtectedRoute
+                requiredEndpoints={["OrchestrationsCreate"]}
+                path="/create"
+              >
                 <Create />
-              </Route>
-              <Redirect to="/orchestrations" />
+              </ProtectedRoute>
+              {entrypoint.endpoints.OrchestrationsList.authorized && (
+                <Redirect to="/orchestrations" />
+              )}
             </Switch>
           </Suspense>
         </Box>

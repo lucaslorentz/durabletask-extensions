@@ -2,10 +2,12 @@ namespace LLL.DurableTask.Api
 {
     public static class DurableTaskPolicy
     {
-        public static string Read = "DurableTaskRead";
-        public static string Create = "DurableTaskCreate";
-        public static string Terminate = "DurableTaskTerminate";
-        public static string RaiseEvent = "DurableTaskRaiseEvent";
-        public static string Purge = "DurableTaskPurge";
+        public const string Entrypoint = "DurableTaskEntrypoint";
+        public const string Read = "DurableTaskRead";
+        public const string ReadHistory = "DurableTaskReadHistory";
+        public const string Create = "DurableTaskCreate";
+        public const string Terminate = "DurableTaskTerminate";
+        public const string RaiseEvent = "DurableTaskRaiseEvent";
+        public const string Purge = "DurableTaskPurge";
     }
 }

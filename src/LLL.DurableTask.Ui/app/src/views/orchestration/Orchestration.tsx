@@ -27,6 +27,7 @@ import {
   useRouteMatch,
 } from "react-router-dom";
 import { apiAxios } from "../../apiAxios";
+import { useEntrypoint } from "../../EntrypointProvider";
 import { useQueryState } from "../../hooks/useQueryState";
 import { HistoryEvent, OrchestrationState } from "../../models/ApiModels";
 import { HistoryTable } from "./HistoryTable";
@@ -51,7 +52,9 @@ type TabValue = "state" | "history" | "raise_event" | "terminate" | "json";
 
 export function Orchestration() {
   const [state, setState] = useState<OrchestrationState | undefined>(undefined);
-  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
+  const [historyEvents, setHistoryEvents] = useState<
+    HistoryEvent[] | undefined
+  >(undefined);
   const [tab, setTab] = useQueryState<TabValue>("tab", "state");
   const [isLoading, setIsLoading] = useState(false);
   const [autoRefreshInterval, setAutoRefreshInterval] = useQueryState<
@@ -64,6 +67,7 @@ export function Orchestration() {
   >();
   const [refreshCount, triggerRefresh] = useReducer((x) => x + 1, 0);
   const [loadedCount, incrementLoadedCount] = useReducer((x) => x + 1, 0);
+  const entrypoint = useEntrypoint();
 
   const route = useRouteMatch<RouteParams>();
 
@@ -71,7 +75,7 @@ export function Orchestration() {
 
   useEffect(() => {
     setState(undefined);
-    setHistoryEvents([]);
+    setHistoryEvents(undefined);
   }, [instanceId, executionId]);
 
   useEffect(() => {
@@ -94,17 +98,19 @@ export function Orchestration() {
       }
 
       var stateResponse = await apiAxios.get<OrchestrationState>(url);
-
-      var historyResponse = await apiAxios.get<HistoryEvent[]>(
-        `/v1/orchestrations/${instanceId}/${stateResponse.data.orchestrationInstance.executionId}/history`
-      );
-
       setState(stateResponse.data);
-      setHistoryEvents(historyResponse.data);
+
+      if (entrypoint.endpoints.OrchestrationsGetExecutionHistory.authorized) {
+        var historyResponse = await apiAxios.get<HistoryEvent[]>(
+          `/v1/orchestrations/${instanceId}/${stateResponse.data.orchestrationInstance.executionId}/history`
+        );
+        setHistoryEvents(historyResponse.data);
+      }
+
       setIsLoading(false);
       incrementLoadedCount();
     })();
-  }, [instanceId, executionId, refreshCount]);
+  }, [instanceId, executionId, refreshCount, entrypoint]);
 
   const history = useHistory();
   const [showConfirmPurge, setShowConfirmPurge] = useState(false);
@@ -198,16 +204,18 @@ export function Orchestration() {
             ))}
           </Menu>
         </Grid>
-        <Grid item>
-          <Button
-            variant="outlined"
-            startIcon={<DeleteIcon />}
-            onClick={handlePurgeClick}
-            size="small"
-          >
-            Purge
-          </Button>
-        </Grid>
+        {entrypoint.endpoints.OrchestrationsPurgeInstance.authorized && (
+          <Grid item>
+            <Button
+              variant="outlined"
+              startIcon={<DeleteIcon />}
+              onClick={handlePurgeClick}
+              size="small"
+            >
+              Purge
+            </Button>
+          </Grid>
+        )}
       </Grid>
       <Box height={4} marginTop={0.5} marginBottom={0.5}>
         {isLoading && <LinearProgress />}
@@ -220,9 +228,13 @@ export function Orchestration() {
           textColor="primary"
         >
           <Tab value="state" label="State" />
-          <Tab value="history" label="History" />
-          <Tab value="raise_event" label="Raise Event" />
-          <Tab value="terminate" label="Terminate" />
+          {historyEvents && <Tab value="history" label="History" />}
+          {entrypoint.endpoints.OrchestrationsRaiseEvent.authorized && (
+            <Tab value="raise_event" label="Raise Event" />
+          )}
+          {entrypoint.endpoints.OrchestrationsTerminate.authorized && (
+            <Tab value="terminate" label="Terminate" />
+          )}
           <Tab value="json" label="Json" />
         </Tabs>
         {state && (
@@ -230,19 +242,21 @@ export function Orchestration() {
             {tab === "state" && (
               <State state={state} definedExecutionId={Boolean(executionId)} />
             )}
-            {tab === "history" && (
+            {historyEvents && tab === "history" && historyEvents && (
               <HistoryTable historyEvents={historyEvents} />
             )}
-            {tab === "raise_event" && (
-              <Box padding={2}>
-                <RaiseEvent instanceId={instanceId} />
-              </Box>
-            )}
-            {tab === "terminate" && (
-              <Box padding={2}>
-                <Terminate instanceId={instanceId} />
-              </Box>
-            )}
+            {entrypoint.endpoints.OrchestrationsRaiseEvent.authorized &&
+              tab === "raise_event" && (
+                <Box padding={2}>
+                  <RaiseEvent instanceId={instanceId} />
+                </Box>
+              )}
+            {entrypoint.endpoints.OrchestrationsTerminate.authorized &&
+              tab === "terminate" && (
+                <Box padding={2}>
+                  <Terminate instanceId={instanceId} />
+                </Box>
+              )}
             {tab === "json" && (
               <Box padding={2}>
                 <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>

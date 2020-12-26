@@ -15,7 +15,7 @@ export interface TerminateRequest {
   reason?: string;
 }
 
-export interface OrchestrationsResult {
+export interface OrchestrationsResponse {
   orchestrations: OrchestrationState[];
   count: number;
   continuationToken: string;
@@ -67,6 +67,17 @@ export interface ParentInstance {
   taskScheduleId: number;
 }
 
+export interface EntrypointResponse {
+  features: Feature[];
+  endpoints: Record<Endpoint, EndpointInfo>;
+}
+
+export interface EndpointInfo {
+  href: string;
+  method: string;
+  authorized: boolean;
+}
+
 export type OrchestrationStatus =
   | "Running"
   | "Completed"
@@ -82,3 +93,15 @@ export type Feature =
   | "SearchByCreatedTime"
   | "SearchByStatus"
   | "QueryCount";
+
+export type Endpoint =
+  | "Entrypoint"
+  | "FeaturesList"
+  | "OrchestrationsList"
+  | "OrchestrationsCreate"
+  | "OrchestrationsGet"
+  | "OrchestrationsGetExecution"
+  | "OrchestrationsGetExecutionHistory"
+  | "OrchestrationsTerminate"
+  | "OrchestrationsRaiseEvent"
+  | "OrchestrationsPurgeInstance";

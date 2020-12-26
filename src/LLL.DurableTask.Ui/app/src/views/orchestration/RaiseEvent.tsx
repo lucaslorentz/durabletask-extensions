@@ -1,7 +1,8 @@
 import { Button, Grid } from "@material-ui/core";
-import React from "react";
+import React, { useState } from "react";
 import * as yup from "yup";
 import { apiAxios } from "../../apiAxios";
+import { ErrorAlert } from "../../components/ErrorAlert";
 import { TextField } from "../../form/fields";
 import { useForm } from "../../form/form-hooks";
 import { Observe } from "../../form/observation-components";
@@ -40,18 +41,30 @@ export function RaiseEvent(props: Props) {
     eventName: "",
     eventData: "",
   }));
+  const [error, setError] = useState<any>();
 
   async function handleSaveClick() {
-    const request: RaiseEventRequest = {
-      eventName: form.value.eventName,
-      eventData: form.value.eventData ? JSON.parse(form.value.eventData) : null,
-    };
+    try {
+      setError(undefined);
 
-    await apiAxios.post(`/v1/orchestrations/${instanceId}/raiseevent`, request);
+      const request: RaiseEventRequest = {
+        eventName: form.value.eventName,
+        eventData: form.value.eventData
+          ? JSON.parse(form.value.eventData)
+          : null,
+      };
 
-    form.reset();
+      await apiAxios.post(
+        `/v1/orchestrations/${instanceId}/raiseevent`,
+        request
+      );
 
-    onRaiseEvent?.();
+      form.reset();
+
+      onRaiseEvent?.();
+    } catch (error) {
+      setError(error);
+    }
   }
 
   return (
@@ -68,6 +81,11 @@ export function RaiseEvent(props: Props) {
             <TextField field={field} multiline rows={6} />
           ))}
         </Grid>
+        {error && (
+          <Grid item xs={12}>
+            <ErrorAlert error={error} />
+          </Grid>
+        )}
         <Observe form={form}>
           {({ form }) => (
             <Grid item xs={12} container spacing={1} justify="space-between">

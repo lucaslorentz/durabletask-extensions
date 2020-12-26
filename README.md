@@ -48,13 +48,13 @@ Extends Durable Task Azure storage with:
 - Dependency Injection
 - Adapter implementing IExtendedOrchestrationServiceClient interface
 
-Supported features:
+#### Supported features
 
 - UI: yes
 - Distributed workers: no
 - Storing activity input: no
 
-Configuration:
+#### Configuration
 
 ```C#
 services.AddDurableTaskAzureStorage(options =>
@@ -70,13 +70,13 @@ Extends Durable Task Emulator storage with:
 
 - Dependency Injection
 
-Supported features:
+#### Supported features
 
 - UI: no
 - Distributed workers: no
 - Storing activity input: no
 
-Configuration:
+#### Configuration
 
 ```C#
 services.AddDurableTaskEmulatorStorage();
@@ -88,7 +88,7 @@ Implements relational relational database storage using EFCore.
 
 The implementation uses a combination of **row locking**, **skip locked** and **polling** to implement queues.
 
-Supported features:
+#### Supported features
 
 - UI: yes
 - Distributed workers: yes
@@ -98,7 +98,7 @@ Supported features:
 
 Extension to EFCore storage with migrations and queries specific to MySql.
 
-Configuration:
+##### Configuration
 
 ```C#
 services.AddDurableTaskEFCoreStorage()
@@ -109,7 +109,7 @@ services.AddDurableTaskEFCoreStorage()
 
 Extension to EFCore storage with migrations and queries specific to PostgreSQL.
 
-Configuration:
+##### Configuration
 
 ```C#
 services.AddDurableTaskEFCoreStorage()
@@ -120,7 +120,7 @@ services.AddDurableTaskEFCoreStorage()
 
 Extension to EFCore storage with migrations and queries specific to Sql Server.
 
-Configuration:
+##### Configuration
 
 ```C#
 services.AddDurableTaskEFCoreStorage()
@@ -133,17 +133,17 @@ Dependency injection extensions to configure TaskHubClient.
 
 Allows management of orchestrations via code.
 
-Depends on:
+#### Depends on
 
 - Storage
 
-Configuration:
+#### Configuration
 
 ```C#
 services.AddDurableTaskClient();
 ```
 
-Usage:
+#### Usage
 
 ```C#
 public IActionResult BookPackage([FromService] TaskHubClient taskHubClient) {
@@ -166,11 +166,11 @@ A service scope is created for each orchestration and activity execution.
 
 Orchestrations/activities/middlewares supports dependency injection.
 
-Depends on:
+#### Depends on
 
 - Storage
 
-Configuration:
+#### Configuration
 
 ```C#
 services.AddDurableTaskWorker(builder =>
@@ -197,10 +197,10 @@ services.AddDurableTaskWorker(builder =>
     // Adds all orchestrations and activities from assembly
     builder.AddFromAssembly(typeof(Startup).Assembly);
 
-    // Add only orchestrationsfrom assembly
+    // Add only orchestrations from assembly
     builder.AddOrchestrationsFromAssembly(typeof(Startup).Assembly);
 
-    // Add only orchestrationsfrom assembly
+    // Add only activities from assembly
     builder.AddActivitiesFromAssembly(typeof(Startup).Assembly);
 });
 ```
@@ -222,7 +222,7 @@ Expose any storage implementation as API.
 
 Allow microservices to connect to an API instead of directly to storage.
 
-Depends on:
+#### Depends on
 
 - Storage
 
@@ -234,7 +234,7 @@ The chatty orchestration execution communication is done with bidirectional stre
 
 Activity execution and all remaining communication is done with non streamed rpc.
 
-Configuration:
+##### Configuration
 
 ```C#
 services.AddDurableTaskServer(builder =>
@@ -254,7 +254,7 @@ Durable Task storage implementation using server GRPC endpoints.
 
 Supports same features as the storage configured in the server.
 
-Configuration:
+##### Configuration
 
 ```C#
 services.AddDurableTaskServerGrpcStorage(options =>
@@ -267,12 +267,12 @@ services.AddDurableTaskServerGrpcStorage(options =>
 
 Exposes orchestration management operations in a REST API.
 
-Depends on:
+#### Depends on
 
 - Storage
 - Client
 
-Configuration:
+#### Configuration
 
 ```C#
 // Add Durable Task Api services
@@ -297,14 +297,14 @@ app.UseEndpoints(endpoints =>
 });
 ```
 
-#### Authorization
-
-The API is integrated by default with [ASP.NET Core Authorization Policies](https://docs.microsoft.com/en-us/aspnet/core/security/authorization/policies?view=aspnetcore-3.1). You must configure all Durable task policies and their requirements, like the example below using role based requirements:
+The API is integrated by default with [ASP.NET Core Authorization Policies](https://docs.microsoft.com/en-us/aspnet/core/security/authorization/policies?view=aspnetcore-3.1). You must configure all Durable task policies and their requirements, like the example below:
 
 ```C#
 services.AddAuthorization(c =>
 {
+    c.AddPolicy(DurableTaskPolicy.Entrypoint, p => p.RequireAssertion(x => true));
     c.AddPolicy(DurableTaskPolicy.Read, p => p.RequireRole("Reader"));
+    c.AddPolicy(DurableTaskPolicy.ReadHistory, p => p.RequireRole("Reader"));
     c.AddPolicy(DurableTaskPolicy.Create, p => p.RequireRole("Administrator"));
     c.AddPolicy(DurableTaskPolicy.Terminate, p => p.RequireRole("Administrator"));
     c.AddPolicy(DurableTaskPolicy.RaiseEvent, p => p.RequireRole("Administrator"));
@@ -312,13 +312,12 @@ services.AddAuthorization(c =>
 });
 ```
 
-Another alternative, not recommended for production environments, is to disable authorization integration after you map the endpoints:
+Alternatively, you can disable authorization integration on non production environments:
 
 ```C#
-app.UseEndpoints(endpoints =>
+services.AddDurableTaskApi(options =>
 {
-    endpoints.MapDurableTaskApi()
-        .DisableAuthorization();
+    options.DisableAuthorization = true;
 });
 ```
 
@@ -331,21 +330,56 @@ To configure CORS, please follow [Enable Cross-Origin Requests (CORS) in ASP.NET
 
 Durable Task API requires http methods: **GET, POST, DELETE.**
 
-*Note that the documentation mentions isses when configuring Cors with endpoint routing. Until that issue is fixed you might need to configure cors policy globally instead of only for Durable Task Api.*
-
 ### LLL.DurableTask.Ui [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Ui)](https://www.nuget.org/packages/LLL.DurableTask.Ui/)
 
 Beautifull UI to manage orchestrations built with React + Material UI.
 
 Take a look in the [screenshots](readme/screenshots.md). History visualization is my favorite :-)
 
-Configuration:
+#### Configuration
 
 ```C#
-services.AddDurableTaskUi();
+services.AddDurableTaskUi(options =>
+{
+    // Configure Durable Task UI
+});
 ...
+// Serve Durable Task Ui files under root path
 app.UseDurableTaskUi();
 ```
+
+Alternatively, you can define a path to serve the Ui from:
+```C#
+// Serve Durable Task Ui files under path /tasks
+app.UseDurableTaskUi("/tasks");
+```
+
+You can configure Durable Task Ui with the following options:
+
+| Option | Default value | Description |
+| --- | ---  | ---  |
+| ApiBaseUrl | "/api" | The base url of Durable Task Api |
+| UserNameClaims | "preferred_username", "name", "sub" | Prioritized claims used to refer to the logged in user |
+| Oidc | null | Object with OIDC integration configuration. OIDC is disabled when null |
+
+#### OIDC/OAuth2 integration
+
+You can enable OIDC integration by configuring OIDC options:
+
+| Option | Default value | Description |
+| --- | ---  | ---  |
+| Authority | null | The URL of the OIDC/OAuth2 provider |
+| ClientId | null | Your client application's identifier as registered with the OIDC/OAuth2 provider |
+| ResponseType | "id_token" | The type of response desired from the OIDC/OAuth2 provider |
+| Scope | "openid" | The scope being requested from the OIDC/OAuth2 provider |
+| Prompt | null | Information sent to IDP during OIDC authorization |
+| Display | null | Information sent to IDP during OIDC authorization |
+| LoadUserInfo | null | Flag to control if additional identity data is loaded from the user info endpoint in order to populate the user's profile. |
+
+The **redirect_url** and **post_logout_redirect_uri** values are computed automatically from the url used to access Durable Task Ui.  
+Examples:
+- **redirect_url:** https://your-domain/path/
+- **post_logout_redirect_uri:** https://your-domain/path/
 
 ## Compose components to build your own architecture
 

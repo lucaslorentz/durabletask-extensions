@@ -10,7 +10,17 @@ import {
 
 type UrlParts = { pathname: string; search: string; hash: string };
 
-export function createBrowserHashHistory(): History<LocationState> {
+interface BrowserHashHistoryOptions {
+  clearSearch?: boolean;
+}
+
+const defaultOptions: BrowserHashHistoryOptions = {};
+
+export function createBrowserHashHistory(
+  options: BrowserHashHistoryOptions = defaultOptions
+): History<LocationState> {
+  const { clearSearch = false } = options;
+
   const browserHistory = createBrowserHistory();
 
   return {
@@ -81,7 +91,7 @@ export function createBrowserHashHistory(): History<LocationState> {
     return {
       ...location,
       pathname: browserHistory.location.pathname,
-      search: browserHistory.location.search,
+      search: clearSearch ? "" : browserHistory.location.search,
       hash: combinePath(location),
     };
   }

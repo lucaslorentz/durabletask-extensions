@@ -9,7 +9,7 @@ import {
   Typography,
 } from "@material-ui/core";
 import DeleteIcon from "@material-ui/icons/Delete";
-import React from "react";
+import React, { useState } from "react";
 import { Link as RouterLink, useHistory } from "react-router-dom";
 import * as yup from "yup";
 import { useForm } from "../../form/form-hooks";
@@ -20,6 +20,7 @@ import {
   OrchestrationInstance,
 } from "../../models/ApiModels";
 import { apiAxios } from "../../apiAxios";
+import { ErrorAlert } from "../../components/ErrorAlert";
 
 const schema = yup
   .object({
@@ -48,29 +49,36 @@ export function Create() {
     input: "",
     tags: [],
   }));
+  const [error, setError] = useState<any>();
 
   const history = useHistory();
 
   console.log("Render");
 
   async function handleSaveClick() {
-    const request: CreateOrchestrationRequest = {
-      name: form.value.name,
-      version: form.value.version,
-      instanceId: form.value.instanceId,
-      input: form.value.input ? JSON.parse(form.value.input) : null,
-      tags: form.value.tags.reduce((previous, current) => {
-        previous[current.key] = current.value;
-        return previous;
-      }, {} as Record<string, string>),
-    };
+    try {
+      setError(undefined);
 
-    var response = await apiAxios.post<OrchestrationInstance>(
-      `/v1/orchestrations`,
-      request
-    );
+      const request: CreateOrchestrationRequest = {
+        name: form.value.name,
+        version: form.value.version,
+        instanceId: form.value.instanceId,
+        input: form.value.input ? JSON.parse(form.value.input) : null,
+        tags: form.value.tags.reduce((previous, current) => {
+          previous[current.key] = current.value;
+          return previous;
+        }, {} as Record<string, string>),
+      };
 
-    history.push(`/orchestrations/${response.data.instanceId}`);
+      var response = await apiAxios.post<OrchestrationInstance>(
+        `/v1/orchestrations`,
+        request
+      );
+
+      history.push(`/orchestrations/${response.data.instanceId}`);
+    } catch (error) {
+      setError(error);
+    }
   }
 
   return (
@@ -136,6 +144,11 @@ export function Create() {
                   </Box>
                 </Grid>
               ))
+            )}
+            {error && (
+              <Grid item xs={12}>
+                <ErrorAlert error={error} />
+              </Grid>
             )}
             <Observe form={form}>
               {({ form }) => (

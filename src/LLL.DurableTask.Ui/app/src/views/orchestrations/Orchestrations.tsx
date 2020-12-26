@@ -34,12 +34,12 @@ import RefreshIcon from "@material-ui/icons/Refresh";
 import { default as React, useCallback, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { apiAxios } from "../../apiAxios";
+import { useEntrypoint } from "../../EntrypointProvider";
 import { useDebouncedEffect } from "../../hooks/useDebouncedEffect";
-import { useFeatures } from "../../hooks/useFeatures";
 import { useLocationState } from "../../hooks/useLocationState";
 import { useQueryState } from "../../hooks/useQueryState";
 import {
-  OrchestrationsResult,
+  OrchestrationsResponse,
   OrchestrationStatus,
 } from "../../models/ApiModels";
 
@@ -57,7 +57,7 @@ const useStyles = makeStyles((theme) => ({
 export function Orchestrations() {
   const classes = useStyles();
 
-  const features = useFeatures();
+  const entrypoint = useEntrypoint();
 
   const [instanceId, setInstanceId] = useQueryState<string>("instanceId", "");
   const [name, setName] = useQueryState<string>("name", "");
@@ -85,7 +85,7 @@ export function Orchestrations() {
     parse: parseFloat,
   });
 
-  const [result, setResult] = useState<OrchestrationsResult | undefined>(
+  const [result, setResult] = useState<OrchestrationsResponse | undefined>(
     undefined
   );
 
@@ -114,7 +114,7 @@ export function Orchestrations() {
     }
     var query = params.entries().next().done ? "" : `?${params.toString()}`;
     setIsLoading(true);
-    var response = await apiAxios.get<OrchestrationsResult>(
+    var response = await apiAxios.get<OrchestrationsResponse>(
       `/v1/orchestrations${query}`
     );
     setResult(response.data);
@@ -176,7 +176,7 @@ export function Orchestrations() {
           </AccordionSummary>
           <AccordionDetails>
             <Grid container spacing={2}>
-              {features.value?.SearchByInstanceId && (
+              {entrypoint.features.includes("SearchByInstanceId") && (
                 <Grid item xs={3}>
                   <TextField
                     fullWidth
@@ -188,7 +188,7 @@ export function Orchestrations() {
                   />
                 </Grid>
               )}
-              {features.value?.SearchByName && (
+              {entrypoint.features.includes("SearchByName") && (
                 <Grid item xs={3}>
                   <TextField
                     fullWidth
@@ -200,7 +200,7 @@ export function Orchestrations() {
                   />
                 </Grid>
               )}
-              {features.value?.SearchByCreatedTime && (
+              {entrypoint.features.includes("SearchByCreatedTime") && (
                 <>
                   <Grid item xs={3}>
                     <TextField
@@ -236,7 +236,7 @@ export function Orchestrations() {
                   </Grid>
                 </>
               )}
-              {features.value?.SearchByStatus && (
+              {entrypoint.features.includes("SearchByStatus") && (
                 <Grid item xs={3}>
                   <FormControl fullWidth variant="outlined" size="small">
                     <InputLabel>Status</InputLabel>
@@ -348,7 +348,8 @@ export function Orchestrations() {
                     {continuationTokenStack.length * pageSize + 1}-
                     {continuationTokenStack.length * pageSize +
                       (result?.orchestrations.length ?? 0)}{" "}
-                    {features.value?.QueryCount && `of ${result?.count}`}
+                    {entrypoint.features.includes("QueryCount") &&
+                      `of ${result?.count}`}
                   </Box>
                   <IconButton
                     disabled={continuationTokenStack.length === 0}

@@ -4,6 +4,7 @@ using DurableTask.Core;
 using DurableTask.Core.History;
 using LLL.DurableTask.Api.Converters;
 using LLL.DurableTask.Api.Extensions;
+using LLL.DurableTask.Api.Metadata;
 using LLL.DurableTask.Api.Models;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.Server.Api.Models;
@@ -14,7 +15,7 @@ using Newtonsoft.Json;
 
 namespace LLL.DurableTask.Api.Endpoints
 {
-    public static class OrchestrationEndpoints
+    public static class OrchestrationsEndpoints
     {
         public static IReadOnlyList<IEndpointConventionBuilder> MapOrchestrationEndpoints(
             this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder builder,
@@ -31,7 +32,10 @@ namespace LLL.DurableTask.Api.Endpoints
                 var result = await extendedOrchestrationServiceClient.GetOrchestrationsAsync(query);
 
                 await context.RespondJson(result);
-            }).WithDisplayName("Get Orchestrations").RequireAuthorization(DurableTaskPolicy.Read));
+            }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata
+            {
+                Id = "OrchestrationsList"
+            }));
 
             endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations", async context =>
             {
@@ -50,7 +54,10 @@ namespace LLL.DurableTask.Api.Endpoints
                 typedHeaders.Location = new Uri($"/v1/orchestrations/{instance.InstanceId}", System.UriKind.Relative);
 
                 await context.RespondJson(instance, 201);
-            }).WithDisplayName("Create Orchestration").RequireAuthorization(DurableTaskPolicy.Create));
+            }).RequireAuthorization(DurableTaskPolicy.Create).WithMetadata(new DurableTaskEndpointMetadata
+            {
+                Id = "OrchestrationsCreate"
+            }));
 
             endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}", async context =>
             {
@@ -60,7 +67,10 @@ namespace LLL.DurableTask.Api.Endpoints
                 var state = await taskHubClient.GetOrchestrationStateAsync(instanceId);
 
                 await context.RespondJson(state);
-            }).WithDisplayName("Get orchestration last state").RequireAuthorization(DurableTaskPolicy.Read));
+            }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata
+            {
+                Id = "OrchestrationsGet"
+            }));
 
             endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}/{executionId}", async context =>
             {
@@ -72,7 +82,10 @@ namespace LLL.DurableTask.Api.Endpoints
                 var state = await taskHubClient.GetOrchestrationStateAsync(instanceId, executionId);
 
                 await context.RespondJson(state);
-            }).WithDisplayName("Get execution state").RequireAuthorization(DurableTaskPolicy.Read));
+            }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata
+            {
+                Id = "OrchestrationsGetExecution"
+            }));
 
             endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}/{executionId}/history", async context =>
             {
@@ -95,7 +108,10 @@ namespace LLL.DurableTask.Api.Endpoints
                 });
 
                 await context.RespondJson(events);
-            }).WithDisplayName("Get execution history").RequireAuthorization(DurableTaskPolicy.Read));
+            }).RequireAuthorization(DurableTaskPolicy.ReadHistory).WithMetadata(new DurableTaskEndpointMetadata
+            {
+                Id = "OrchestrationsGetExecutionHistory"
+            }));
 
             endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/terminate", async context =>
             {
@@ -113,7 +129,10 @@ namespace LLL.DurableTask.Api.Endpoints
                 await taskHubClient.TerminateInstanceAsync(orchestrationInstance, request.Reason);
 
                 await context.RespondJson(new { });
-            }).WithDisplayName("Terminate orchestration").RequireAuthorization(DurableTaskPolicy.Terminate));
+            }).RequireAuthorization(DurableTaskPolicy.Terminate).WithMetadata(new DurableTaskEndpointMetadata
+            {
+                Id = "OrchestrationsTerminate"
+            }));
 
             endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/raiseevent", async context =>
             {
@@ -131,7 +150,10 @@ namespace LLL.DurableTask.Api.Endpoints
                 await taskHubClient.RaiseEventAsync(orchestrationInstance, request.EventName, request.EventData);
 
                 await context.RespondJson(new { });
-            }).WithDisplayName("Raise orchestration event").RequireAuthorization(DurableTaskPolicy.RaiseEvent));
+            }).RequireAuthorization(DurableTaskPolicy.RaiseEvent).WithMetadata(new DurableTaskEndpointMetadata
+            {
+                Id = "OrchestrationsRaiseEvent"
+            }));
 
             endpoints.Add(builder.MapDelete(prefix + "/v1/orchestrations/{instanceId}", async context =>
             {
@@ -142,7 +164,10 @@ namespace LLL.DurableTask.Api.Endpoints
                 var result = await extendedOrchestrationServiceClient.PurgeInstanceHistoryAsync(instanceId);
 
                 await context.RespondJson(new { });
-            }).WithDisplayName("Purge orchestration").RequireAuthorization(DurableTaskPolicy.Purge));
+            }).RequireAuthorization(DurableTaskPolicy.Purge).WithMetadata(new DurableTaskEndpointMetadata
+            {
+                Id = "OrchestrationsPurgeInstance"
+            }));
 
             return endpoints;
         }

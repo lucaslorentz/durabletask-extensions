@@ -1,7 +1,8 @@
 import { Button, Grid } from "@material-ui/core";
-import React from "react";
+import React, { useState } from "react";
 import * as yup from "yup";
 import { apiAxios } from "../../apiAxios";
+import { ErrorAlert } from "../../components/ErrorAlert";
 import { TextField } from "../../form/fields";
 import { useForm } from "../../form/form-hooks";
 import { Observe } from "../../form/observation-components";
@@ -24,17 +25,27 @@ export function Terminate(props: Props) {
   const form = useForm(schema, () => ({
     reason: "",
   }));
+  const [error, setError] = useState<any>();
 
   async function handleSaveClick() {
-    const request: TerminateRequest = {
-      reason: form.value.reason,
-    };
+    try {
+      setError(undefined);
 
-    await apiAxios.post(`/v1/orchestrations/${instanceId}/terminate`, request);
+      const request: TerminateRequest = {
+        reason: form.value.reason,
+      };
 
-    form.value = { reason: "" };
+      await apiAxios.post(
+        `/v1/orchestrations/${instanceId}/terminate`,
+        request
+      );
 
-    onTerminate?.();
+      form.reset();
+
+      onTerminate?.();
+    } catch (error) {
+      setError(error);
+    }
   }
 
   return (
@@ -45,6 +56,11 @@ export function Terminate(props: Props) {
             <TextField field={field} multiline rows={6} />
           ))}
         </Grid>
+        {error && (
+          <Grid item xs={12}>
+            <ErrorAlert error={error} />
+          </Grid>
+        )}
         <Observe form={form}>
           {({ form }) => (
             <Grid item xs={12} container spacing={1} justify="space-between">
