@@ -1,6 +1,6 @@
 # Durable Task Extensions
 
-**NOTE:** THIS IS A PROTOTYPE, NOT PRODUCTION READY.
+**NOTE:** WORK IN PROGRESS, NOT PRODUCTION READY.
 
 ## Introduction
 
