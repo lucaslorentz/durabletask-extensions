@@ -288,11 +288,4 @@ function getColor(usedColors: string[]): string {
   return "#000000";
 }
 
-export const colors = [
-  "#000000",
-  "#E53935",
-  "#1E88E5",
-  "#4CAF50",
-  "#FFEB3B",
-  "#FF5722",
-];
+export const colors = ["#000000", "#E53935", "#1E88E5", "#4CAF50", "#FF9800"];
