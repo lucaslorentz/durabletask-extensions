@@ -5,11 +5,10 @@ namespace Microsoft.AspNetCore.Builder
 {
     public static class EndpointRouteBuilderExtensions
     {
-        public static IEndpointRouteBuilder MapDurableTaskServerGrpcService(this IEndpointRouteBuilder endpoints)
+        public static GrpcServiceEndpointConventionBuilder MapDurableTaskServerGrpcService(
+            this IEndpointRouteBuilder endpoints)
         {
-            endpoints.MapGrpcService<GrpcServerOrchestrationService>();
-            
-            return endpoints;
+            return endpoints.MapGrpcService<GrpcServerOrchestrationService>();
         }
     }
 }

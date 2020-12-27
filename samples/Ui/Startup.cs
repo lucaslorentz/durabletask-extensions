@@ -38,7 +38,9 @@ namespace Api
 
             services.AddDurableTaskClient();
 
-            services.AddDurableTaskApi();
+            services.AddDurableTaskApi(options => {
+                options.DisableAuthorization = true;
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -52,8 +54,7 @@ namespace Api
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapDurableTaskApi()
-                    .DisableAuthorization();
+                endpoints.MapDurableTaskApi();
             });
 
             app.UseDurableTaskUi();
