@@ -24,5 +24,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
         [JsonPropertyName("loadUserInfo")]
         public bool? LoadUserInfo { get; set; }
+
+        [JsonPropertyName("automaticSilentRenew")]
+        public bool AutomaticSilentRenew { get; set; }
     }
 }

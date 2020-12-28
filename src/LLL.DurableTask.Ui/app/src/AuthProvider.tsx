@@ -52,6 +52,11 @@ export function AuthProvider(props: Props) {
         window.location.origin + window.location.pathname;
     }
 
+    if (!settings.silent_redirect_uri) {
+      settings.silent_redirect_uri =
+        window.location.origin + window.location.pathname;
+    }
+
     return new UserManager(settings);
   }, [configuration]);
 
@@ -70,7 +75,11 @@ export function AuthProvider(props: Props) {
         history.replace(user.state);
         setUser(user);
       } else {
-        const user = await userManager.getUser();
+        let user = await userManager.getUser();
+        if (user?.expired) {
+          await userManager.removeUser();
+          user = null;
+        }
         setUser(user ?? undefined);
       }
 
@@ -80,21 +89,25 @@ export function AuthProvider(props: Props) {
 
       userManager.events.addUserLoaded(setUser);
       userManager.events.addUserUnloaded(unsetUser);
+      userManager.events.addAccessTokenExpired(unsetUser);
 
       return () => {
         userManager.events.removeUserLoaded(setUser);
         userManager.events.removeUserUnloaded(unsetUser);
+        userManager.events.removeAccessTokenExpired(unsetUser);
       };
     })();
   }, [userManager, history]);
 
   // Configure axios authorization header
   useLayoutEffect(() => {
-    if (user) {
-      apiAxios.defaults.headers.common.Authorization = `Bearer ${user.access_token}`;
-    } else {
+    if (!user) return;
+
+    apiAxios.defaults.headers.common.Authorization = `Bearer ${user.access_token}`;
+
+    return () => {
       delete apiAxios.defaults.headers.common.Authorization;
-    }
+    };
   }, [user]);
 
   // Context value

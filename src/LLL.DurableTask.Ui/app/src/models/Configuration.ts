@@ -1,7 +1,7 @@
-import { OidcClientSettings } from "oidc-client";
+import { UserManagerSettings } from "oidc-client";
 
 export interface Configuration {
   apiBaseUrl: string;
-  oidc?: OidcClientSettings;
+  oidc?: UserManagerSettings;
   userNameClaims?: string[];
 }
