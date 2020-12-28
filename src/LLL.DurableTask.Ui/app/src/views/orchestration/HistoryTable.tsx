@@ -96,8 +96,20 @@ export function HistoryTable(props: Props) {
                   )}
                 </TableCell>
                 <TableCell>
-                  {row.event.eventType}
-                  {row.id && `: ${row.id}`}
+                  {row.event.instanceId ? (
+                    <Link
+                      component={RouterLink}
+                      to={`/orchestrations/${row.event.instanceId}`}
+                    >
+                      {row.event.eventType}
+                      {row.id && `: ${row.id}`}
+                    </Link>
+                  ) : (
+                    <>
+                      {row.event.eventType}
+                      {row.id && `: ${row.id}`}
+                    </>
+                  )}
                 </TableCell>
                 <TableCell>{row.event.timestamp}</TableCell>
                 <TableCell>
@@ -115,19 +127,10 @@ export function HistoryTable(props: Props) {
                   style={{ wordBreak: "break-all", width: "30%" }}
                 >
                   <Box padding={1} style={{ maxHeight: 100, overflow: "auto" }}>
-                    {row.event.instanceId ? (
-                      <Link
-                        component={RouterLink}
-                        to={`/orchestrations/${row.event.instanceId}`}
-                      >
-                        {row.event.instanceId}
-                      </Link>
-                    ) : (
-                      row.event.input ??
+                    {row.event.input ??
                       row.event.result ??
                       row.event.reason ??
-                      row.event.reason
-                    )}
+                      row.event.reason}
                   </Box>
                 </TableCell>
               </TableRow>
