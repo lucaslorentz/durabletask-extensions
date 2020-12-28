@@ -102,6 +102,8 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ExecutionId");
+
                     b.HasIndex("InstanceId", "ExecutionId", "SequenceNumber")
                         .IsUnique();
 
@@ -110,10 +112,6 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
-                    b.Property<string>("InstanceId")
-                        .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
-
                     b.Property<string>("ExecutionId")
                         .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
@@ -132,6 +130,11 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.Property<string>("Input")
                         .HasColumnType("text");
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasColumnType("character varying(100)")
+                        .HasMaxLength(100);
 
                     b.Property<DateTime>("LastUpdatedTime")
                         .HasColumnType("timestamp without time zone");
@@ -160,7 +163,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
 
-                    b.HasKey("InstanceId", "ExecutionId");
+                    b.HasKey("ExecutionId");
 
                     b.ToTable("Executions");
                 });
@@ -191,7 +194,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.HasIndex("AvailableAt");
 
-                    b.HasIndex("InstanceId", "LastExecutionId");
+                    b.HasIndex("LastExecutionId");
 
                     b.HasIndex("Queue", "AvailableAt");
 
@@ -245,7 +248,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 {
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Execution", "Execution")
                         .WithMany()
-                        .HasForeignKey("InstanceId", "ExecutionId")
+                        .HasForeignKey("ExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -254,9 +257,6 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 {
                     b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
-                            b1.Property<string>("InstanceId")
-                                .HasColumnType("character varying(100)");
-
                             b1.Property<string>("ExecutionId")
                                 .HasColumnType("character varying(100)");
 
@@ -275,12 +275,12 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                                 .HasColumnType("character varying(2000)")
                                 .HasMaxLength(2000);
 
-                            b1.HasKey("InstanceId", "ExecutionId", "Id");
+                            b1.HasKey("ExecutionId", "Id");
 
                             b1.ToTable("ExecutionTags");
 
                             b1.WithOwner()
-                                .HasForeignKey("InstanceId", "ExecutionId");
+                                .HasForeignKey("ExecutionId");
                         });
                 });
 
@@ -288,7 +288,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 {
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Execution", "LastExecution")
                         .WithMany()
-                        .HasForeignKey("InstanceId", "LastExecutionId")
+                        .HasForeignKey("LastExecutionId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 

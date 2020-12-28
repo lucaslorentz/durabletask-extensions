@@ -262,8 +262,7 @@ namespace LLL.DurableTask.EFCore
         private bool IsFinalStatus(OrchestrationStatus status)
         {
             return status != OrchestrationStatus.Running &&
-                status != OrchestrationStatus.Pending &&
-                status != OrchestrationStatus.ContinuedAsNew;
+                status != OrchestrationStatus.Pending;
         }
     }
 }

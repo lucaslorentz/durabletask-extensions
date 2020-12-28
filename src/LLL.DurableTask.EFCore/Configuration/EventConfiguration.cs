@@ -16,7 +16,7 @@ namespace LLL.DurableTask.EFCore.Configuration
             builder.HasOne(x => x.Execution)
                 .WithMany()
                 .IsRequired()
-                .HasForeignKey(x => new { x.InstanceId, x.ExecutionId })
+                .HasForeignKey(x => x.ExecutionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.Property(x => x.SequenceNumber).IsRequired();

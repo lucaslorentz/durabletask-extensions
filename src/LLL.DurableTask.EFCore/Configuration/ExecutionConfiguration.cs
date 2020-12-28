@@ -11,9 +11,10 @@ namespace LLL.DurableTask.EFCore.Configuration
     {
         public void Configure(EntityTypeBuilder<Execution> builder)
         {
-            builder.HasKey(x => new { x.InstanceId, x.ExecutionId });
-            builder.Property(x => x.InstanceId).HasMaxLength(100).IsRequired();
+            builder.HasKey(x => x.ExecutionId);
             builder.Property(x => x.ExecutionId).HasMaxLength(100).IsRequired();
+
+            builder.Property(x => x.InstanceId).HasMaxLength(100).IsRequired();
 
             builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
             builder.Property(x => x.Version).HasMaxLength(100).IsRequired();
@@ -32,7 +33,7 @@ namespace LLL.DurableTask.EFCore.Configuration
             builder.OwnsMany(x => x.Tags, o =>
             {
                 o.ToTable("ExecutionTags");
-                o.WithOwner().HasForeignKey("InstanceId", "ExecutionId");
+                o.WithOwner().HasForeignKey("ExecutionId");
                 o.Property(x => x.Name).IsRequired().HasMaxLength(100);
                 o.Property(x => x.Value).IsRequired().HasMaxLength(2000);
             });

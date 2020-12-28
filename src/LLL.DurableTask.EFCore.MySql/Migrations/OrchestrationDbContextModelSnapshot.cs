@@ -100,6 +100,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ExecutionId");
+
                     b.HasIndex("InstanceId", "ExecutionId", "SequenceNumber")
                         .IsUnique();
 
@@ -108,10 +110,6 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
-                    b.Property<string>("InstanceId")
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
-
                     b.Property<string>("ExecutionId")
                         .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
                         .HasMaxLength(100);
@@ -130,6 +128,11 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.Property<string>("Input")
                         .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
+                        .HasMaxLength(100);
 
                     b.Property<DateTime>("LastUpdatedTime")
                         .HasColumnType("datetime(6)");
@@ -158,7 +161,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
                         .HasMaxLength(100);
 
-                    b.HasKey("InstanceId", "ExecutionId");
+                    b.HasKey("ExecutionId");
 
                     b.ToTable("Executions");
                 });
@@ -189,7 +192,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.HasIndex("AvailableAt");
 
-                    b.HasIndex("InstanceId", "LastExecutionId");
+                    b.HasIndex("LastExecutionId");
 
                     b.HasIndex("Queue", "AvailableAt");
 
@@ -243,7 +246,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 {
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Execution", "Execution")
                         .WithMany()
-                        .HasForeignKey("InstanceId", "ExecutionId")
+                        .HasForeignKey("ExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -252,9 +255,6 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 {
                     b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
-                            b1.Property<string>("InstanceId")
-                                .HasColumnType("varchar(100) CHARACTER SET utf8mb4");
-
                             b1.Property<string>("ExecutionId")
                                 .HasColumnType("varchar(100) CHARACTER SET utf8mb4");
 
@@ -272,12 +272,12 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                                 .HasColumnType("varchar(2000) CHARACTER SET utf8mb4")
                                 .HasMaxLength(2000);
 
-                            b1.HasKey("InstanceId", "ExecutionId", "Id");
+                            b1.HasKey("ExecutionId", "Id");
 
                             b1.ToTable("ExecutionTags");
 
                             b1.WithOwner()
-                                .HasForeignKey("InstanceId", "ExecutionId");
+                                .HasForeignKey("ExecutionId");
                         });
                 });
 
@@ -285,7 +285,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 {
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Execution", "LastExecution")
                         .WithMany()
-                        .HasForeignKey("InstanceId", "LastExecutionId")
+                        .HasForeignKey("LastExecutionId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 

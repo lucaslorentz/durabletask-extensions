@@ -1,8 +1,7 @@
 ﻿using System;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace LLL.DurableTask.EFCore.MySql.Migrations
+namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 {
     public partial class Initial : Migration
     {
@@ -12,8 +11,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 name: "Executions",
                 columns: table => new
                 {
-                    InstanceId = table.Column<string>(maxLength: 100, nullable: false),
                     ExecutionId = table.Column<string>(maxLength: 100, nullable: false),
+                    InstanceId = table.Column<string>(maxLength: 100, nullable: false),
                     Name = table.Column<string>(maxLength: 200, nullable: false),
                     Version = table.Column<string>(maxLength: 100, nullable: false),
                     CreatedTime = table.Column<DateTime>(nullable: false),
@@ -29,7 +28,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Executions", x => new { x.InstanceId, x.ExecutionId });
+                    table.PrimaryKey("PK_Executions", x => x.ExecutionId);
                 });
 
             migrationBuilder.CreateTable(
@@ -46,10 +45,10 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 {
                     table.PrimaryKey("PK_Events", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Events_Executions_InstanceId_ExecutionId",
-                        columns: x => new { x.InstanceId, x.ExecutionId },
+                        name: "FK_Events_Executions_ExecutionId",
+                        column: x => x.ExecutionId,
                         principalTable: "Executions",
-                        principalColumns: new[] { "InstanceId", "ExecutionId" },
+                        principalColumn: "ExecutionId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -57,21 +56,20 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 name: "ExecutionTags",
                 columns: table => new
                 {
-                    InstanceId = table.Column<string>(nullable: false),
                     ExecutionId = table.Column<string>(nullable: false),
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(maxLength: 100, nullable: false),
                     Value = table.Column<string>(maxLength: 2000, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ExecutionTags", x => new { x.InstanceId, x.ExecutionId, x.Id });
+                    table.PrimaryKey("PK_ExecutionTags", x => new { x.ExecutionId, x.Id });
                     table.ForeignKey(
-                        name: "FK_ExecutionTags_Executions_InstanceId_ExecutionId",
-                        columns: x => new { x.InstanceId, x.ExecutionId },
+                        name: "FK_ExecutionTags_Executions_ExecutionId",
+                        column: x => x.ExecutionId,
                         principalTable: "Executions",
-                        principalColumns: new[] { "InstanceId", "ExecutionId" },
+                        principalColumn: "ExecutionId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -89,10 +87,10 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 {
                     table.PrimaryKey("PK_Instances", x => x.InstanceId);
                     table.ForeignKey(
-                        name: "FK_Instances_Executions_InstanceId_LastExecutionId",
-                        columns: x => new { x.InstanceId, x.LastExecutionId },
+                        name: "FK_Instances_Executions_LastExecutionId",
+                        column: x => x.LastExecutionId,
                         principalTable: "Executions",
-                        principalColumns: new[] { "InstanceId", "ExecutionId" },
+                        principalColumn: "ExecutionId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -160,6 +158,11 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 columns: new[] { "Queue", "AvailableAt" });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Events_ExecutionId",
+                table: "Events",
+                column: "ExecutionId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Events_InstanceId_ExecutionId_SequenceNumber",
                 table: "Events",
                 columns: new[] { "InstanceId", "ExecutionId", "SequenceNumber" },
@@ -171,9 +174,9 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 column: "AvailableAt");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Instances_InstanceId_LastExecutionId",
+                name: "IX_Instances_LastExecutionId",
                 table: "Instances",
-                columns: new[] { "InstanceId", "LastExecutionId" });
+                column: "LastExecutionId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Instances_Queue_AvailableAt",

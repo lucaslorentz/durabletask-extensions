@@ -11,8 +11,9 @@ namespace LLL.DurableTask.EFCore.Configuration
         {
             builder.HasKey(x => x.InstanceId);
             builder.Property(x => x.InstanceId).HasMaxLength(100).IsRequired();
-            builder.HasOne(x => x.LastExecution).WithMany()
-                .HasForeignKey(x => new { x.InstanceId, x.LastExecutionId })
+            builder.HasOne(x => x.LastExecution)
+                .WithMany()
+                .HasForeignKey(x => x.LastExecutionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.Property(x => x.Queue).HasMaxLength(300).IsRequired();
