@@ -140,9 +140,9 @@ namespace LLL.DurableTask.Server.Client
             var request = new GetOrchestrationsRequest
             {
                 Top = query.Top,
-                ContinuationToken = query.ContinuationToken ?? string.Empty,
-                InstanceId = query.InstanceId ?? string.Empty,
-                Name = query.Name ?? string.Empty,
+                ContinuationToken = query.ContinuationToken,
+                InstanceId = query.InstanceId,
+                Name = query.Name,
                 CreatedTimeFrom = ToTimestamp(query.CreatedTimeFrom),
                 CreatedTimeTo = ToTimestamp(query.CreatedTimeTo)
             };

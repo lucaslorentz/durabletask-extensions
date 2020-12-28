@@ -107,7 +107,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
             var response = new GetOrchestrationStateResponse
             {
-                State = state == null ? string.Empty : _options.DataConverter.Serialize(state)
+                State = state == null ? null : _options.DataConverter.Serialize(state)
             };
 
             return response;
@@ -132,7 +132,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
             var response = new WaitForOrchestrationResponse
             {
-                State = state == null ? string.Empty : _options.DataConverter.Serialize(state)
+                State = state == null ? null : _options.DataConverter.Serialize(state)
             };
 
             return response;
@@ -157,7 +157,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
             {
                 States = { queryResult.Orchestrations.Select(s => _options.DataConverter.Serialize(s)) },
                 Count = queryResult.Count,
-                ContinuationToken = queryResult.ContinuationToken ?? string.Empty
+                ContinuationToken = queryResult.ContinuationToken
             };
 
             return response;
@@ -245,34 +245,35 @@ namespace LLL.DurableTask.Server.Grpc.Server
                             var orchestrationState = _options.DataConverter.Deserialize<OrchestrationState>(completeRequest.OrchestrationState);
 
                             var newEvents = completeRequest.NewEvents.Select(x => _options.DataConverter.Deserialize<HistoryEvent>(x)).ToArray();
-
-                            var executionStartedEvent = newEvents
-                                .OfType<ExecutionStartedEvent>()
-                                .FirstOrDefault();
-
-                            var isNewExecution = executionStartedEvent != null
-                                && workItem.OrchestrationRuntimeState != null
-                                && workItem.OrchestrationRuntimeState.OrchestrationInstance != null
-                                && executionStartedEvent.OrchestrationInstance.ExecutionId != workItem.OrchestrationRuntimeState.OrchestrationInstance.ExecutionId;
-
-                            if (isNewExecution)
+                            workItem.OrchestrationRuntimeState ??= new OrchestrationRuntimeState();
+                            foreach (var newEvent in newEvents)
                             {
-                                workItem.OrchestrationRuntimeState = new OrchestrationRuntimeState();
+                                workItem.OrchestrationRuntimeState.AddEvent(newEvent);
                             }
 
-                            foreach (var newEvent in newEvents)
-                                workItem.OrchestrationRuntimeState.AddEvent(newEvent);
+                            var newOrchestrationRuntimeState = workItem.OrchestrationRuntimeState;
+                            var newOrchestrationRuntimeStateEvents = completeRequest.NewOrchestrationRuntimeStateEvents.Select(x => _options.DataConverter.Deserialize<HistoryEvent>(x)).ToArray();
+                            if (newOrchestrationRuntimeStateEvents.Length > 0)
+                            {
+                                newOrchestrationRuntimeState = new OrchestrationRuntimeState();
+                                foreach (var newEvent in newOrchestrationRuntimeStateEvents)
+                                {
+                                    newOrchestrationRuntimeState.AddEvent(newEvent);
+                                }
+                            }
 
                             await _orchestrationService.CompleteTaskOrchestrationWorkItemAsync(
                                 workItem,
-                                workItem.OrchestrationRuntimeState,
+                                newOrchestrationRuntimeState,
                                 outboundMessages,
                                 orchestratorMessages,
                                 timerMessages,
                                 continuedAsNewMessage,
                                 orchestrationState);
 
-                            workItem.OrchestrationRuntimeState.NewEvents.Clear();
+                            newOrchestrationRuntimeState.NewEvents.Clear();
+
+                            workItem.OrchestrationRuntimeState = newOrchestrationRuntimeState;
 
                             await responseStream.WriteAsync(new TaskOrchestrationResponse
                             {

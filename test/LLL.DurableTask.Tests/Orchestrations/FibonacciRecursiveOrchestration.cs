@@ -1,58 +1,53 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using DurableTask.Core;
-using LLL.DurableTask.Server.Tests.Activities;
+using LLL.DurableTask.Tests.Activities;
 using LLL.DurableTask.Worker;
 
-namespace LLL.DurableTask.Server.Tests.Orchestrations
+namespace LLL.DurableTask.Tests.Orchestrations
 {
-    public class FibonacciRecursiveOrchestration : DistributedTaskOrchestration<FibonacciRecursiveOrchestration.Result, FibonacciRecursiveOrchestration.Input>
+    public class FibonacciRecursiveOrchestration : DistributedTaskOrchestration<int, int>
     {
         public const string Name = "FibonnaciRecursive";
         public const string Version = "v1";
 
-        public override async Task<Result> RunTask(OrchestrationContext context, Input input)
+        public override async Task<int> RunTask(OrchestrationContext context, int input)
         {
-            if (input.Number <= 1)
+            if (input <= 1)
             {
-                return new Result
-                {
-                    Value = input.Number
-                };
+                return input;
             }
 
-            var fibNMinus1Task = context.CreateSubOrchestrationInstance<Result>(Name, Version, new Input
+            var fibNMinus1Task = new Func<Task<int>>(async () =>
             {
-                Number = input.Number - 1
-            });
+                var inputMinus1 = await context.ScheduleTask<int>(SubtractActivity.Name, SubtractActivity.Version, new SubtractActivity.Input
+                {
+                    LeftValue = input,
+                    RightValue = 1
+                });
 
-            var fibNMinus2Task = context.CreateSubOrchestrationInstance<Result>(Name, Version, new Input
+                return await context.CreateSubOrchestrationInstance<int>(Name, Version, inputMinus1);
+            })();
+
+            var fibNMinus2Task = new Func<Task<int>>(async () =>
             {
-                Number = input.Number - 2
-            });
+                var inputMinus2 = await context.ScheduleTask<int>(SubtractActivity.Name, SubtractActivity.Version, new SubtractActivity.Input
+                {
+                    LeftValue = input,
+                    RightValue = 2
+                });
+
+                return await context.CreateSubOrchestrationInstance<int>(Name, Version, inputMinus2);
+            })();
 
             var fibNMinus1 = await fibNMinus1Task;
             var fibNMinus2 = await fibNMinus2Task;
 
-            var sum = await context.ScheduleTask<SumActivity.Result>(SumActivity.Name, SumActivity.Version, new SumActivity.Input
+            return await context.ScheduleTask<int>(SumActivity.Name, SumActivity.Version, new SumActivity.Input
             {
-                LeftValue = fibNMinus1.Value,
-                RightValue = fibNMinus2.Value
+                LeftValue = fibNMinus1,
+                RightValue = fibNMinus2
             });
-
-            return new Result
-            {
-                Value = sum.Value
-            };
-        }
-
-        public class Input
-        {
-            public int Number { get; set; }
-        }
-
-        public class Result
-        {
-            public int Value { get; set; }
         }
     }
 }

@@ -44,7 +44,7 @@ message CreateTaskOrchestrationRequest {
 
 message ForceTerminateTaskOrchestrationRequest {
     string instance_id = 1;
-    string reason = 2;
+    google.protobuf.StringValue reason = 2;
 }
 
 message SendTaskOrchestrationMessageBatchRequest {
@@ -53,20 +53,20 @@ message SendTaskOrchestrationMessageBatchRequest {
 
 message GetOrchestrationHistoryRequest {
     string instance_id = 1;
-    string execution_id = 2;
+    google.protobuf.StringValue execution_id = 2;
 }
 
 message GetOrchestrationHistoryResponse {
-    string history = 1;
+    google.protobuf.StringValue history = 1;
 }
 
 message GetOrchestrationStateRequest {
     string instance_id = 1;
-    string execution_id = 2;
+    google.protobuf.StringValue execution_id = 2;
 }
 
 message GetOrchestrationStateResponse {
-    string state = 1;
+    google.protobuf.StringValue state = 1;
 }
 
 message GetOrchestrationInstanceStateRequest {
@@ -80,12 +80,12 @@ message GetOrchestrationInstanceStateResponse {
 
 message WaitForOrchestrationRequest {
     string instance_id = 1;
-    string executionId = 2;
+    google.protobuf.StringValue execution_id = 2;
     google.protobuf.Duration timeout = 3;
 }
 
 message WaitForOrchestrationResponse {
-    string state = 1;
+    google.protobuf.StringValue state = 1;
 }
 
 message PurgeOrchestrationHistoryRequest {
@@ -101,9 +101,9 @@ enum OrchestrationTimeFilterType {
 
 message GetOrchestrationsRequest {
     int32 top = 1;
-    string continuation_token = 2;
-    string instance_id = 3;
-    string name = 4;
+    google.protobuf.StringValue continuation_token = 2;
+    google.protobuf.StringValue instance_id = 3;
+    google.protobuf.StringValue name = 4;
     google.protobuf.Timestamp created_time_from = 5;
     google.protobuf.Timestamp created_time_to = 6;
     repeated int32 runtime_status = 7;
@@ -112,7 +112,7 @@ message GetOrchestrationsRequest {
 message GetOrchestrationsResponse {
     repeated string states = 1;
     google.protobuf.Int64Value count = 2;
-    string continuation_token = 3;
+    google.protobuf.StringValue continuation_token = 3;
 }
 
 message PurgeInstanceHistoryRequest {
@@ -173,12 +173,13 @@ message RenewTaskOrchestrationWorkItemLockResponse {
 }
 
 message CompleteTaskOrchestrationWorkItemRequest {
-    repeated string new_events = 4;
-    repeated string outbound_messages = 5;
-    repeated string orchestrator_messages = 6;
-    repeated string timer_messages = 7;
-    string continued_as_new_message = 8;
-    string orchestration_state = 9;
+    repeated string new_events = 1;
+    repeated string new_orchestration_runtime_state_events = 2;
+    repeated string outbound_messages = 3;
+    repeated string orchestrator_messages = 4;
+    repeated string timer_messages = 5;
+    google.protobuf.StringValue continued_as_new_message = 6;
+    string orchestration_state = 7;
 }
 
 message CompleteTaskOrchestrationWorkItemResponse {

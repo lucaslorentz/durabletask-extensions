@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LLL.DurableTask.Server.Tests
+namespace LLL.DurableTask.Tests.Utils
 {
     class ResponseVersionHandler : DelegatingHandler
     {

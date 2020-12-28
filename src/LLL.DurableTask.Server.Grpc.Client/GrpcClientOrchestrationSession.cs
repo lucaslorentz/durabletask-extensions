@@ -67,7 +67,10 @@ namespace LLL.DurableTask.Server.Client
             {
                 CompleteRequest = new CompleteTaskOrchestrationWorkItemRequest
                 {
-                    NewEvents = { newOrchestrationRuntimeState.NewEvents.Select(_options.DataConverter.Serialize) },
+                    NewEvents = { workItem.OrchestrationRuntimeState.NewEvents.Select(_options.DataConverter.Serialize) },
+                    NewOrchestrationRuntimeStateEvents = { newOrchestrationRuntimeState == workItem.OrchestrationRuntimeState
+                    ? Enumerable.Empty<string>()
+                    : newOrchestrationRuntimeState.NewEvents.Select(_options.DataConverter.Serialize) },
                     OutboundMessages = { outboundMessages.Select(_options.DataConverter.Serialize) },
                     OrchestratorMessages = { orchestratorMessages.Select(_options.DataConverter.Serialize) },
                     TimerMessages = { timerMessages.Select(_options.DataConverter.Serialize) },
