@@ -376,13 +376,15 @@ namespace LLL.DurableTask.EFCore
                 _instanceMapper.UpdateInstance(instance, newOrchestrationRuntimeState);
 
                 // Update current execution
+                EnrichNewEventsInput(workItem.OrchestrationRuntimeState, outboundMessages, orchestratorMessages);
                 session.Execution = await SaveExecutionAsync(dbContext, workItem.OrchestrationRuntimeState, session.Execution);
 
                 // Update new execution
-                EnrichNewEventsInput(newOrchestrationRuntimeState, outboundMessages, orchestratorMessages);
-
                 if (newOrchestrationRuntimeState != workItem.OrchestrationRuntimeState)
+                {
+                    EnrichNewEventsInput(newOrchestrationRuntimeState, outboundMessages, orchestratorMessages);
                     session.Execution = await SaveExecutionAsync(dbContext, newOrchestrationRuntimeState);
+                }
 
                 await dbContext.SaveChangesAsync();
 
@@ -504,14 +506,14 @@ namespace LLL.DurableTask.EFCore
             return (Guid.Parse(parts[0]), parts[1]);
         }
 
-        private static void EnrichNewEventsInput(OrchestrationRuntimeState newOrchestrationRuntimeState, IList<TaskMessage> outboundMessages, IList<TaskMessage> orchestratorMessages)
+        private static void EnrichNewEventsInput(OrchestrationRuntimeState orchestrationRuntimeState, IList<TaskMessage> outboundMessages, IList<TaskMessage> orchestratorMessages)
         {
             foreach (var outboundEvent in outboundMessages.Select(e => e.Event))
             {
                 switch (outboundEvent)
                 {
                     case TaskScheduledEvent outboundTaskScheduledEvent:
-                        foreach (var taskScheduledEvent in newOrchestrationRuntimeState.NewEvents.OfType<TaskScheduledEvent>())
+                        foreach (var taskScheduledEvent in orchestrationRuntimeState.NewEvents.OfType<TaskScheduledEvent>())
                         {
                             if (taskScheduledEvent.EventId == outboundTaskScheduledEvent.EventId)
                             {
@@ -526,7 +528,7 @@ namespace LLL.DurableTask.EFCore
                 switch (orchestratorEvent)
                 {
                     case ExecutionStartedEvent executionStartedEvent:
-                        foreach (var subOrchestrationCreatedEvent in newOrchestrationRuntimeState.NewEvents.OfType<SubOrchestrationInstanceCreatedEvent>())
+                        foreach (var subOrchestrationCreatedEvent in orchestrationRuntimeState.NewEvents.OfType<SubOrchestrationInstanceCreatedEvent>())
                         {
                             if (subOrchestrationCreatedEvent.InstanceId == executionStartedEvent.OrchestrationInstance.InstanceId)
                             {
