@@ -10,14 +10,14 @@ services:
         condition: service_healthy
 
   mysql:
-    image: mysql:8.0.20
+    image: mysql:8.0.22
     ports:
       - 3306:3306
     command: --default-authentication-plugin=mysql_native_password
     environment:
       - MYSQL_ROOT_PASSWORD=root
     volumes:
-      - mysql:/var/lib/mysql
+      - mysql:/var/lib/mysql:delegated
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       timeout: 20s
@@ -31,7 +31,7 @@ services:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=P1ssw0rd
     volumes:
-      - sqlserver:/var/opt/mssql
+      - sqlserver:/var/opt/mssql:delegated
 
   postgres:
     image: postgres
@@ -40,7 +40,7 @@ services:
     environment:
       - POSTGRES_PASSWORD=root
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data:delegated
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
