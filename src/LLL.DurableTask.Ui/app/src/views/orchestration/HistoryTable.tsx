@@ -96,20 +96,31 @@ export function HistoryTable(props: Props) {
                   )}
                 </TableCell>
                 <TableCell>
-                  {row.event.instanceId ? (
-                    <Link
-                      component={RouterLink}
-                      to={`/orchestrations/${row.event.instanceId}`}
-                    >
-                      {row.event.eventType}
-                      {row.id && `: ${row.id}`}
-                    </Link>
-                  ) : (
-                    <>
-                      {row.event.eventType}
-                      {row.id && `: ${row.id}`}
-                    </>
-                  )}
+                  <span
+                    style={{
+                      textDecoration: row.rewound ? "line-through" : undefined,
+                    }}
+                  >
+                    {row.event.instanceId ? (
+                      <Link
+                        component={RouterLink}
+                        to={`/orchestrations/${row.event.instanceId}`}
+                      >
+                        {row.event.eventType}
+                        {row.id && `: ${row.id}`}
+                      </Link>
+                    ) : (
+                      <>
+                        {row.event.eventType}
+                        {row.id && `: ${row.id}`}
+                      </>
+                    )}
+                  </span>
+                  {row.rewound ? (
+                    <div style={{ display: "inline-block" }}>
+                      &nbsp;(rewound)
+                    </div>
+                  ) : null}
                 </TableCell>
                 <TableCell>{row.event.timestamp}</TableCell>
                 <TableCell>
@@ -130,7 +141,7 @@ export function HistoryTable(props: Props) {
                     {row.event.input ??
                       row.event.result ??
                       row.event.reason ??
-                      row.event.reason}
+                      row.event.data}
                   </Box>
                 </TableCell>
               </TableRow>
@@ -157,8 +168,9 @@ type DotData = {
 };
 
 type DataRow = {
-  event: any;
+  event: HistoryEvent;
   id?: string;
+  rewound: boolean;
 };
 
 const forkEventTypes = [
@@ -189,13 +201,30 @@ function prepareData(
 
   const linesStack: LineBuilder[] = [];
   const linesById: Record<number, LineBuilder> = {};
+  const lines: LineBuilder[] = [];
 
   const dots: DotData[] = [];
   const rows: DataRow[] = [];
   let lastRowCenterY = 0;
 
   for (var index = 0; index < events.length; index++) {
-    const event = events[index];
+    let event = events[index];
+    let rewound = false;
+
+    if (event.eventType === "GenericEvent") {
+      const rewoundDataJson = /^Rewound: ({.*})$/.exec(event.data)?.[1];
+      if (rewoundDataJson) {
+        try {
+          let rewoundData = JSON.parse(rewoundDataJson);
+          event = {
+            ...event,
+            data: undefined,
+            ...rewoundData,
+          };
+          rewound = true;
+        } catch {}
+      }
+    }
 
     const rowElement = getRefCurrent<HTMLTableRowElement>(index);
     const rowCenterY =
@@ -214,6 +243,7 @@ function prepareData(
       line = new LineBuilder(getColor(linesStack.map((s) => s.color)));
       linesStack.push(line);
       linesById[lineId] = line;
+      lines.push(line);
 
       if (rowCenterY) {
         if (lineId !== -1) {
@@ -253,17 +283,19 @@ function prepareData(
         line.lineTo(marginLeft, rowCenterY + branchYOffset);
       }
       linesStack.splice(lineIndex, 1);
+      delete linesById[lineId];
     }
 
     rows.push({
       event: event,
       id: lineId === -1 ? undefined : String(lineId),
+      rewound,
     });
   }
 
   return {
     rows: rows,
-    lines: Object.values(linesById),
+    lines: lines,
     dots: dots,
     svgWidth:
       Math.min(Object.values(linesById).length, maxLines) * linesGap +

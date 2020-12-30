@@ -1,8 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
+namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 {
     public partial class Initial : Migration
     {
@@ -39,7 +38,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                     Id = table.Column<Guid>(nullable: false),
                     InstanceId = table.Column<string>(maxLength: 100, nullable: false),
                     ExecutionId = table.Column<string>(maxLength: 100, nullable: false),
-                    SequenceNumber = table.Column<long>(nullable: false),
+                    SequenceNumber = table.Column<int>(nullable: false),
                     Content = table.Column<string>(maxLength: 2147483647, nullable: false)
                 },
                 constraints: table =>
@@ -59,7 +58,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 {
                     ExecutionId = table.Column<string>(nullable: false),
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(maxLength: 100, nullable: false),
                     Value = table.Column<string>(maxLength: 2000, nullable: false)
                 },

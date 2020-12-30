@@ -95,8 +95,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
                         .HasMaxLength(100);
 
-                    b.Property<long>("SequenceNumber")
-                        .HasColumnType("bigint");
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

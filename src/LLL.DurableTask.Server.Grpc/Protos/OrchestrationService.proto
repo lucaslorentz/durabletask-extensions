@@ -13,6 +13,7 @@ service OrchestrationService {
     rpc GetFeatures(google.protobuf.Empty) returns (GetFeaturesResponse);
     rpc CreateTaskOrchestration (CreateTaskOrchestrationRequest) returns (google.protobuf.Empty);
     rpc ForceTerminateTaskOrchestration (ForceTerminateTaskOrchestrationRequest) returns (google.protobuf.Empty);
+    rpc RewindTaskOrchestration (RewindTaskOrchestrationRequest) returns (google.protobuf.Empty);
     rpc SendTaskOrchestrationMessageBatch (SendTaskOrchestrationMessageBatchRequest) returns (google.protobuf.Empty);
     rpc GetOrchestrationHistory (GetOrchestrationHistoryRequest) returns (GetOrchestrationHistoryResponse);
     rpc GetOrchestrationState (GetOrchestrationStateRequest) returns (GetOrchestrationStateResponse);
@@ -43,6 +44,11 @@ message CreateTaskOrchestrationRequest {
 }
 
 message ForceTerminateTaskOrchestrationRequest {
+    string instance_id = 1;
+    google.protobuf.StringValue reason = 2;
+}
+
+message RewindTaskOrchestrationRequest {
     string instance_id = 1;
     google.protobuf.StringValue reason = 2;
 }

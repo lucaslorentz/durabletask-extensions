@@ -134,6 +134,22 @@ namespace LLL.DurableTask.Api.Endpoints
                 Id = "OrchestrationsTerminate"
             }));
 
+            endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/rewind", async context =>
+            {
+                var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
+
+                var instanceId = context.Request.RouteValues["instanceId"].ToString();
+
+                var request = await context.ParseBody<RewindRequest>();
+
+                await extendedOrchestrationServiceClient.RewindTaskOrchestrationAsync(instanceId, request.Reason);
+
+                await context.RespondJson(new { });
+            }).RequireAuthorization(DurableTaskPolicy.Rewind).WithMetadata(new DurableTaskEndpointMetadata
+            {
+                Id = "OrchestrationsRewind"
+            }));
+
             endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/raiseevent", async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();

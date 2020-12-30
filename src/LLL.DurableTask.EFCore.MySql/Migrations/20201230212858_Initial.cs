@@ -39,7 +39,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                     Id = table.Column<Guid>(nullable: false),
                     InstanceId = table.Column<string>(maxLength: 100, nullable: false),
                     ExecutionId = table.Column<string>(maxLength: 100, nullable: false),
-                    SequenceNumber = table.Column<long>(nullable: false),
+                    SequenceNumber = table.Column<int>(nullable: false),
                     Content = table.Column<string>(maxLength: 2147483647, nullable: false)
                 },
                 constraints: table =>

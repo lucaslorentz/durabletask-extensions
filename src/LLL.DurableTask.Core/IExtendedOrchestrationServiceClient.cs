@@ -10,5 +10,7 @@ namespace LLL.DurableTask.Core
         Task<OrchestrationQueryResult> GetOrchestrationsAsync(OrchestrationQuery query, CancellationToken cancellationToken = default);
 
         Task<PurgeInstanceHistoryResult> PurgeInstanceHistoryAsync(string instanceId);
+
+        Task RewindTaskOrchestrationAsync(string instanceId, string reason);
     }
 }

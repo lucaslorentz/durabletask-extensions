@@ -171,7 +171,8 @@ namespace LLL.DurableTask.EFCore
                 OrchestrationFeature.SearchByName,
                 OrchestrationFeature.SearchByCreatedTime,
                 OrchestrationFeature.SearchByStatus,
-                OrchestrationFeature.QueryCount
+                OrchestrationFeature.QueryCount,
+                OrchestrationFeature.Rewind
             });
         }
 
@@ -255,9 +256,161 @@ namespace LLL.DurableTask.EFCore
             }
         }
 
+        public async Task RewindTaskOrchestrationAsync(string instanceId, string reason)
+        {
+            using (var dbContext = _dbContextFactory())
+            {
+                await RewindInstanceAsync(dbContext, instanceId, reason);
+
+                await dbContext.SaveChangesAsync();
+            }
+        }
+
         protected abstract Task PurgeOrchestrationHistoryAsync(OrchestrationDbContext dbContext, DateTime thresholdDateTimeUtc, OrchestrationStateTimeRangeFilterType timeRangeFilterType);
 
         protected abstract Task<int> PurgeInstanceHistoryAsync(OrchestrationDbContext dbContext, string instanceId);
+
+        private async Task RewindInstanceAsync(OrchestrationDbContext dbContext, string instanceId, string reason)
+        {
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // REWIND ALGORITHM:
+            // 1. Finds failed execution of specified orchestration instance to rewind
+            // 2. Finds failure entities to clear and over-writes them (as well as corresponding trigger events)
+            // 3. Identifies sub-orchestration failure(s) from parent instance and calls RewindHistoryAsync recursively on failed sub-orchestration child instance(s)
+            // 4. Resets orchestration status of rewound instance in instance store table to prepare it to be restarted
+            // 5. Restart that doesn't have failed suborchestrations with a generic event
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            var lastExecution = dbContext.Instances
+                                .Where(i => i.InstanceId == instanceId)
+                                .Select(i => i.LastExecution)
+                                .FirstOrDefault();
+
+            var events = await dbContext.Events
+                .Where(e => e.ExecutionId == lastExecution.ExecutionId)
+                .ToArrayAsync();
+
+            var historyEvents = events
+                .ToDictionary(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content));
+
+            bool hasFailedSubOrchestrations = false;
+
+            foreach (var historyEvent in historyEvents.Keys)
+            {
+                if (historyEvent is TaskFailedEvent taskFailedEvent)
+                {
+                    var taskScheduledEvent = historyEvents.Keys.OfType<TaskScheduledEvent>()
+                        .FirstOrDefault(e => e.EventId == taskFailedEvent.TaskScheduledId);
+
+                    var rewoundTaskScheduledData = _options.RewindDataConverter.Serialize(new
+                    {
+                        taskScheduledEvent.EventType,
+                        taskScheduledEvent.Name,
+                        taskScheduledEvent.Version,
+                        taskScheduledEvent.Input
+                    });
+
+                    historyEvents[taskScheduledEvent].Content = _options.DataConverter.Serialize(
+                        new GenericEvent(taskScheduledEvent.EventId, $"Rewound: {rewoundTaskScheduledData}")
+                        {
+                            Timestamp = taskScheduledEvent.Timestamp
+                        }
+                    );
+
+                    var rewoundTaskFailedData = _options.RewindDataConverter.Serialize(new
+                    {
+                        taskFailedEvent.EventType,
+                        taskFailedEvent.Reason,
+                        taskFailedEvent.TaskScheduledId
+                    });
+
+                    historyEvents[taskFailedEvent].Content = _options.DataConverter.Serialize(
+                        new GenericEvent(taskFailedEvent.EventId, $"Rewound: {rewoundTaskFailedData}")
+                        {
+                            Timestamp = taskFailedEvent.Timestamp
+                        }
+                    );
+                }
+                else if (historyEvent is SubOrchestrationInstanceFailedEvent soFailedEvent)
+                {
+                    hasFailedSubOrchestrations = true;
+
+                    var soCreatedEvent = historyEvents.Keys.OfType<SubOrchestrationInstanceCreatedEvent>()
+                        .FirstOrDefault(e => e.EventId == soFailedEvent.TaskScheduledId);
+
+                    var rewoundSoCreatedData = _options.RewindDataConverter.Serialize(new
+                    {
+                        soCreatedEvent.EventType,
+                        soCreatedEvent.Name,
+                        soCreatedEvent.Version,
+                        soCreatedEvent.Input
+                    });
+
+                    historyEvents[soCreatedEvent].Content = _options.DataConverter.Serialize(
+                        new GenericEvent(soCreatedEvent.EventId, $"Rewound: {rewoundSoCreatedData}")
+                        {
+                            Timestamp = soCreatedEvent.Timestamp
+                        }
+                    );
+
+                    var rewoundSoFailedData = _options.RewindDataConverter.Serialize(new
+                    {
+                        soFailedEvent.EventType,
+                        soFailedEvent.Reason,
+                        soFailedEvent.TaskScheduledId
+                    });
+
+                    historyEvents[soFailedEvent].Content = _options.DataConverter.Serialize(
+                        new GenericEvent(soFailedEvent.EventId, $"Rewound: {rewoundSoFailedData}")
+                        {
+                            Timestamp = soFailedEvent.Timestamp
+                        }
+                    );
+
+                    // recursive call to clear out failure events on child instances
+                    await RewindInstanceAsync(dbContext, soCreatedEvent.InstanceId, reason);
+                }
+                else if (historyEvent is ExecutionCompletedEvent executionCompletedEvent
+                    && executionCompletedEvent.OrchestrationStatus == OrchestrationStatus.Failed)
+                {
+                    var rewoundExecutionCompletedData = _options.RewindDataConverter.Serialize(new
+                    {
+                        executionCompletedEvent.EventType,
+                        executionCompletedEvent.Result,
+                        executionCompletedEvent.OrchestrationStatus
+                    });
+
+                    historyEvents[executionCompletedEvent].Content = _options.DataConverter.Serialize(
+                        new GenericEvent(executionCompletedEvent.EventId, $"Rewound: {rewoundExecutionCompletedData}")
+                        {
+                            Timestamp = executionCompletedEvent.Timestamp
+                        }
+                    );
+                }
+            }
+
+            // Reset execution status
+            lastExecution.Status = OrchestrationStatus.Running;
+            lastExecution.LastUpdatedTime = DateTime.UtcNow;
+
+            if (!hasFailedSubOrchestrations)
+            {
+                var orchestrationInstance = new OrchestrationInstance
+                {
+                    InstanceId = instanceId
+                };
+
+                var taskMessage = new TaskMessage
+                {
+                    OrchestrationInstance = orchestrationInstance,
+                    Event = new GenericEvent(-1, reason)
+                };
+
+                var orchestrationMessage = _orchestratorMessageMapper.CreateOrchestratorMessage(taskMessage, 0);
+
+                await dbContext.OrchestratorMessages.AddAsync(orchestrationMessage);
+            }
+        }
 
         private bool IsFinalStatus(OrchestrationStatus status)
         {

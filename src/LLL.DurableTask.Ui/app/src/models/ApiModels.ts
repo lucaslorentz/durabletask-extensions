@@ -15,6 +15,10 @@ export interface TerminateRequest {
   reason?: string;
 }
 
+export interface RewindRequest {
+  reason?: string;
+}
+
 export interface OrchestrationsResponse {
   orchestrations: OrchestrationState[];
   count: number;
@@ -54,10 +58,13 @@ export type HistoryEvent = {
   correlation?: string;
   scheduledStartTime?: string;
   taskScheduledId?: number;
-  orchestrationStatus?: OrchestrationStatus;
+  instanceId?: string;
+  fireAt?: string;
   reason?: string;
   input?: string;
+  data?: string;
   result?: string;
+  orchestrationStatus?: OrchestrationStatus;
 };
 
 export interface ParentInstance {
@@ -92,7 +99,8 @@ export type Feature =
   | "SearchByName"
   | "SearchByCreatedTime"
   | "SearchByStatus"
-  | "QueryCount";
+  | "QueryCount"
+  | "Rewind";
 
 export type Endpoint =
   | "Entrypoint"
@@ -103,5 +111,6 @@ export type Endpoint =
   | "OrchestrationsGetExecution"
   | "OrchestrationsGetExecutionHistory"
   | "OrchestrationsTerminate"
+  | "OrchestrationsRewind"
   | "OrchestrationsRaiseEvent"
   | "OrchestrationsPurgeInstance";

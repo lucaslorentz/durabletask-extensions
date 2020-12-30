@@ -97,8 +97,8 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasMaxLength(100);
 
-                    b.Property<long>("SequenceNumber")
-                        .HasColumnType("bigint");
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

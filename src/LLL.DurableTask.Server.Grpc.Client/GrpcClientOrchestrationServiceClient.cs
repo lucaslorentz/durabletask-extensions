@@ -93,6 +93,17 @@ namespace LLL.DurableTask.Server.Client
             await _client.ForceTerminateTaskOrchestrationAsync(request);
         }
 
+        public async Task RewindTaskOrchestrationAsync(string instanceId, string reason)
+        {
+            var request = new RewindTaskOrchestrationRequest
+            {
+                InstanceId = instanceId,
+                Reason = reason
+            };
+
+            await _client.RewindTaskOrchestrationAsync(request);
+        }
+
         public async Task PurgeOrchestrationHistoryAsync(DateTime thresholdDateTimeUtc, OrchestrationStateTimeRangeFilterType timeRangeFilterType)
         {
             var request = new PurgeOrchestrationHistoryRequest

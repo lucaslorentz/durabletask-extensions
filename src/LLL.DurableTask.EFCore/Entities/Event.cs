@@ -12,7 +12,7 @@ namespace LLL.DurableTask.EFCore.Entities
 
         public Execution Execution { get; set; }
 
-        public long SequenceNumber { get; set; }
+        public int SequenceNumber { get; set; }
 
         public string Content { get; set; }
     }

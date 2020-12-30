@@ -15,8 +15,6 @@ namespace LLL.DurableTask.EFCore
     {
         private readonly EFCoreOrchestrationOptions _options;
 
-        private readonly DataConverter _dataConverter = new JsonDataConverter();
-
         private readonly Func<OrchestrationDbContext> _dbContextFactory;
         private readonly CancellationToken _stopCancellationToken;
 
@@ -97,7 +95,7 @@ namespace LLL.DurableTask.EFCore
             Messages.AddRange(dbWorkItems);
 
             var deserializedMessages = dbWorkItems
-                .Select(w => _dataConverter.Deserialize<TaskMessage>(w.Message))
+                .Select(w => _options.DataConverter.Deserialize<TaskMessage>(w.Message))
                 .ToArray();
 
             return deserializedMessages;

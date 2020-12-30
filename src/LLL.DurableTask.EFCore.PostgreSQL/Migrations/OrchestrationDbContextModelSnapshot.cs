@@ -97,8 +97,8 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
 
-                    b.Property<long>("SequenceNumber")
-                        .HasColumnType("bigint");
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

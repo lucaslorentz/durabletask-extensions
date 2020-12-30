@@ -71,6 +71,14 @@ namespace LLL.DurableTask.Server.Grpc.Server
             return new Empty();
         }
 
+        public override async Task<Empty> RewindTaskOrchestration(RewindTaskOrchestrationRequest request, ServerCallContext context)
+        {
+            await (_extendedOrchestrationServiceClient ?? throw NotSupported("Rewind"))
+                .RewindTaskOrchestrationAsync(request.InstanceId, request.Reason);
+
+            return new Empty();
+        }
+
         public override async Task<GetOrchestrationHistoryResponse> GetOrchestrationHistory(GetOrchestrationHistoryRequest request, ServerCallContext context)
         {
             var history = await _orchestrationServiceClient.GetOrchestrationHistoryAsync(
@@ -420,7 +428,12 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
         private Exception DistributedWorkersNotSupported()
         {
-            return new NotSupportedException("Distributed workers is not supported by storage implementation");
+            return NotSupported("Distributed workers");
+        }
+
+        private Exception NotSupported(string operation)
+        {
+            return new NotSupportedException($"{operation} is not supported by storage implementation");
         }
     }
 }

@@ -33,6 +33,7 @@ import { HistoryEvent, OrchestrationState } from "../../models/ApiModels";
 import { HistoryTable } from "./HistoryTable";
 import { RaiseEvent } from "./RaiseEvent";
 import { State } from "./State";
+import { Rewind } from "./Rewind";
 import { Terminate } from "./Terminate";
 
 type RouteParams = {
@@ -48,7 +49,13 @@ const autoRefreshOptions = [
   { value: 30, label: "30 seconds" },
 ];
 
-type TabValue = "state" | "history" | "raise_event" | "terminate" | "json";
+type TabValue =
+  | "state"
+  | "history"
+  | "raise_event"
+  | "terminate"
+  | "rewind"
+  | "json";
 
 export function Orchestration() {
   const [state, setState] = useState<OrchestrationState | undefined>(undefined);
@@ -228,13 +235,18 @@ export function Orchestration() {
           textColor="primary"
         >
           <Tab value="state" label="State" />
-          {historyEvents && <Tab value="history" label="History" />}
+          {entrypoint.endpoints.OrchestrationsGetExecutionHistory
+            .authorized && <Tab value="history" label="History" />}
           {entrypoint.endpoints.OrchestrationsRaiseEvent.authorized && (
             <Tab value="raise_event" label="Raise Event" />
           )}
           {entrypoint.endpoints.OrchestrationsTerminate.authorized && (
             <Tab value="terminate" label="Terminate" />
           )}
+          {entrypoint.features.includes("Rewind") &&
+            entrypoint.endpoints.OrchestrationsRewind.authorized && (
+              <Tab value="rewind" label="Rewind" />
+            )}
           <Tab value="json" label="Json" />
         </Tabs>
         {state && (
@@ -242,19 +254,33 @@ export function Orchestration() {
             {tab === "state" && (
               <State state={state} definedExecutionId={Boolean(executionId)} />
             )}
-            {historyEvents && tab === "history" && historyEvents && (
-              <HistoryTable historyEvents={historyEvents} />
-            )}
+            {entrypoint.endpoints.OrchestrationsGetExecutionHistory
+              .authorized &&
+              tab === "history" &&
+              historyEvents && <HistoryTable historyEvents={historyEvents} />}
             {entrypoint.endpoints.OrchestrationsRaiseEvent.authorized &&
               tab === "raise_event" && (
                 <Box padding={2}>
-                  <RaiseEvent instanceId={instanceId} />
+                  <RaiseEvent
+                    instanceId={instanceId}
+                    onRaiseEvent={triggerRefresh}
+                  />
                 </Box>
               )}
             {entrypoint.endpoints.OrchestrationsTerminate.authorized &&
               tab === "terminate" && (
                 <Box padding={2}>
-                  <Terminate instanceId={instanceId} />
+                  <Terminate
+                    instanceId={instanceId}
+                    onTerminate={triggerRefresh}
+                  />
+                </Box>
+              )}
+            {entrypoint.features.includes("Rewind") &&
+              entrypoint.endpoints.OrchestrationsRewind.authorized &&
+              tab === "rewind" && (
+                <Box padding={2}>
+                  <Rewind instanceId={instanceId} onRewind={triggerRefresh} />
                 </Box>
               )}
             {tab === "json" && (

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
@@ -18,12 +17,14 @@ namespace LLL.DurableTaskExtensions.AzureStorage
             _azureStorageOrchestrationService = azureStorageOrchestrationService;
         }
 
-        public Task<OrchestrationFeature[]> GetFeatures() {
+        public Task<OrchestrationFeature[]> GetFeatures()
+        {
             return Task.FromResult(new OrchestrationFeature[]
             {
                 OrchestrationFeature.SearchByInstanceId,
                 OrchestrationFeature.SearchByCreatedTime,
-                OrchestrationFeature.SearchByStatus
+                OrchestrationFeature.SearchByStatus,
+                OrchestrationFeature.Rewind
             });
         }
 
@@ -58,6 +59,11 @@ namespace LLL.DurableTaskExtensions.AzureStorage
             {
                 InstancesDeleted = azureStorageResult.InstancesDeleted
             };
+        }
+
+        public async Task RewindTaskOrchestrationAsync(string instanceId, string reason)
+        {
+            await _azureStorageOrchestrationService.RewindTaskOrchestrationAsync(instanceId, reason);
         }
     }
 }

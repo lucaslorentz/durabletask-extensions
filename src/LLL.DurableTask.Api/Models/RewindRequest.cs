@@ -1,6 +1,6 @@
 ﻿namespace LLL.DurableTask.Api.Models
 {
-    public class TerminateRequest
+    public class RewindRequest
     {
         public string Reason { get; set; }
     }
