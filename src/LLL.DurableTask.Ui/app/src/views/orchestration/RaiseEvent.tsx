@@ -55,7 +55,7 @@ export function RaiseEvent(props: Props) {
       };
 
       await apiAxios.post(
-        `/v1/orchestrations/${instanceId}/raiseevent`,
+        `/v1/orchestrations/${encodeURIComponent(instanceId)}/raiseevent`,
         request
       );
 

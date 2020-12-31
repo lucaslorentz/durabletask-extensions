@@ -36,7 +36,7 @@ export function Rewind(props: Props) {
       };
 
       await apiAxios.post(
-        `/v1/orchestrations/${instanceId}/rewind`,
+        `/v1/orchestrations/${encodeURIComponent(instanceId)}/rewind`,
         request
       );
 

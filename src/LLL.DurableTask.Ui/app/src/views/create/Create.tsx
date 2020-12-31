@@ -75,7 +75,7 @@ export function Create() {
         request
       );
 
-      history.push(`/orchestrations/${response.data.instanceId}`);
+      history.push(`/orchestrations/${encodeURIComponent(response.data.instanceId)}`);
     } catch (error) {
       setError(error);
     }

@@ -48,7 +48,7 @@ export function State(props: Props) {
               ) : (
                 <Link
                   component={RouterLink}
-                  to={`/orchestrations/${state.orchestrationInstance.instanceId}/${state.orchestrationInstance.executionId}`}
+                  to={`/orchestrations/${encodeURIComponent(state.orchestrationInstance.instanceId)}/${encodeURIComponent(state.orchestrationInstance.executionId)}`}
                 >
                   {state.orchestrationInstance.executionId}
                 </Link>
@@ -80,7 +80,7 @@ export function State(props: Props) {
               <TableCell>
                 <Link
                   component={RouterLink}
-                  to={`/orchestrations/${state.parentInstance.orchestrationInstance.instanceId}`}
+                  to={`/orchestrations/${encodeURIComponent(state.parentInstance.orchestrationInstance.instanceId)}`}
                 >
                   {state.parentInstance.orchestrationInstance.instanceId}
                 </Link>

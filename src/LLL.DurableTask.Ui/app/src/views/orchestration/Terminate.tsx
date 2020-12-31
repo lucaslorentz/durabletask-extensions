@@ -36,7 +36,7 @@ export function Terminate(props: Props) {
       };
 
       await apiAxios.post(
-        `/v1/orchestrations/${instanceId}/terminate`,
+        `/v1/orchestrations/${encodeURIComponent(instanceId)}/terminate`,
         request
       );
 

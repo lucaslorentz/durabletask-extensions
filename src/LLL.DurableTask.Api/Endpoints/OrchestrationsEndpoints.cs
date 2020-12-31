@@ -63,7 +63,8 @@ namespace LLL.DurableTask.Api.Endpoints
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
-                var instanceId = context.Request.RouteValues["instanceId"].ToString();
+                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+
                 var state = await taskHubClient.GetOrchestrationStateAsync(instanceId);
 
                 await context.RespondJson(state);
@@ -76,8 +77,8 @@ namespace LLL.DurableTask.Api.Endpoints
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
-                var instanceId = context.Request.RouteValues["instanceId"].ToString();
-                var executionId = context.Request.RouteValues["executionId"].ToString();
+                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+                var executionId = Uri.UnescapeDataString(context.Request.RouteValues["executionId"].ToString());
 
                 var state = await taskHubClient.GetOrchestrationStateAsync(instanceId, executionId);
 
@@ -91,8 +92,8 @@ namespace LLL.DurableTask.Api.Endpoints
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
-                var instanceId = context.Request.RouteValues["instanceId"].ToString();
-                var executionId = context.Request.RouteValues["executionId"].ToString();
+                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+                var executionId = Uri.UnescapeDataString(context.Request.RouteValues["executionId"].ToString());
 
                 var orchestrationInstance = new OrchestrationInstance
                 {
@@ -117,7 +118,7 @@ namespace LLL.DurableTask.Api.Endpoints
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
-                var instanceId = context.Request.RouteValues["instanceId"].ToString();
+                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
 
                 var orchestrationInstance = new OrchestrationInstance
                 {
@@ -138,7 +139,7 @@ namespace LLL.DurableTask.Api.Endpoints
             {
                 var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
 
-                var instanceId = context.Request.RouteValues["instanceId"].ToString();
+                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
 
                 var request = await context.ParseBody<RewindRequest>();
 
@@ -154,7 +155,7 @@ namespace LLL.DurableTask.Api.Endpoints
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
-                var instanceId = context.Request.RouteValues["instanceId"].ToString();
+                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
 
                 var orchestrationInstance = new OrchestrationInstance
                 {
@@ -175,7 +176,7 @@ namespace LLL.DurableTask.Api.Endpoints
             {
                 var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
 
-                var instanceId = context.Request.RouteValues["instanceId"].ToString();
+                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
 
                 var result = await extendedOrchestrationServiceClient.PurgeInstanceHistoryAsync(instanceId);
 

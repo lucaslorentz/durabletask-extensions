@@ -78,7 +78,10 @@ export function Orchestration() {
 
   const route = useRouteMatch<RouteParams>();
 
-  const { instanceId, executionId } = route.params;
+  const instanceId =
+    route.params.instanceId && decodeURIComponent(route.params.instanceId);
+  const executionId =
+    route.params.executionId && decodeURIComponent(route.params.executionId);
 
   useEffect(() => {
     setState(undefined);
@@ -99,7 +102,7 @@ export function Orchestration() {
     (async () => {
       setIsLoading(true);
 
-      let url = `/v1/orchestrations/${instanceId}`;
+      let url = `/v1/orchestrations/${encodeURIComponent(instanceId)}`;
       if (executionId) {
         url = `${url}/${executionId}`;
       }
@@ -109,7 +112,11 @@ export function Orchestration() {
 
       if (entrypoint.endpoints.OrchestrationsGetExecutionHistory.authorized) {
         var historyResponse = await apiAxios.get<HistoryEvent[]>(
-          `/v1/orchestrations/${instanceId}/${stateResponse.data.orchestrationInstance.executionId}/history`
+          `/v1/orchestrations/${encodeURIComponent(
+            instanceId
+          )}/${encodeURIComponent(
+            stateResponse.data.orchestrationInstance.executionId
+          )}/history`
         );
         setHistoryEvents(historyResponse.data);
       }
@@ -125,7 +132,9 @@ export function Orchestration() {
     setShowConfirmPurge(true);
   }
   async function handleConfirmPurgeClick() {
-    await apiAxios.delete(`/v1/orchestrations/${instanceId}`);
+    await apiAxios.delete(
+      `/v1/orchestrations/${encodeURIComponent(instanceId)}`
+    );
 
     setShowConfirmPurge(false);
 
@@ -160,7 +169,10 @@ export function Orchestration() {
             Orchestrations
           </Link>
           {executionId ? (
-            <Link component={RouterLink} to={`/orchestrations/${instanceId}`}>
+            <Link
+              component={RouterLink}
+              to={`/orchestrations/${encodeURIComponent(instanceId)}`}
+            >
               {instanceId}
             </Link>
           ) : (

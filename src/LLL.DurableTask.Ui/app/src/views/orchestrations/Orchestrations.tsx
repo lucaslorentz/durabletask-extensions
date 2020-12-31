@@ -132,8 +132,10 @@ export function Orchestrations() {
 
   const [skipDebounce] = useDebouncedEffect(load, [load], 500);
 
-  const hasFilter = Boolean(
-    instanceId || name || createdTimeFrom || createdTimeTo || statuses.length
+  const [searchExpanded, setSearchExpanded] = useState(() =>
+    Boolean(
+      instanceId || name || createdTimeFrom || createdTimeTo || statuses.length
+    )
   );
 
   function changePage(action: "first" | "previous" | "next") {
@@ -170,7 +172,11 @@ export function Orchestrations() {
         </Breadcrumbs>
       </Box>
       <Box marginBottom={1}>
-        <Accordion variant="outlined" defaultExpanded={hasFilter}>
+        <Accordion
+          variant="outlined"
+          expanded={searchExpanded}
+          onChange={(_, ex) => setSearchExpanded(ex)}
+        >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             Search
           </AccordionSummary>
@@ -283,7 +289,9 @@ export function Orchestrations() {
                 <TableCell>
                   <Link
                     component={RouterLink}
-                    to={`/orchestrations/${orchestration.orchestrationInstance.instanceId}`}
+                    to={`/orchestrations/${encodeURIComponent(
+                      orchestration.orchestrationInstance.instanceId
+                    )}`}
                   >
                     {orchestration.orchestrationInstance.instanceId}
                   </Link>
@@ -291,7 +299,11 @@ export function Orchestrations() {
                 <TableCell>
                   <Link
                     component={RouterLink}
-                    to={`/orchestrations/${orchestration.orchestrationInstance.instanceId}/${orchestration.orchestrationInstance.executionId}`}
+                    to={`/orchestrations/${encodeURIComponent(
+                      orchestration.orchestrationInstance.instanceId
+                    )}/${encodeURIComponent(
+                      orchestration.orchestrationInstance.executionId
+                    )}`}
                   >
                     {orchestration.orchestrationInstance.executionId}
                   </Link>
