@@ -323,7 +323,7 @@ export function Orchestrations() {
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={6} padding="none" style={{ color: "#000" }}>
+              <TableCell colSpan={7} padding="none" style={{ color: "#000" }}>
                 <Box marginX={2} display="flex" alignItems="center">
                   <Box flex={1}>
                     <Button startIcon={<RefreshIcon />} onClick={load}>
