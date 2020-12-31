@@ -24,10 +24,7 @@ namespace LLL.DurableTask.EFCore.Mappers
                 Id = Guid.NewGuid(),
                 CreatedAt = DateTime.UtcNow,
                 Queue = QueueMapper.ToQueueName(taskScheduledEvent.Name, taskScheduledEvent.Version),
-                Name = taskScheduledEvent.Name,
-                Version = taskScheduledEvent.Version,
                 InstanceId = message.OrchestrationInstance.InstanceId,
-                ExecutionId = message.OrchestrationInstance.ExecutionId,
                 Message = _options.DataConverter.Serialize(message),
                 AvailableAt = DateTime.UtcNow
             };

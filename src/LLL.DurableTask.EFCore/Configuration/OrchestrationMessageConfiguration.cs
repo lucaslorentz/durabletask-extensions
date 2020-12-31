@@ -12,7 +12,7 @@ namespace LLL.DurableTask.EFCore.Configuration
             builder.HasKey(x => x.Id);
             builder.Property(x => x.Id).IsRequired();
 
-            builder.Property(x => x.InstanceId).HasMaxLength(100).IsRequired();
+            builder.Property(x => x.InstanceId).HasMaxLength(500).IsRequired();
             builder.HasOne(x => x.Instance)
                 .WithMany()
                 .HasForeignKey(x => x.InstanceId)

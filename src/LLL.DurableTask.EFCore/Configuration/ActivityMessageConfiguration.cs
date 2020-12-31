@@ -12,22 +12,18 @@ namespace LLL.DurableTask.EFCore.Configuration
             builder.HasKey(x => x.Id);
             builder.Property(x => x.Id).IsRequired();
 
-            builder.Property(x => x.InstanceId).HasMaxLength(100).IsRequired();
+            builder.Property(x => x.InstanceId).HasMaxLength(500).IsRequired();
             builder.HasOne(x => x.Instance)
                 .WithMany()
                 .HasForeignKey(x => x.InstanceId)
-                .IsRequired();
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Property(x => x.ExecutionId).HasMaxLength(100).IsRequired();
-
-            builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
-            builder.Property(x => x.Version).HasMaxLength(100).IsRequired();
-
-            builder.Property(x => x.CreatedAt).IsRequired().HasConversion(new UtcDateTimeConverter());
+            builder.Property(x => x.Queue).HasMaxLength(500).IsRequired();
 
             builder.Property(x => x.Message).HasMaxLength(int.MaxValue);
 
-            builder.Property(x => x.Queue).HasMaxLength(100).IsRequired();
+            builder.Property(x => x.CreatedAt).IsRequired().HasConversion(new UtcDateTimeConverter());
             builder.Property(x => x.AvailableAt).HasConversion(new UtcDateTimeConverter());
             builder.Property(x => x.LockId).HasMaxLength(100).IsConcurrencyToken();
 

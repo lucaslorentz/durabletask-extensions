@@ -29,15 +29,10 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("ExecutionId")
-                        .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
-
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
 
                     b.Property<string>("LockId")
                         .IsConcurrencyToken()
@@ -48,20 +43,10 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasColumnType("longtext CHARACTER SET utf8mb4")
                         .HasMaxLength(2147483647);
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("varchar(200) CHARACTER SET utf8mb4")
-                        .HasMaxLength(200);
-
                     b.Property<string>("Queue")
                         .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
-
-                    b.Property<string>("Version")
-                        .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
 
                     b.HasKey("Id");
 
@@ -92,8 +77,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
 
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
@@ -131,16 +116,16 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
 
                     b.Property<DateTime>("LastUpdatedTime")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("varchar(200) CHARACTER SET utf8mb4")
-                        .HasMaxLength(200);
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
 
                     b.Property<string>("Output")
                         .HasColumnType("longtext CHARACTER SET utf8mb4");
@@ -169,14 +154,16 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
                 {
                     b.Property<string>("InstanceId")
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
 
                     b.Property<DateTime>("AvailableAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("LastExecutionId")
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4");
+                        .IsRequired()
+                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
+                        .HasMaxLength(100);
 
                     b.Property<string>("LockId")
                         .IsConcurrencyToken()
@@ -185,8 +172,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.Property<string>("Queue")
                         .IsRequired()
-                        .HasColumnType("varchar(300) CHARACTER SET utf8mb4")
-                        .HasMaxLength(300);
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
 
                     b.HasKey("InstanceId");
 
@@ -214,8 +201,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
 
                     b.Property<string>("Message")
                         .HasColumnType("longtext CHARACTER SET utf8mb4")
@@ -286,7 +273,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Execution", "LastExecution")
                         .WithMany()
                         .HasForeignKey("LastExecutionId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>

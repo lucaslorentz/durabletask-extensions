@@ -13,8 +13,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 columns: table => new
                 {
                     ExecutionId = table.Column<string>(maxLength: 100, nullable: false),
-                    InstanceId = table.Column<string>(maxLength: 100, nullable: false),
-                    Name = table.Column<string>(maxLength: 200, nullable: false),
+                    InstanceId = table.Column<string>(maxLength: 500, nullable: false),
+                    Name = table.Column<string>(maxLength: 500, nullable: false),
                     Version = table.Column<string>(maxLength: 100, nullable: false),
                     CreatedTime = table.Column<DateTime>(nullable: false),
                     CompletedTime = table.Column<DateTime>(nullable: false),
@@ -37,7 +37,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
-                    InstanceId = table.Column<string>(maxLength: 100, nullable: false),
+                    InstanceId = table.Column<string>(maxLength: 500, nullable: false),
                     ExecutionId = table.Column<string>(maxLength: 100, nullable: false),
                     SequenceNumber = table.Column<int>(nullable: false),
                     Content = table.Column<string>(maxLength: 2147483647, nullable: false)
@@ -78,9 +78,9 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 name: "Instances",
                 columns: table => new
                 {
-                    InstanceId = table.Column<string>(maxLength: 100, nullable: false),
-                    LastExecutionId = table.Column<string>(nullable: true),
-                    Queue = table.Column<string>(maxLength: 300, nullable: false),
+                    InstanceId = table.Column<string>(maxLength: 500, nullable: false),
+                    LastExecutionId = table.Column<string>(maxLength: 100, nullable: false),
+                    Queue = table.Column<string>(maxLength: 500, nullable: false),
                     AvailableAt = table.Column<DateTime>(nullable: false),
                     LockId = table.Column<string>(maxLength: 100, nullable: true)
                 },
@@ -100,13 +100,10 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
-                    InstanceId = table.Column<string>(maxLength: 100, nullable: false),
-                    ExecutionId = table.Column<string>(maxLength: 100, nullable: false),
-                    CreatedAt = table.Column<DateTime>(nullable: false),
-                    Name = table.Column<string>(maxLength: 200, nullable: false),
-                    Version = table.Column<string>(maxLength: 100, nullable: false),
+                    InstanceId = table.Column<string>(maxLength: 500, nullable: false),
+                    Queue = table.Column<string>(maxLength: 500, nullable: false),
                     Message = table.Column<string>(maxLength: 2147483647, nullable: true),
-                    Queue = table.Column<string>(maxLength: 100, nullable: false),
+                    CreatedAt = table.Column<DateTime>(nullable: false),
                     AvailableAt = table.Column<DateTime>(nullable: false),
                     LockId = table.Column<string>(maxLength: 100, nullable: true)
                 },
@@ -126,7 +123,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
-                    InstanceId = table.Column<string>(maxLength: 100, nullable: false),
+                    InstanceId = table.Column<string>(maxLength: 500, nullable: false),
                     ExecutionId = table.Column<string>(maxLength: 100, nullable: true),
                     AvailableAt = table.Column<DateTime>(nullable: false),
                     SequenceNumber = table.Column<int>(nullable: false),
