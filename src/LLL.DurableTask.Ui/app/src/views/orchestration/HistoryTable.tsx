@@ -192,7 +192,7 @@ function prepareData(
 ): Data {
   const svgElement = getRefCurrent<SVGSVGElement>("svg");
 
-  const maxLines = 6;
+  const maxLines = 5;
   const marginLeft = 20;
   const marginRight = 16;
   const marginBottom = 10;
@@ -298,7 +298,7 @@ function prepareData(
     lines: lines,
     dots: dots,
     svgWidth:
-      Math.min(Object.values(linesById).length, maxLines) * linesGap +
+      Math.min(lines.length, maxLines) * linesGap +
       marginLeft +
       marginRight,
     svgHeight: lastRowCenterY + marginBottom,
