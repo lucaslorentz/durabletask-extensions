@@ -34,6 +34,7 @@ import RefreshIcon from "@material-ui/icons/Refresh";
 import { default as React, useCallback, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { apiAxios } from "../../apiAxios";
+import { ErrorAlert } from "../../components/ErrorAlert";
 import { useEntrypoint } from "../../EntrypointProvider";
 import { useDebouncedEffect } from "../../hooks/useDebouncedEffect";
 import { useLocationState } from "../../hooks/useLocationState";
@@ -42,6 +43,7 @@ import {
   OrchestrationsResponse,
   OrchestrationStatus,
 } from "../../models/ApiModels";
+import { toDatetimeLocal, toUtcISO } from "../../utils/date-utils";
 
 const useStyles = makeStyles((theme) => ({
   chips: {
@@ -57,7 +59,7 @@ const useStyles = makeStyles((theme) => ({
 export function Orchestrations() {
   const classes = useStyles();
 
-  const entrypoint = useEntrypoint();
+  const { features } = useEntrypoint();
 
   const [instanceId, setInstanceId] = useQueryState<string>("instanceId", "");
   const [name, setName] = useQueryState<string>("name", "");
@@ -85,40 +87,36 @@ export function Orchestrations() {
     parse: parseFloat,
   });
 
+  const [error, setError] = useState<any>();
   const [result, setResult] = useState<OrchestrationsResponse | undefined>(
     undefined
   );
 
   const load = useCallback(async () => {
-    const params = new URLSearchParams();
+    try {
+      setIsLoading(true);
 
-    if (instanceId) {
-      params.append("instanceId", instanceId);
-    }
-    if (name) {
-      params.append("name", name);
-    }
-    if (createdTimeFrom) {
-      params.append("createdTimeFrom", createdTimeFrom);
-    }
-    if (createdTimeTo) {
-      params.append("createdTimeTo", createdTimeTo);
-    }
-    for (var status of statuses) {
-      params.append("runtimeStatus", status);
-    }
-    params.append("top", pageSize.toString());
+      const params = new URLSearchParams();
+      instanceId && params.append("instanceId", instanceId);
+      name && params.append("name", name);
+      createdTimeFrom && params.append("createdTimeFrom", createdTimeFrom);
+      createdTimeTo && params.append("createdTimeTo", createdTimeTo);
+      statuses.forEach((status) => params.append("runtimeStatus", status));
+      params.append("top", pageSize.toString());
+      continuationTokenStack.length > 0 &&
+        params.append("continuationToken", continuationTokenStack[0]);
 
-    if (continuationTokenStack.length > 0) {
-      params.append("continuationToken", continuationTokenStack[0]);
+      var response = await apiAxios.get<OrchestrationsResponse>(
+        `/v1/orchestrations?${params.toString()}`
+      );
+      setResult(response.data);
+      setError(undefined);
+    } catch (error) {
+      setResult(undefined);
+      setError(error);
+    } finally {
+      setIsLoading(false);
     }
-    var query = params.entries().next().done ? "" : `?${params.toString()}`;
-    setIsLoading(true);
-    var response = await apiAxios.get<OrchestrationsResponse>(
-      `/v1/orchestrations${query}`
-    );
-    setResult(response.data);
-    setIsLoading(false);
   }, [
     instanceId,
     name,
@@ -171,105 +169,129 @@ export function Orchestrations() {
           <Typography color="textPrimary">Orchestrations</Typography>
         </Breadcrumbs>
       </Box>
-      <Box marginBottom={1}>
-        <Accordion
-          variant="outlined"
-          expanded={searchExpanded}
-          onChange={(_, ex) => setSearchExpanded(ex)}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            Search
-          </AccordionSummary>
-          <AccordionDetails>
-            <Grid container spacing={2}>
-              {entrypoint.features.includes("SearchByInstanceId") && (
-                <Grid item xs={3}>
-                  <TextField
-                    fullWidth
-                    label="InstanceId"
-                    variant="outlined"
-                    size="small"
-                    value={instanceId}
-                    onChange={(e) => setInstanceId(e.target.value)}
-                  />
-                </Grid>
-              )}
-              {entrypoint.features.includes("SearchByName") && (
-                <Grid item xs={3}>
-                  <TextField
-                    fullWidth
-                    label="Name"
-                    variant="outlined"
-                    size="small"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </Grid>
-              )}
-              {entrypoint.features.includes("SearchByCreatedTime") && (
-                <>
-                  <Grid item xs={3}>
-                    <TextField
-                      fullWidth
-                      label="Created Time From"
-                      variant="outlined"
-                      type="datetime-local"
-                      size="small"
-                      value={toDatetimeLocal(createdTimeFrom)}
-                      onChange={(e) =>
-                        setCreatedTimeFrom(toUtcISO(e.target.value))
-                      }
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={3}>
-                    <TextField
-                      fullWidth
-                      label="Created Time To"
-                      variant="outlined"
-                      type="datetime-local"
-                      size="small"
-                      value={toDatetimeLocal(createdTimeTo)}
-                      onChange={(e) =>
-                        setCreatedTimeTo(toUtcISO(e.target.value))
-                      }
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                    />
-                  </Grid>
-                </>
-              )}
-              {entrypoint.features.includes("SearchByStatus") && (
-                <Grid item xs={3}>
-                  <FormControl fullWidth variant="outlined" size="small">
-                    <InputLabel>Status</InputLabel>
-                    <Select
-                      multiple
-                      value={statuses}
-                      onChange={(e) => setStatuses(e.target.value as any)}
-                      label="Status"
-                    >
-                      <MenuItem value="Pending">Pending</MenuItem>
-                      <MenuItem value="Running">Running</MenuItem>
-                      <MenuItem value="Completed">Completed</MenuItem>
-                      <MenuItem value="ContinuedAsNew">ContinuedAsNew</MenuItem>
-                      <MenuItem value="Failed">Failed</MenuItem>
-                      <MenuItem value="Canceled">Canceled</MenuItem>
-                      <MenuItem value="Terminated">Terminated</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              )}
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
-      </Box>
-      <Box height={4} marginBottom={1}>
+      <Box>{RenderSearch()}</Box>
+      <Box height={4} marginTop={0.5} marginBottom={0.5}>
         {isLoading && <LinearProgress />}
       </Box>
+      {error && (
+        <Box marginBottom={2}>
+          <ErrorAlert error={error} />
+        </Box>
+      )}
+      {RenderTable()}
+    </div>
+  );
+
+  function RenderSearch() {
+    return (
+      <Accordion
+        variant="outlined"
+        expanded={searchExpanded}
+        onChange={(_, ex) => setSearchExpanded(ex)}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          Search
+        </AccordionSummary>
+        <AccordionDetails>
+          <Grid container spacing={2}>
+            {features.includes("SearchByInstanceId") && (
+              <Grid item xs={3}>
+                <TextField
+                  fullWidth
+                  label="InstanceId"
+                  variant="outlined"
+                  size="small"
+                  value={instanceId}
+                  onChange={(e) => setInstanceId(e.target.value)}
+                />
+              </Grid>
+            )}
+            {features.includes("SearchByName") && (
+              <Grid item xs={3}>
+                <TextField
+                  fullWidth
+                  label="Name"
+                  variant="outlined"
+                  size="small"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </Grid>
+            )}
+            {features.includes("SearchByCreatedTime") && (
+              <>
+                <Grid item xs={3}>
+                  <TextField
+                    fullWidth
+                    label="Created Time From"
+                    variant="outlined"
+                    type="datetime-local"
+                    size="small"
+                    value={toDatetimeLocal(createdTimeFrom)}
+                    onChange={(e) =>
+                      setCreatedTimeFrom(toUtcISO(e.target.value))
+                    }
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={3}>
+                  <TextField
+                    fullWidth
+                    label="Created Time To"
+                    variant="outlined"
+                    type="datetime-local"
+                    size="small"
+                    value={toDatetimeLocal(createdTimeTo)}
+                    onChange={(e) => setCreatedTimeTo(toUtcISO(e.target.value))}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                  />
+                </Grid>
+              </>
+            )}
+            {features.includes("SearchByStatus") && (
+              <Grid item xs={3}>
+                <FormControl fullWidth variant="outlined" size="small">
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    multiple
+                    value={statuses}
+                    onChange={(e) => setStatuses(e.target.value as any)}
+                    label="Status"
+                    MenuProps={{
+                      getContentAnchorEl: null,
+                      anchorOrigin: {
+                        vertical: "bottom",
+                        horizontal: "right",
+                      },
+                      transformOrigin: {
+                        vertical: "top",
+                        horizontal: "right",
+                      },
+                    }}
+                  >
+                    <MenuItem value="Pending">Pending</MenuItem>
+                    <MenuItem value="Running">Running</MenuItem>
+                    <MenuItem value="Completed">Completed</MenuItem>
+                    <MenuItem value="ContinuedAsNew">ContinuedAsNew</MenuItem>
+                    <MenuItem value="Failed">Failed</MenuItem>
+                    <MenuItem value="Canceled">Canceled</MenuItem>
+                    <MenuItem value="Terminated">Terminated</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
+    );
+  }
+
+  function RenderTable(): React.ReactNode {
+    return (
       <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>
@@ -336,80 +358,62 @@ export function Orchestrations() {
           <TableFooter>
             <TableRow>
               <TableCell colSpan={7} padding="none" style={{ color: "#000" }}>
-                <Box marginX={2} display="flex" alignItems="center">
-                  <Box flex={1}>
-                    <Button startIcon={<RefreshIcon />} onClick={load}>
-                      Refresh
-                    </Button>
-                  </Box>
-                  <Box>
-                    Rows per page{" "}
-                    <Select
-                      value={pageSize}
-                      onChange={(e) => setPageSize(e.target.value as number)}
-                      SelectDisplayProps={{ style: { fontSize: 13 } }}
-                      autoWidth
-                      disableUnderline
-                    >
-                      <MenuItem value={5}>5</MenuItem>
-                      <MenuItem value={10}>10</MenuItem>
-                      <MenuItem value={25}>25</MenuItem>
-                      <MenuItem value={50}>50</MenuItem>
-                      <MenuItem value={100}>100</MenuItem>
-                    </Select>
-                    {continuationTokenStack.length * pageSize + 1}-
-                    {continuationTokenStack.length * pageSize +
-                      (result?.orchestrations.length ?? 0)}{" "}
-                    {entrypoint.features.includes("QueryCount") &&
-                      `of ${result?.count}`}
-                  </Box>
-                  <IconButton
-                    disabled={continuationTokenStack.length === 0}
-                    onClick={changePage.bind(null, "first")}
-                  >
-                    <FirstPageIcon />
-                  </IconButton>
-                  <IconButton
-                    disabled={continuationTokenStack.length === 0}
-                    onClick={changePage.bind(null, "previous")}
-                  >
-                    <ChevronLeftIcon />
-                  </IconButton>
-                  <IconButton
-                    disabled={!result?.continuationToken}
-                    onClick={changePage.bind(null, "next")}
-                  >
-                    <ChevronRightIcon />
-                  </IconButton>
-                </Box>
+                {RenderFooter()}
               </TableCell>
             </TableRow>
           </TableFooter>
         </Table>
       </TableContainer>
-    </div>
-  );
-}
+    );
+  }
 
-function toDatetimeLocal(value: string) {
-  if (!value) return "";
-
-  var date = new Date(value);
-
-  var ten = function (i: number) {
-      return (i < 10 ? "0" : "") + i;
-    },
-    YYYY = date.getFullYear(),
-    MM = ten(date.getMonth() + 1),
-    DD = ten(date.getDate()),
-    HH = ten(date.getHours()),
-    II = ten(date.getMinutes()),
-    SS = ten(date.getSeconds());
-  return YYYY + "-" + MM + "-" + DD + "T" + HH + ":" + II + ":" + SS;
-}
-
-function toUtcISO(value: string) {
-  if (!value) return "";
-
-  return new Date(value).toISOString();
+  function RenderFooter() {
+    return (
+      <Box marginX={2} display="flex" alignItems="center">
+        <Box flex={1}>
+          <Button startIcon={<RefreshIcon />} onClick={load}>
+            Refresh
+          </Button>
+        </Box>
+        <Box>
+          Rows per page{" "}
+          <Select
+            value={pageSize}
+            onChange={(e) => setPageSize(e.target.value as number)}
+            SelectDisplayProps={{ style: { fontSize: 13 } }}
+            autoWidth
+            disableUnderline
+          >
+            <MenuItem value={5}>5</MenuItem>
+            <MenuItem value={10}>10</MenuItem>
+            <MenuItem value={25}>25</MenuItem>
+            <MenuItem value={50}>50</MenuItem>
+            <MenuItem value={100}>100</MenuItem>
+          </Select>
+          {continuationTokenStack.length * pageSize + 1}-
+          {continuationTokenStack.length * pageSize +
+            (result?.orchestrations.length ?? 0)}{" "}
+          {features.includes("QueryCount") && `of ${result?.count}`}
+        </Box>
+        <IconButton
+          disabled={continuationTokenStack.length === 0}
+          onClick={changePage.bind(null, "first")}
+        >
+          <FirstPageIcon />
+        </IconButton>
+        <IconButton
+          disabled={continuationTokenStack.length === 0}
+          onClick={changePage.bind(null, "previous")}
+        >
+          <ChevronLeftIcon />
+        </IconButton>
+        <IconButton
+          disabled={!result?.continuationToken}
+          onClick={changePage.bind(null, "next")}
+        >
+          <ChevronRightIcon />
+        </IconButton>
+      </Box>
+    );
+  }
 }

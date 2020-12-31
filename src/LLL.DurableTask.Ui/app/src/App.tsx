@@ -14,7 +14,7 @@ import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
 import { Person } from "@material-ui/icons";
 import React, { Suspense } from "react";
-import { Link as RouterLink, Redirect, Switch } from "react-router-dom";
+import { Link as RouterLink, Redirect, Route, Switch } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useConfiguration } from "./ConfigurationProvider";
@@ -22,6 +22,7 @@ import { useEntrypoint } from "./EntrypointProvider";
 import { Create } from "./views/create";
 import { Orchestration } from "./views/orchestration";
 import { Orchestrations } from "./views/orchestrations";
+import { NotFound } from "./views/notfound";
 
 const useStyles = makeStyles((theme) => ({
   title: {
@@ -36,7 +37,7 @@ export function App() {
 
   const auth = useAuth();
 
-  const entrypoint = useEntrypoint();
+  const { endpoints } = useEntrypoint();
 
   const [userAnchorEl, setUserAnchorEl] = React.useState<
     HTMLButtonElement | undefined
@@ -65,18 +66,18 @@ export function App() {
         <Toolbar>
           <Grid container alignItems="center">
             <Grid item>
-              <Typography variant="h6" className={classes.title}>
+              <Typography variant="h4" className={classes.title}>
                 Durable Task UI
               </Typography>
             </Grid>
-            {entrypoint.endpoints.OrchestrationsCreate.authorized && (
+            {endpoints.OrchestrationsCreate.authorized && (
               <Grid item>
                 <Button component={RouterLink} to="/create" color="inherit">
                   Create
                 </Button>
               </Grid>
             )}
-            {entrypoint.endpoints.OrchestrationsList.authorized && (
+            {endpoints.OrchestrationsList.authorized && (
               <Grid item>
                 <Button
                   component={RouterLink}
@@ -144,18 +145,23 @@ export function App() {
                   "OrchestrationsGetExecution",
                 ]}
                 path="/orchestrations/:instanceId/:executionId?"
+                exact
               >
                 <Orchestration />
               </ProtectedRoute>
               <ProtectedRoute
                 requiredEndpoints={["OrchestrationsCreate"]}
                 path="/create"
+                exact
               >
                 <Create />
               </ProtectedRoute>
-              {entrypoint.endpoints.OrchestrationsList.authorized && (
-                <Redirect to="/orchestrations" />
+              {endpoints.OrchestrationsList.authorized && (
+                <Route path="/" exact>
+                  <Redirect to="/orchestrations" />
+                </Route>
               )}
+              <NotFound />
             </Switch>
           </Suspense>
         </Box>

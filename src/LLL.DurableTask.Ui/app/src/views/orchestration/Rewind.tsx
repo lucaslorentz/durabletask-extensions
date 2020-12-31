@@ -1,4 +1,5 @@
 import { Button, Grid } from "@material-ui/core";
+import { useSnackbar } from "notistack";
 import React, { useState } from "react";
 import * as yup from "yup";
 import { apiAxios } from "../../apiAxios";
@@ -26,6 +27,7 @@ export function Rewind(props: Props) {
     reason: "",
   }));
   const [error, setError] = useState<any>();
+  const { enqueueSnackbar } = useSnackbar();
 
   async function handleSaveClick() {
     try {
@@ -39,6 +41,10 @@ export function Rewind(props: Props) {
         `/v1/orchestrations/${encodeURIComponent(instanceId)}/rewind`,
         request
       );
+
+      enqueueSnackbar("Failures rewound", {
+        variant: "success",
+      });
 
       form.reset();
 

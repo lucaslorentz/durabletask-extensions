@@ -3,11 +3,6 @@ import {
   Breadcrumbs,
   Button,
   ButtonGroup,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Grid,
   LinearProgress,
   Link,
@@ -20,6 +15,8 @@ import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
 import { ArrowDropDown, Sync } from "@material-ui/icons";
 import DeleteIcon from "@material-ui/icons/Delete";
+import { useConfirm } from "material-ui-confirm";
+import { useSnackbar } from "notistack";
 import React, { useEffect, useReducer, useState } from "react";
 import {
   Link as RouterLink,
@@ -27,13 +24,14 @@ import {
   useRouteMatch,
 } from "react-router-dom";
 import { apiAxios } from "../../apiAxios";
+import { ErrorAlert } from "../../components/ErrorAlert";
 import { useEntrypoint } from "../../EntrypointProvider";
 import { useQueryState } from "../../hooks/useQueryState";
 import { HistoryEvent, OrchestrationState } from "../../models/ApiModels";
 import { HistoryTable } from "./HistoryTable";
 import { RaiseEvent } from "./RaiseEvent";
-import { State } from "./State";
 import { Rewind } from "./Rewind";
+import { State } from "./State";
 import { Terminate } from "./Terminate";
 
 type RouteParams = {
@@ -62,20 +60,21 @@ export function Orchestration() {
   const [historyEvents, setHistoryEvents] = useState<
     HistoryEvent[] | undefined
   >(undefined);
+  const [error, setError] = useState<any>();
   const [tab, setTab] = useQueryState<TabValue>("tab", "state");
   const [isLoading, setIsLoading] = useState(false);
-  const [autoRefreshInterval, setAutoRefreshInterval] = useQueryState<
+  const [refreshInterval, setRefreshInterval] = useQueryState<
     number | undefined
   >("refreshInterval", undefined, {
     parse: parseInt,
   });
-  const [autoRefreshAnchor, setAutoRefreshAnchor] = useState<
-    HTMLElement | undefined
-  >();
+  const [refreshAnchor, setRefreshAnchor] = useState<HTMLElement | undefined>();
   const [refreshCount, triggerRefresh] = useReducer((x) => x + 1, 0);
   const [loadedCount, incrementLoadedCount] = useReducer((x) => x + 1, 0);
-  const entrypoint = useEntrypoint();
-
+  const { endpoints, features } = useEntrypoint();
+  const history = useHistory();
+  const confirm = useConfirm();
+  const { enqueueSnackbar } = useSnackbar();
   const route = useRouteMatch<RouteParams>();
 
   const instanceId =
@@ -89,80 +88,65 @@ export function Orchestration() {
   }, [instanceId, executionId]);
 
   useEffect(() => {
-    if (!autoRefreshInterval) return;
+    if (!refreshInterval) return;
 
-    const timeout = setTimeout(
-      () => triggerRefresh(),
-      autoRefreshInterval * 1000
-    );
+    const timeout = setTimeout(() => triggerRefresh(), refreshInterval * 1000);
     return () => clearTimeout(timeout);
-  }, [autoRefreshInterval, loadedCount]);
+  }, [refreshInterval, loadedCount]);
 
   useEffect(() => {
     (async () => {
-      setIsLoading(true);
+      try {
+        setIsLoading(true);
 
-      let url = `/v1/orchestrations/${encodeURIComponent(instanceId)}`;
-      if (executionId) {
-        url = `${url}/${executionId}`;
+        let url = `/v1/orchestrations/${encodeURIComponent(instanceId)}`;
+        if (executionId) {
+          url = `${url}/${executionId}`;
+        }
+
+        var stateResponse = await apiAxios.get<OrchestrationState>(url);
+        setState(stateResponse.data);
+
+        if (endpoints.OrchestrationsGetExecutionHistory.authorized) {
+          var historyResponse = await apiAxios.get<HistoryEvent[]>(
+            `/v1/orchestrations/${encodeURIComponent(
+              instanceId
+            )}/${encodeURIComponent(
+              stateResponse.data.orchestrationInstance.executionId
+            )}/history`
+          );
+          setHistoryEvents(historyResponse.data);
+        }
+
+        setError(undefined);
+      } catch (error) {
+        setError(error);
+        setState(undefined);
+        setHistoryEvents(undefined);
+      } finally {
+        setIsLoading(false);
+        incrementLoadedCount();
       }
-
-      var stateResponse = await apiAxios.get<OrchestrationState>(url);
-      setState(stateResponse.data);
-
-      if (entrypoint.endpoints.OrchestrationsGetExecutionHistory.authorized) {
-        var historyResponse = await apiAxios.get<HistoryEvent[]>(
-          `/v1/orchestrations/${encodeURIComponent(
-            instanceId
-          )}/${encodeURIComponent(
-            stateResponse.data.orchestrationInstance.executionId
-          )}/history`
-        );
-        setHistoryEvents(historyResponse.data);
-      }
-
-      setIsLoading(false);
-      incrementLoadedCount();
     })();
-  }, [instanceId, executionId, refreshCount, entrypoint]);
+  }, [instanceId, executionId, refreshCount, endpoints]);
 
-  const history = useHistory();
-  const [showConfirmPurge, setShowConfirmPurge] = useState(false);
   function handlePurgeClick() {
-    setShowConfirmPurge(true);
-  }
-  async function handleConfirmPurgeClick() {
-    await apiAxios.delete(
-      `/v1/orchestrations/${encodeURIComponent(instanceId)}`
-    );
-
-    setShowConfirmPurge(false);
-
-    history.goBack();
+    confirm({
+      description:
+        "This action is irreversible. Do you confirm the purge of this instance?",
+    }).then(async () => {
+      await apiAxios.delete(
+        `/v1/orchestrations/${encodeURIComponent(instanceId)}`
+      );
+      enqueueSnackbar("Instance purged", {
+        variant: "success",
+      });
+      history.goBack();
+    });
   }
 
   return (
     <div>
-      <Dialog
-        open={showConfirmPurge}
-        onClose={() => setShowConfirmPurge(false)}
-      >
-        <DialogTitle>Confirm purge</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            This action is irreversible. Do you confirm the purge of this
-            instance?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowConfirmPurge(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmPurgeClick} color="primary" autoFocus>
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
       <Box marginBottom={1}>
         <Breadcrumbs aria-label="breadcrumb">
           <Link component={RouterLink} to="/orchestrations">
@@ -189,13 +173,13 @@ export function Orchestration() {
             <Button onClick={() => triggerRefresh()} title="Refresh">
               <Sync />
             </Button>
-            <Button onClick={(e) => setAutoRefreshAnchor(e.currentTarget)}>
-              {autoRefreshInterval ? `${autoRefreshInterval} seconds` : "Off"}
+            <Button onClick={(e) => setRefreshAnchor(e.currentTarget)}>
+              {refreshInterval ? `${refreshInterval} seconds` : "Off"}
               <ArrowDropDown />
             </Button>
           </ButtonGroup>
           <Menu
-            anchorEl={autoRefreshAnchor}
+            anchorEl={refreshAnchor}
             keepMounted
             getContentAnchorEl={null}
             anchorOrigin={{
@@ -206,16 +190,16 @@ export function Orchestration() {
               vertical: "top",
               horizontal: "right",
             }}
-            open={Boolean(autoRefreshAnchor)}
-            onClose={() => setAutoRefreshAnchor(undefined)}
+            open={Boolean(refreshAnchor)}
+            onClose={() => setRefreshAnchor(undefined)}
           >
             {autoRefreshOptions.map((option, index) => (
               <MenuItem
                 key={index}
-                selected={autoRefreshInterval === option.value}
+                selected={refreshInterval === option.value}
                 onClick={() => {
-                  setAutoRefreshInterval(option.value);
-                  setAutoRefreshAnchor(undefined);
+                  setRefreshInterval(option.value);
+                  setRefreshAnchor(undefined);
                 }}
               >
                 {option.label}
@@ -223,7 +207,7 @@ export function Orchestration() {
             ))}
           </Menu>
         </Grid>
-        {entrypoint.endpoints.OrchestrationsPurgeInstance.authorized && (
+        {endpoints.OrchestrationsPurgeInstance.authorized && state && (
           <Grid item>
             <Button
               variant="outlined"
@@ -239,6 +223,11 @@ export function Orchestration() {
       <Box height={4} marginTop={0.5} marginBottom={0.5}>
         {isLoading && <LinearProgress />}
       </Box>
+      {error && (
+        <Box marginBottom={2}>
+          <ErrorAlert error={error} />
+        </Box>
+      )}
       <Paper variant="outlined">
         <Tabs
           value={tab}
@@ -247,16 +236,17 @@ export function Orchestration() {
           textColor="primary"
         >
           <Tab value="state" label="State" />
-          {entrypoint.endpoints.OrchestrationsGetExecutionHistory
-            .authorized && <Tab value="history" label="History" />}
-          {entrypoint.endpoints.OrchestrationsRaiseEvent.authorized && (
+          {endpoints.OrchestrationsGetExecutionHistory.authorized && (
+            <Tab value="history" label="History" />
+          )}
+          {endpoints.OrchestrationsRaiseEvent.authorized && (
             <Tab value="raise_event" label="Raise Event" />
           )}
-          {entrypoint.endpoints.OrchestrationsTerminate.authorized && (
+          {endpoints.OrchestrationsTerminate.authorized && (
             <Tab value="terminate" label="Terminate" />
           )}
-          {entrypoint.features.includes("Rewind") &&
-            entrypoint.endpoints.OrchestrationsRewind.authorized && (
+          {features.includes("Rewind") &&
+            endpoints.OrchestrationsRewind.authorized && (
               <Tab value="rewind" label="Rewind" />
             )}
           <Tab value="json" label="Json" />
@@ -266,11 +256,10 @@ export function Orchestration() {
             {tab === "state" && (
               <State state={state} definedExecutionId={Boolean(executionId)} />
             )}
-            {entrypoint.endpoints.OrchestrationsGetExecutionHistory
-              .authorized &&
+            {endpoints.OrchestrationsGetExecutionHistory.authorized &&
               tab === "history" &&
               historyEvents && <HistoryTable historyEvents={historyEvents} />}
-            {entrypoint.endpoints.OrchestrationsRaiseEvent.authorized &&
+            {endpoints.OrchestrationsRaiseEvent.authorized &&
               tab === "raise_event" && (
                 <Box padding={2}>
                   <RaiseEvent
@@ -279,7 +268,7 @@ export function Orchestration() {
                   />
                 </Box>
               )}
-            {entrypoint.endpoints.OrchestrationsTerminate.authorized &&
+            {endpoints.OrchestrationsTerminate.authorized &&
               tab === "terminate" && (
                 <Box padding={2}>
                   <Terminate
@@ -288,8 +277,8 @@ export function Orchestration() {
                   />
                 </Box>
               )}
-            {entrypoint.features.includes("Rewind") &&
-              entrypoint.endpoints.OrchestrationsRewind.authorized &&
+            {features.includes("Rewind") &&
+              endpoints.OrchestrationsRewind.authorized &&
               tab === "rewind" && (
                 <Box padding={2}>
                   <Rewind instanceId={instanceId} onRewind={triggerRefresh} />

@@ -9,12 +9,12 @@ type Props = RouteProps & {
 };
 
 export function ProtectedRoute(props: Props) {
-  const entrypoint = useEntrypoint();
+  const { endpoints } = useEntrypoint();
 
   const { requiredEndpoints, render, children, ...other } = props;
 
   const authorizedEndpoints = requiredEndpoints.filter(
-    (e) => entrypoint.endpoints[e].authorized
+    (e) => endpoints[e].authorized
   );
 
   const authorized = requiredEndpoints.length === authorizedEndpoints.length;

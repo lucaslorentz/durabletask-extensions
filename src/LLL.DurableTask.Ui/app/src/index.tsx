@@ -10,18 +10,29 @@ import { customTheme } from "./CustomTheme";
 import { ConfigurationProvider } from "./ConfigurationProvider";
 import { AuthProvider } from "./AuthProvider";
 import { EntrypointProvider } from "./EntrypointProvider";
+import { ConfirmProvider } from "material-ui-confirm";
+import { SnackbarProvider } from "notistack";
 
 ReactDOM.render(
   // <React.StrictMode>
   <Router history={createBrowserHashHistory({ clearSearch: true })}>
     <ThemeProvider theme={customTheme}>
-      <ConfigurationProvider>
-        <AuthProvider>
-          <EntrypointProvider>
-            <App />
-          </EntrypointProvider>
-        </AuthProvider>
-      </ConfigurationProvider>
+      <SnackbarProvider
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "center",
+        }}
+      >
+        <ConfirmProvider>
+          <ConfigurationProvider>
+            <AuthProvider>
+              <EntrypointProvider>
+                <App />
+              </EntrypointProvider>
+            </AuthProvider>
+          </ConfigurationProvider>
+        </ConfirmProvider>
+      </SnackbarProvider>
     </ThemeProvider>
   </Router>,
   // </React.StrictMode>

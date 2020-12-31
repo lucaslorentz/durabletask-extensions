@@ -21,6 +21,7 @@ import {
 } from "../../models/ApiModels";
 import { apiAxios } from "../../apiAxios";
 import { ErrorAlert } from "../../components/ErrorAlert";
+import { useSnackbar } from "notistack";
 
 const schema = yup
   .object({
@@ -52,8 +53,7 @@ export function Create() {
   const [error, setError] = useState<any>();
 
   const history = useHistory();
-
-  console.log("Render");
+  const { enqueueSnackbar } = useSnackbar();
 
   async function handleSaveClick() {
     try {
@@ -75,7 +75,13 @@ export function Create() {
         request
       );
 
-      history.push(`/orchestrations/${encodeURIComponent(response.data.instanceId)}`);
+      enqueueSnackbar("Orchestration created", {
+        variant: "success",
+      });
+
+      history.push(
+        `/orchestrations/${encodeURIComponent(response.data.instanceId)}`
+      );
     } catch (error) {
       setError(error);
     }

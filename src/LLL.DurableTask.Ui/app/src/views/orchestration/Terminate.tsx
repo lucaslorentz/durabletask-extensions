@@ -1,4 +1,5 @@
 import { Button, Grid } from "@material-ui/core";
+import { useSnackbar } from "notistack";
 import React, { useState } from "react";
 import * as yup from "yup";
 import { apiAxios } from "../../apiAxios";
@@ -26,6 +27,7 @@ export function Terminate(props: Props) {
     reason: "",
   }));
   const [error, setError] = useState<any>();
+  const { enqueueSnackbar } = useSnackbar();
 
   async function handleSaveClick() {
     try {
@@ -39,6 +41,10 @@ export function Terminate(props: Props) {
         `/v1/orchestrations/${encodeURIComponent(instanceId)}/terminate`,
         request
       );
+
+      enqueueSnackbar("Termination requested", {
+        variant: "success",
+      });
 
       form.reset();
 

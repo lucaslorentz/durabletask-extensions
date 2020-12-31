@@ -67,6 +67,12 @@ namespace LLL.DurableTask.Api.Endpoints
 
                 var state = await taskHubClient.GetOrchestrationStateAsync(instanceId);
 
+                if (state == null)
+                {
+                    context.Response.StatusCode = 404;
+                    return;
+                }
+
                 await context.RespondJson(state);
             }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata
             {
@@ -81,6 +87,12 @@ namespace LLL.DurableTask.Api.Endpoints
                 var executionId = Uri.UnescapeDataString(context.Request.RouteValues["executionId"].ToString());
 
                 var state = await taskHubClient.GetOrchestrationStateAsync(instanceId, executionId);
+
+                if (state == null)
+                {
+                    context.Response.StatusCode = 404;
+                    return;
+                }
 
                 await context.RespondJson(state);
             }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata
