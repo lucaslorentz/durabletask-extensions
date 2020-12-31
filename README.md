@@ -76,6 +76,7 @@ Extends Durable Task Emulator storage with:
 - UI: no
 - Distributed workers: no
 - Storing activity input: no
+- Failures rewind: no
 
 #### Configuration
 
