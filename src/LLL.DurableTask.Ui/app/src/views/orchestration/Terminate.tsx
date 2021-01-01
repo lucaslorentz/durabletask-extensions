@@ -4,9 +4,8 @@ import React, { useState } from "react";
 import * as yup from "yup";
 import { apiAxios } from "../../apiAxios";
 import { ErrorAlert } from "../../components/ErrorAlert";
-import { TextField } from "../../form/fields";
-import { useForm } from "../../form/form-hooks";
-import { Observe } from "../../form/observation-components";
+import { TextField } from "../../form/TextField";
+import { useForm } from "../../form/useForm";
 import { TerminateRequest } from "../../models/ApiModels";
 
 type Props = {
@@ -58,37 +57,32 @@ export function Terminate(props: Props) {
     <div>
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          {form.field("reason").render((field) => (
-            <TextField field={field} multiline rows={6} />
-          ))}
+          <TextField field={form.field("reason")} multiline rows={6} />
         </Grid>
         {error && (
           <Grid item xs={12}>
             <ErrorAlert error={error} />
           </Grid>
         )}
-        <Observe form={form}>
-          {({ form }) => (
-            <Grid item xs={12} container spacing={1} justify="space-between">
-              <Grid item>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSaveClick}
-                  disabled={
-                    form.pendingValidation ||
-                    Object.keys(form.errors).length > 0
-                  }
-                >
-                  Terminate
-                </Button>
-              </Grid>
-              <Grid item>
-                <Button onClick={() => form.reset()}>Reset</Button>
-              </Grid>
+        {form.render((form) => (
+          <Grid item xs={12} container spacing={1} justify="space-between">
+            <Grid item>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSaveClick}
+                disabled={
+                  form.pendingValidation || Object.keys(form.errors).length > 0
+                }
+              >
+                Terminate
+              </Button>
             </Grid>
-          )}
-        </Observe>
+            <Grid item>
+              <Button onClick={() => form.reset()}>Reset</Button>
+            </Grid>
+          </Grid>
+        ))}
       </Grid>
     </div>
   );

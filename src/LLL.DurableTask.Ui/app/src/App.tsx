@@ -22,7 +22,7 @@ import { useEntrypoint } from "./EntrypointProvider";
 import { Create } from "./views/create";
 import { Orchestration } from "./views/orchestration";
 import { Orchestrations } from "./views/orchestrations";
-import { NotFound } from "./views/notfound";
+import { NotFound } from "./views/not_found";
 
 const useStyles = makeStyles((theme) => ({
   title: {

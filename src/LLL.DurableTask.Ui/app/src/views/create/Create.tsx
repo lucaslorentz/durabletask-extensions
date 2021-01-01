@@ -9,19 +9,18 @@ import {
   Typography,
 } from "@material-ui/core";
 import DeleteIcon from "@material-ui/icons/Delete";
+import { useSnackbar } from "notistack";
 import React, { useState } from "react";
 import { Link as RouterLink, useHistory } from "react-router-dom";
 import * as yup from "yup";
-import { useForm } from "../../form/form-hooks";
-import { Observe } from "../../form/observation-components";
-import { TextField } from "../../form/fields";
+import { apiAxios } from "../../apiAxios";
+import { ErrorAlert } from "../../components/ErrorAlert";
+import { TextField } from "../../form/TextField";
+import { useForm } from "../../form/useForm";
 import {
   CreateOrchestrationRequest,
   OrchestrationInstance,
 } from "../../models/ApiModels";
-import { apiAxios } from "../../apiAxios";
-import { ErrorAlert } from "../../components/ErrorAlert";
-import { useSnackbar } from "notistack";
 
 const schema = yup
   .object({
@@ -101,25 +100,17 @@ export function Create() {
         <Box padding={2}>
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              {form.field("name").render((field) => (
-                <TextField field={field} />
-              ))}
+              <TextField field={form.field("name")} />
             </Grid>
             <Grid item xs={6}>
-              {form.field("version").render((field) => (
-                <TextField field={field} />
-              ))}
+              <TextField field={form.field("version")} />
             </Grid>
             <Grid item xs={6}>
-              {form.field("instanceId").render((field) => (
-                <TextField field={field} />
-              ))}
+              <TextField field={form.field("instanceId")} />
             </Grid>
             <Grid item xs={6}></Grid>
             <Grid item xs={12}>
-              {form.field("input").render((field) => (
-                <TextField field={field} multiline rows={6} />
-              ))}
+              <TextField field={form.field("input")} multiline rows={6} />
             </Grid>
             <Grid item xs={12}>
               <Button
@@ -129,21 +120,17 @@ export function Create() {
               </Button>
             </Grid>
             {form.field("tags").render((field) =>
-              field.map((tag, index) => (
-                <Grid key={index} item xs={12}>
+              field.fields().map((tagField) => (
+                <Grid key={tagField.path} item xs={12}>
                   <Box display="flex">
                     <Box marginX={1} flex={1}>
-                      {tag.field("key").render((field) => (
-                        <TextField field={field} />
-                      ))}
+                      <TextField field={tagField.field("key")} />
                     </Box>
                     <Box marginX={1} flex={1}>
-                      {tag.field("value").render((field) => (
-                        <TextField field={field} />
-                      ))}
+                      <TextField field={tagField.field("value")} />
                     </Box>
                     <Box>
-                      <IconButton onClick={() => field.remove(tag.value)}>
+                      <IconButton onClick={() => field.remove(tagField.value)}>
                         <DeleteIcon />
                       </IconButton>
                     </Box>
@@ -156,34 +143,26 @@ export function Create() {
                 <ErrorAlert error={error} />
               </Grid>
             )}
-            <Observe form={form}>
-              {({ form }) => (
-                <Grid
-                  item
-                  xs={12}
-                  container
-                  spacing={1}
-                  justify="space-between"
-                >
-                  <Grid item>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleSaveClick}
-                      disabled={
-                        form.pendingValidation ||
-                        Object.keys(form.errors).length > 0
-                      }
-                    >
-                      Create
-                    </Button>
-                  </Grid>
-                  <Grid item>
-                    <Button onClick={() => form.reset()}>Reset</Button>
-                  </Grid>
+            {form.render((form) => (
+              <Grid item xs={12} container spacing={1} justify="space-between">
+                <Grid item>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSaveClick}
+                    disabled={
+                      form.pendingValidation ||
+                      Object.keys(form.errors).length > 0
+                    }
+                  >
+                    Create
+                  </Button>
                 </Grid>
-              )}
-            </Observe>
+                <Grid item>
+                  <Button onClick={() => form.reset()}>Reset</Button>
+                </Grid>
+              </Grid>
+            ))}
           </Grid>
         </Box>
       </Paper>

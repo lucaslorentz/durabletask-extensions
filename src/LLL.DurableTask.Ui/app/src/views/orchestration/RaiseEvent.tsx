@@ -4,9 +4,8 @@ import React, { useState } from "react";
 import * as yup from "yup";
 import { apiAxios } from "../../apiAxios";
 import { ErrorAlert } from "../../components/ErrorAlert";
-import { TextField } from "../../form/fields";
-import { useForm } from "../../form/form-hooks";
-import { Observe } from "../../form/observation-components";
+import { TextField } from "../../form/TextField";
+import { useForm } from "../../form/useForm";
 import { RaiseEventRequest } from "../../models/ApiModels";
 
 type Props = {
@@ -77,43 +76,36 @@ export function RaiseEvent(props: Props) {
     <div>
       <Grid container spacing={2}>
         <Grid item xs={6}>
-          {form.field("eventName").render((field) => (
-            <TextField field={field} />
-          ))}
+          <TextField field={form.field("eventName")} />
         </Grid>
         <Grid item xs={6}></Grid>
         <Grid item xs={12}>
-          {form.field("eventData").render((field) => (
-            <TextField field={field} multiline rows={6} />
-          ))}
+          <TextField field={form.field("eventData")} multiline rows={6} />
         </Grid>
         {error && (
           <Grid item xs={12}>
             <ErrorAlert error={error} />
           </Grid>
         )}
-        <Observe form={form}>
-          {({ form }) => (
-            <Grid item xs={12} container spacing={1} justify="space-between">
-              <Grid item>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSaveClick}
-                  disabled={
-                    form.pendingValidation ||
-                    Object.keys(form.errors).length > 0
-                  }
-                >
-                  Raise Event
-                </Button>
-              </Grid>
-              <Grid item>
-                <Button onClick={() => form.reset()}>Reset</Button>
-              </Grid>
+        {form.render((form) => (
+          <Grid item xs={12} container spacing={1} justify="space-between">
+            <Grid item>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSaveClick}
+                disabled={
+                  form.pendingValidation || Object.keys(form.errors).length > 0
+                }
+              >
+                Raise Event
+              </Button>
             </Grid>
-          )}
-        </Observe>
+            <Grid item>
+              <Button onClick={() => form.reset()}>Reset</Button>
+            </Grid>
+          </Grid>
+        ))}
       </Grid>
     </div>
   );
