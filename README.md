@@ -409,7 +409,8 @@ Inside the [sample](samples) folder you will find an implementation of the class
 The sample was built to demonstrate a microservices architecture with the following components:
 
 - **Server:** Connects to storage and exposes it as GRPC endpoints.
-- **UI:** Exposes API and UI static files.
+- **Api:** Exposes REST API to manage orchestrations.
+- **UI:** Exposes UI to manage orchestrations.
 - **OrchestrationWorker:** Implements [BookParallel](samples/OrchestrationWorker/Orchestrations/BookParallelOrchestration.cs) and [BookSquential](samples/OrchestrationWorker/Orchestrations/BookSequentialOrchestration.cs) orchestrations for the given problem.
 - **FlightWorker:** Implements [BookFlight](samples/FlightWorker/Activities/BookFlightActivity.cs) and [CancelFlight](samples/CarWorker/Activities/CancelFlightActivity.cs) activities.
 - **CarWorker:** Implements [BookCar](samples/CarWorker/Activities/BookCarActivity.cs) and [CancelCar](samples/CarWorker/Activities/CancelCarActivity.cs) activities.

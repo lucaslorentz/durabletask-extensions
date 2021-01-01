@@ -2,27 +2,27 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.Client", "src\LLL.DurableTask.Client\LLL.DurableTask.Client.csproj", "{D48A9FF2-266F-4E58-B5B6-049D982BC11B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.Client", "src\LLL.DurableTask.Client\LLL.DurableTask.Client.csproj", "{D48A9FF2-266F-4E58-B5B6-049D982BC11B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.EFCore", "src\LLL.DurableTask.EFCore\LLL.DurableTask.EFCore.csproj", "{11BDFC0F-F81E-4538-BA1A-57B6A64B616A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.EFCore", "src\LLL.DurableTask.EFCore\LLL.DurableTask.EFCore.csproj", "{11BDFC0F-F81E-4538-BA1A-57B6A64B616A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.Emulator", "src\LLL.DurableTask.Emulator\LLL.DurableTask.Emulator.csproj", "{1F42DCBA-D212-4E36-83AC-7E067A7A7ECC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.Emulator", "src\LLL.DurableTask.Emulator\LLL.DurableTask.Emulator.csproj", "{1F42DCBA-D212-4E36-83AC-7E067A7A7ECC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.AzureStorage", "src\LLL.DurableTask.AzureStorage\LLL.DurableTask.AzureStorage.csproj", "{63E10D86-BA42-4EE2-964D-F2EE796AAC83}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.AzureStorage", "src\LLL.DurableTask.AzureStorage\LLL.DurableTask.AzureStorage.csproj", "{63E10D86-BA42-4EE2-964D-F2EE796AAC83}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.Server.Grpc.Client", "src\LLL.DurableTask.Server.Grpc.Client\LLL.DurableTask.Server.Grpc.Client.csproj", "{BC199061-8982-4161-B8C6-18A002F3E0BF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.Server.Grpc.Client", "src\LLL.DurableTask.Server.Grpc.Client\LLL.DurableTask.Server.Grpc.Client.csproj", "{BC199061-8982-4161-B8C6-18A002F3E0BF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.Core", "src\LLL.DurableTask.Core\LLL.DurableTask.Core.csproj", "{18285DF2-6A90-4B71-8C3D-3B699E8C28D3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.Core", "src\LLL.DurableTask.Core\LLL.DurableTask.Core.csproj", "{18285DF2-6A90-4B71-8C3D-3B699E8C28D3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.EFCore.MySql", "src\LLL.DurableTask.EFCore.MySql\LLL.DurableTask.EFCore.MySql.csproj", "{287C32B8-251F-4796-AF77-90992A28E0EE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.EFCore.MySql", "src\LLL.DurableTask.EFCore.MySql\LLL.DurableTask.EFCore.MySql.csproj", "{287C32B8-251F-4796-AF77-90992A28E0EE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.EFCore.SqlServer", "src\LLL.DurableTask.EFCore.SqlServer\LLL.DurableTask.EFCore.SqlServer.csproj", "{E843E763-CB19-4A80-9064-3D5E2A63D3CF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.EFCore.SqlServer", "src\LLL.DurableTask.EFCore.SqlServer\LLL.DurableTask.EFCore.SqlServer.csproj", "{E843E763-CB19-4A80-9064-3D5E2A63D3CF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{E0FCDB26-294E-4389-95DA-B6ADACFD4A5C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BpmnWorker", "samples\BpmnWorker\BpmnWorker.csproj", "{4A6DDCA8-44BB-440D-B898-E7283112F3DD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.EFCore.PostgreSQL", "src\LLL.DurableTask.EFCore.PostgreSQL\LLL.DurableTask.EFCore.PostgreSQL.csproj", "{57CD5EC5-80EC-4EAE-9542-5E9151E436D8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.EFCore.PostgreSQL", "src\LLL.DurableTask.EFCore.PostgreSQL\LLL.DurableTask.EFCore.PostgreSQL.csproj", "{57CD5EC5-80EC-4EAE-9542-5E9151E436D8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CarWorker", "samples\CarWorker\CarWorker.csproj", "{B372C7A4-4834-48B4-BA73-CBAA11DA2F66}"
 EndProject
@@ -36,26 +36,28 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5B6D72A5-EA1
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{303FE5B1-30C6-4DC3-881E-0A3CA920B03F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.Tests", "test\LLL.DurableTask.Tests\LLL.DurableTask.Tests.csproj", "{9C833A22-F135-4990-BB70-268549B8F7B8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.Tests", "test\LLL.DurableTask.Tests\LLL.DurableTask.Tests.csproj", "{9C833A22-F135-4990-BB70-268549B8F7B8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.Server.Grpc", "src\LLL.DurableTask.Server.Grpc\LLL.DurableTask.Server.Grpc.csproj", "{33FE20EC-64DB-4A5C-A5F7-ABCA9947C31A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.Server.Grpc", "src\LLL.DurableTask.Server.Grpc\LLL.DurableTask.Server.Grpc.csproj", "{33FE20EC-64DB-4A5C-A5F7-ABCA9947C31A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{57C96BE4-6BB2-40C1-B6D3-FF1C9BA29C4B}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.Server", "src\LLL.DurableTask.Server\LLL.DurableTask.Server.csproj", "{5229E122-2B60-4FE9-BAB5-0BB113BBAC73}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.Server", "src\LLL.DurableTask.Server\LLL.DurableTask.Server.csproj", "{5229E122-2B60-4FE9-BAB5-0BB113BBAC73}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.Api", "src\LLL.DurableTask.Api\LLL.DurableTask.Api.csproj", "{3B6841EB-65FE-466C-8141-B06BA87A08C3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.Api", "src\LLL.DurableTask.Api\LLL.DurableTask.Api.csproj", "{3B6841EB-65FE-466C-8141-B06BA87A08C3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.Ui", "src\LLL.DurableTask.Ui\LLL.DurableTask.Ui.csproj", "{856ED398-A3A4-4BF2-8E84-4EE51A4A1CD5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLL.DurableTask.Ui", "src\LLL.DurableTask.Ui\LLL.DurableTask.Ui.csproj", "{856ED398-A3A4-4BF2-8E84-4EE51A4A1CD5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DurableTask.Worker", "src\LLL.DurableTask.Worker\LLL.DurableTask.Worker.csproj", "{6EE26F76-6DE8-4252-8647-7FA9612FDBCE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LLL.DurableTask.Worker", "src\LLL.DurableTask.Worker\LLL.DurableTask.Worker.csproj", "{6EE26F76-6DE8-4252-8647-7FA9612FDBCE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "samples\Server\Server.csproj", "{3C2D139D-4768-4C04-8805-5824733739AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api", "samples\Ui\Ui.csproj", "{E6B7F70C-2AFC-4228-AA86-0F6ABCD9FCD9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ui", "samples\Ui\Ui.csproj", "{E6B7F70C-2AFC-4228-AA86-0F6ABCD9FCD9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api", "samples\Api\Api.csproj", "{06883E5A-B19F-4EE1-837A-508754C00CB7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -151,6 +153,10 @@ Global
 		{E6B7F70C-2AFC-4228-AA86-0F6ABCD9FCD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6B7F70C-2AFC-4228-AA86-0F6ABCD9FCD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E6B7F70C-2AFC-4228-AA86-0F6ABCD9FCD9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06883E5A-B19F-4EE1-837A-508754C00CB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06883E5A-B19F-4EE1-837A-508754C00CB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06883E5A-B19F-4EE1-837A-508754C00CB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06883E5A-B19F-4EE1-837A-508754C00CB7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -178,6 +184,7 @@ Global
 		{6EE26F76-6DE8-4252-8647-7FA9612FDBCE} = {5B6D72A5-EA1B-4815-88D1-DAC262E987CA}
 		{3C2D139D-4768-4C04-8805-5824733739AF} = {E0FCDB26-294E-4389-95DA-B6ADACFD4A5C}
 		{E6B7F70C-2AFC-4228-AA86-0F6ABCD9FCD9} = {E0FCDB26-294E-4389-95DA-B6ADACFD4A5C}
+		{06883E5A-B19F-4EE1-837A-508754C00CB7} = {E0FCDB26-294E-4389-95DA-B6ADACFD4A5C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D2608FDC-AB3C-4A29-9FD7-53C76E8D66FB}

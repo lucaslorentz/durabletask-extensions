@@ -4,16 +4,6 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Grpc.AspNetCore" Version="2.34.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.5.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="3.1.8" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="3.1.4" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.5.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="5.5.1" />
-  </ItemGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore\LLL.DurableTask.EFCore.csproj" />
