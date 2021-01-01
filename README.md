@@ -430,5 +430,3 @@ The sample was built to demonstrate a microservices architecture with the follow
    | BPMN | (Empty) | (Empty) | { "name": "BookParallel" }
    | BPMN | (Empty) | (Empty) | { "name": "BookSequential" }
    | BPMN | (Empty) | (Empty) | { "name": "Bonus" }
-
-Note: The Orchestration state screen doesn't refresh automatically yet. Reload the page to see progress in workflow execution.
