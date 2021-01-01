@@ -1,13 +1,13 @@
 ﻿using System.Threading.Tasks;
 using DurableTask.Core;
-using DurableTask.Core.Serializing;
+using LLL.DurableTask.Core.Serializing;
 
 namespace LLL.DurableTask.Worker
 {
     public abstract class DistributedAsyncTaskActivity<TInput, TResult> : AsyncTaskActivity<TInput, TResult>
     {
         public DistributedAsyncTaskActivity()
-            : base(new JsonDataConverter(new Newtonsoft.Json.JsonSerializerSettings()))
+            : base(new UntypedJsonDataConverter())
         {
         }
     }

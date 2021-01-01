@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using DurableTask.Core;
 using DurableTask.Core.History;
-using LLL.DurableTask.Api.Converters;
 using LLL.DurableTask.Api.Extensions;
 using LLL.DurableTask.Api.Metadata;
 using LLL.DurableTask.Api.Models;
 using LLL.DurableTask.Core;
+using LLL.DurableTask.Core.Serializing;
 using LLL.DurableTask.Server.Api.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -115,10 +115,7 @@ namespace LLL.DurableTask.Api.Endpoints
 
                 var history = await taskHubClient.GetOrchestrationHistoryAsync(orchestrationInstance);
 
-                var events = JsonConvert.DeserializeObject<HistoryEvent[]>(history, new JsonSerializerSettings
-                {
-                    Converters = { new HistoryEventConverter() }
-                });
+                var events = new UntypedJsonDataConverter().Deserialize<HistoryEvent[]>(history);
 
                 await context.RespondJson(events);
             }).RequireAuthorization(DurableTaskPolicy.ReadHistory).WithMetadata(new DurableTaskEndpointMetadata

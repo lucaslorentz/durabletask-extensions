@@ -1,12 +1,13 @@
 ﻿using System;
 using DurableTask.Core.Serializing;
+using LLL.DurableTask.Core.Serializing;
 
 namespace LLL.DurableTask.Server.Client
 {
     public class GrpcClientOrchestrationServiceOptions
     {
         public Uri BaseAddress { get; set; }
-        public DataConverter DataConverter { get; set; } = new JsonDataConverter();
+        public DataConverter DataConverter { get; set; } = new UntypedJsonDataConverter();
         public int TaskOrchestrationDispatcherCount { get; set; } = 1;
         public int TaskActivityDispatcherCount { get; set; } = 1;
         public int MaxConcurrentTaskOrchestrationWorkItems { get; set; } = 20;

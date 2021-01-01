@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 using DurableTask.Core;
-using DurableTask.Core.Serializing;
+using LLL.DurableTask.Core.Serializing;
 
 namespace LLL.DurableTask.Worker
 {
@@ -12,12 +12,12 @@ namespace LLL.DurableTask.Worker
     {
         public DistributedTaskOrchestration()
         {
-            DataConverter = new JsonDataConverter(new Newtonsoft.Json.JsonSerializerSettings());
+            DataConverter = new UntypedJsonDataConverter();
         }
 
         public override Task<string> Execute(OrchestrationContext context, string input)
         {
-            context.MessageDataConverter = new JsonDataConverter(new Newtonsoft.Json.JsonSerializerSettings());
+            context.MessageDataConverter = new UntypedJsonDataConverter();
 
             return base.Execute(context, input);
         }

@@ -1,8 +1,6 @@
-﻿using System;
-using DurableTask.Core;
-using DurableTask.Core.Serializing;
+﻿using DurableTask.Core;
+using LLL.DurableTask.Core.Serializing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Newtonsoft.Json;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -14,7 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton(serviceProvider =>
             {
                 var orchestrationServiceClient = serviceProvider.GetRequiredService<IOrchestrationServiceClient>();
-                var jsonDataConverter = new JsonDataConverter(new JsonSerializerSettings());
+                var jsonDataConverter = new UntypedJsonDataConverter();
                 return new TaskHubClient(orchestrationServiceClient, jsonDataConverter);
             });
 

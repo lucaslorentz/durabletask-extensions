@@ -4,7 +4,7 @@ using DurableTask.Core.History;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace LLL.DurableTask.Api.Converters
+namespace LLL.DurableTask.Core.Serializing
 {
     public class HistoryEventConverter : JsonConverter
     {
