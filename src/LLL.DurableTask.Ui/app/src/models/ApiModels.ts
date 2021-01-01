@@ -104,7 +104,6 @@ export type Feature =
 
 export type Endpoint =
   | "Entrypoint"
-  | "FeaturesList"
   | "OrchestrationsList"
   | "OrchestrationsCreate"
   | "OrchestrationsGet"

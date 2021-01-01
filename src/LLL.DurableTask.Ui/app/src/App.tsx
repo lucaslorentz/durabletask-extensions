@@ -23,6 +23,8 @@ import { Create } from "./views/create";
 import { Orchestration } from "./views/orchestration";
 import { Orchestrations } from "./views/orchestrations";
 import { NotFound } from "./views/not_found";
+import { Home } from "./views/home";
+import Link from "@material-ui/core/Link";
 
 const useStyles = makeStyles((theme) => ({
   title: {
@@ -66,9 +68,16 @@ export function App() {
         <Toolbar>
           <Grid container alignItems="center">
             <Grid item>
-              <Typography variant="h4" className={classes.title}>
-                Durable Task UI
-              </Typography>
+              <Link
+                component={RouterLink}
+                to="/"
+                underline="none"
+                color="inherit"
+              >
+                <Typography variant="h4" className={classes.title}>
+                  Durable Task UI
+                </Typography>
+              </Link>
             </Grid>
             {endpoints.OrchestrationsCreate.authorized && (
               <Grid item>
@@ -156,11 +165,9 @@ export function App() {
               >
                 <Create />
               </ProtectedRoute>
-              {endpoints.OrchestrationsList.authorized && (
-                <Route path="/" exact>
-                  <Redirect to="/orchestrations" />
-                </Route>
-              )}
+              <Route path="/" exact>
+                <Home />
+              </Route>
               <NotFound />
             </Switch>
           </Suspense>
