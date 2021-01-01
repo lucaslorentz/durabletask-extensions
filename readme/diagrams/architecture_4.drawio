@@ -1,1 +1,48 @@
-<mxfile host="Electron" modified="2020-12-14T11:48:50.186Z" agent="5.0 (Macintosh; Intel Mac OS X 10_16_0) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/13.9.9 Chrome/85.0.4183.121 Electron/10.1.5 Safari/537.36" etag="lizQf4FkzbkdZVNaAQ6K" version="13.9.9" type="device"><diagram id="VXLdp9_0gb5skO2kyKBa" name="Page-1">1VjbcpswEP0az7QPzgDi5sf4kjTTJOPGzbR9lEFcahlRIXzJ10cCYZCxnaSxnfbFlo6klbRn9yzQAYP56prCNLojPsIdQ/NXHTDsGEbPtPmvANYlYLlOCYQ09ktIr4FJ/IQkqEk0j32UKRMZIZjFqQp6JEmQxxQMUkqW6rSAYHXXFIaoBUw8iNvoj9hnUYm6hlPjX1AcRtXOut0rR+awmixvkkXQJ8sGBEYdMKCEsLI1Xw0QFr6r/FKuu9ozujkYRQl7zYLk6fHbYjL7mqP7Be7d3y3geNzdHI6tqxsjnztAdgllEQlJAvGoRvuU5ImPhFmN9+o5t4SkHNQ5+BsxtpZswpwRDkVsjuVo++jyNhnJqYcOnNct54kzNhbKC18jMkeMrvkEijBk8UIlEcpYCDfzNkvHJOZHMTQZtqYjl8ioNSxNNcEgDRGTq2qn80bjGDVUUPEWWuT2C4hzeYc7mIhQNbQlobMAi8A2bMzd159ShUD7Ty5Cqh+QhHWzgoJLPkHX0lU9yFuh+P+UMUK53c87w+AWTnk2K9RBHIcJb3ucOkQ5sECUxTxfLuXAPPb9MkoQ3xxOC3siTlLhrMJ9Vr9jDeUJZYzo2s6wOBizYme02qUCclcl0ZTwkKu0C8NSeO5KO+8Mn80Rt8xWFkgQZOgkgeO24uZyfNPitk5gQekyihmapLBIvCVXcZXxIMZ4QDChxVoQBMj2PI5njJIZaoz4Tm+qCR6zGWJe9FKut+jbS5PhOGo2AuneZUORJRQ1xNjU9hOnOP7N6Qk+QjW5A+n6p1xfdH6JzoVVdYer5uBwLXt/r7bAlBW3ULuPl2W9ZxyW5fJGp5Nl81yy/DCafP+vNBkcS5O72oUGLKDqJ3ifLFdmzHPJcPV42NThp5yKOJmUBbfFLX88TEXThwyKooxeocwNruxt3d2WbddDu2V76lqmdVAnXq/UpqMmqN6zW0qta2Zbqjfg0bUatHP28aaZozLjpuJdAdF20r2nWCLdt5Czy+s92wGwRdoRKPjXaiWw36iZJR8PeXJ4wuEn1xOX4pdVUj9PRbSqkrRJuC0Te15UXjakW2ctrcDaq5jDnBbFw9Cu8sRjMUmyoyZpEATGnidae2pbp0hS03IVb7vtJNWBcZQs5d36G0PJVv2hBoyeAQ==</diagram></mxfile>
+<mxfile host="65bd71144e" modified="2021-01-01T11:18:03.324Z" agent="5.0 (Macintosh; Intel Mac OS X 11_0_0) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.52.1 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36" etag="1XMpJma1eO0-4CJnau0q" version="13.10.0" type="embed">
+    <diagram id="VXLdp9_0gb5skO2kyKBa" name="Page-1">
+        <mxGraphModel dx="602" dy="403" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="nzUQvSkKueNvl9NMvaPP-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="nzUQvSkKueNvl9NMvaPP-8" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="471" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nzUQvSkKueNvl9NMvaPP-21" value="Manage workflows&lt;br style=&quot;font-size: 10px&quot;&gt;(storage)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" parent="nzUQvSkKueNvl9NMvaPP-20" vertex="1" connectable="0">
+                    <mxGeometry x="0.25" y="-1" relative="1" as="geometry">
+                        <mxPoint x="-20" y="-1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nzUQvSkKueNvl9NMvaPP-8" value="API + UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="277" y="230" width="80" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="nzUQvSkKueNvl9NMvaPP-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="nzUQvSkKueNvl9NMvaPP-34" target="nzUQvSkKueNvl9NMvaPP-8" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="192" y="250" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nzUQvSkKueNvl9NMvaPP-24" value="Manage workflows&lt;br style=&quot;font-size: 10px&quot;&gt;(REST)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" parent="nzUQvSkKueNvl9NMvaPP-23" vertex="1" connectable="0">
+                    <mxGeometry x="-0.0353" y="-3" relative="1" as="geometry">
+                        <mxPoint y="-4" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nzUQvSkKueNvl9NMvaPP-27" value="Azure Storage" style="shape=datastore;whiteSpace=wrap;html=1;fontSize=16;sketch=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="472" y="196" width="104" height="104" as="geometry"/>
+                </mxCell>
+                <mxCell id="nzUQvSkKueNvl9NMvaPP-34" value="UI&lt;br&gt;(browser)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="77" y="230" width="80" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="nzUQvSkKueNvl9NMvaPP-36" value="Manage workflows&lt;br&gt;Run workflows&lt;br&gt;(storage)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="524" y="191" as="targetPoint"/>
+                        <mxPoint x="524" y="115" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="nzUQvSkKueNvl9NMvaPP-35" value="Azure Durable Functions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;sketch=1;" parent="1" vertex="1">
+                    <mxGeometry x="458" y="80" width="132" height="40" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
