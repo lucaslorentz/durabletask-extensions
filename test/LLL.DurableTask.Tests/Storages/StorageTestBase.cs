@@ -7,6 +7,7 @@ using LLL.DurableTask.Tests.Activities;
 using LLL.DurableTask.Tests.Orchestrations;
 using LLL.DurableTask.Worker.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,15 +18,23 @@ namespace LLL.DurableTask.Tests.Storages
 {
     public abstract class StorageTestBase : IAsyncLifetime
     {
-        private static readonly TimeSpan _fastWaitTimeout = TimeSpan.FromSeconds(20);
-        private static readonly TimeSpan _slowWaitTimeout = TimeSpan.FromSeconds(30);
-
         private readonly ITestOutputHelper _output;
         private IHost _host;
+        protected IConfiguration Configuration { get; }
+        protected TimeSpan FastWaitTimeout { get; set; } = TimeSpan.FromSeconds(20);
+        protected TimeSpan SlowWaitTimeout { get; set; } = TimeSpan.FromSeconds(30);
+        protected bool SupportsMultipleExecutionStorage { get; set; } = true;
+        protected bool SupportsTags { get; set; } = true;
 
         public StorageTestBase(ITestOutputHelper output)
         {
             _output = output;
+
+            Configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", false)
+                .AddJsonFile("appsettings.private.json", true)
+                .AddEnvironmentVariables()
+                .Build();
         }
 
         public virtual async Task InitializeAsync()
@@ -69,7 +78,7 @@ namespace LLL.DurableTask.Tests.Storages
         }
 
         [Trait("Category", "Integration")]
-        [Fact]
+        [SkippableFact]
         public async Task EmptyOrchestration_ShouldComplete()
         {
             var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
@@ -78,7 +87,7 @@ namespace LLL.DurableTask.Tests.Storages
 
             var instance = await taskHubClient.CreateOrchestrationInstanceAsync(EmptyOrchestration.Name, EmptyOrchestration.Version, input);
 
-            var state = await taskHubClient.WaitForOrchestrationAsync(instance, _fastWaitTimeout);
+            var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
 
             state.Should().NotBeNull();
             state.Output.Should().Be($"\"{input}\"");
@@ -86,7 +95,7 @@ namespace LLL.DurableTask.Tests.Storages
         }
 
         [Trait("Category", "Integration")]
-        [Theory]
+        [SkippableTheory]
         [InlineData(ContinueAsNewEmptyOrchestration.Name, ContinueAsNewEmptyOrchestration.Version)]
         [InlineData(ContinueAsNewOrchestration.Name, ContinueAsNewOrchestration.Version)]
         public async Task ContinueAsNewOrchestration_ShouldComplete(string name, string version)
@@ -95,27 +104,30 @@ namespace LLL.DurableTask.Tests.Storages
 
             var instance = await taskHubClient.CreateOrchestrationInstanceAsync(name, version, 5);
 
-            var firstExecutionState = await taskHubClient.WaitForOrchestrationAsync(instance, _fastWaitTimeout);
-            firstExecutionState.Should().NotBeNull();
-            firstExecutionState.Output.Should().Be("4");
-            firstExecutionState.OrchestrationStatus.Should().Be(OrchestrationStatus.ContinuedAsNew);
+            if (SupportsMultipleExecutionStorage)
+            {
+                var firstExecutionState = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
+                firstExecutionState.Should().NotBeNull();
+                firstExecutionState.Output.Should().Be("4");
+                firstExecutionState.OrchestrationStatus.Should().Be(OrchestrationStatus.ContinuedAsNew);
+            }
 
             var lastExecution = new OrchestrationInstance { InstanceId = instance.InstanceId };
-            var lastExecutionState = await taskHubClient.WaitForOrchestrationAsync(lastExecution, _fastWaitTimeout);
+            var lastExecutionState = await taskHubClient.WaitForOrchestrationAsync(lastExecution, FastWaitTimeout);
             lastExecutionState.Should().NotBeNull();
             lastExecutionState.Output.Should().Be("0");
             lastExecutionState.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
         }
 
         [Trait("Category", "Integration")]
-        [Fact]
+        [SkippableFact]
         public async Task ParentOrchestration_ShouldComplete()
         {
             var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
 
             var instance = await taskHubClient.CreateOrchestrationInstanceAsync(ParentOrchestration.Name, ParentOrchestration.Version, 5);
 
-            var state = await taskHubClient.WaitForOrchestrationAsync(instance, _fastWaitTimeout);
+            var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
 
             state.Should().NotBeNull();
             state.Output.Should().Be("5");
@@ -123,7 +135,7 @@ namespace LLL.DurableTask.Tests.Storages
         }
 
         [Trait("Category", "Integration")]
-        [Fact]
+        [SkippableFact]
         public async Task FibonacciOrchestration_ShouldComplete()
         {
             var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
@@ -139,15 +151,19 @@ namespace LLL.DurableTask.Tests.Storages
                     { "Tag2", "Value2" }
                 });
 
-            var state = await taskHubClient.WaitForOrchestrationAsync(instance, _slowWaitTimeout);
+            var state = await taskHubClient.WaitForOrchestrationAsync(instance, SlowWaitTimeout);
 
             state.Should().NotBeNull();
             state.Output.Should().Be("1");
             state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
-            state.Tags.Should().BeEquivalentTo(new Dictionary<string, string> {
-                { "Tag1", "Value1" },
-                { "Tag2", "Value2" }
-            });
+
+            if (SupportsTags)
+            {
+                state.Tags.Should().BeEquivalentTo(new Dictionary<string, string> {
+                    { "Tag1", "Value1" },
+                    { "Tag2", "Value2" }
+                });
+            }
         }
     }
 }

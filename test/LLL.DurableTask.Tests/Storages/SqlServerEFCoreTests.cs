@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
@@ -13,8 +14,12 @@ namespace LLL.DurableTask.Tests.Storages
 
         protected override void ConfigureStorage(IServiceCollection services)
         {
+            var connectionString = Configuration.GetConnectionString("SqlServer");
+
+            Skip.If(string.IsNullOrEmpty(connectionString), "SqlServer connection string not configured");
+
             services.AddDurableTaskEFCoreStorage()
-                .UseSqlServer("server=localhost;database=durabletask;user=sa;password=P1ssw0rd");
+                .UseSqlServer(connectionString);
         }
     }
 }

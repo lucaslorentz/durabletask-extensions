@@ -226,6 +226,8 @@ namespace LLL.DurableTask.Server.Grpc.Server
                                 }
                             };
 
+                            context.CancellationToken.ThrowIfCancellationRequested();
+
                             await responseStream.WriteAsync(lockResponse);
                             break;
                         case TaskOrchestrationRequest.MessageOneofCase.RenewRequest:
@@ -239,6 +241,8 @@ namespace LLL.DurableTask.Server.Grpc.Server
                                     LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc)
                                 }
                             };
+
+                            context.CancellationToken.ThrowIfCancellationRequested();
 
                             await responseStream.WriteAsync(renewResponse);
                             break;
@@ -283,6 +287,8 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
                             workItem.OrchestrationRuntimeState = newOrchestrationRuntimeState;
 
+                            context.CancellationToken.ThrowIfCancellationRequested();
+
                             await responseStream.WriteAsync(new TaskOrchestrationResponse
                             {
                                 CompleteResponse = new CompleteTaskOrchestrationWorkItemResponse()
@@ -299,6 +305,8 @@ namespace LLL.DurableTask.Server.Grpc.Server
                                         NewMessages = null
                                     }
                                 };
+
+                                context.CancellationToken.ThrowIfCancellationRequested();
 
                                 await responseStream.WriteAsync(fetchResponse);
                             }
@@ -317,12 +325,15 @@ namespace LLL.DurableTask.Server.Grpc.Server
                                     }
                                 };
 
+                                context.CancellationToken.ThrowIfCancellationRequested();
+
                                 await responseStream.WriteAsync(fetchResponse);
                             }
                             break;
                         case TaskOrchestrationRequest.MessageOneofCase.ReleaseRequest:
                             var releaseRequest = message.ReleaseRequest;
                             await _orchestrationService.ReleaseTaskOrchestrationWorkItemAsync(workItem);
+                            context.CancellationToken.ThrowIfCancellationRequested();
                             await responseStream.WriteAsync(new TaskOrchestrationResponse
                             {
                                 ReleaseResponse = new ReleaseTaskOrchestrationWorkItemResponse()
@@ -331,6 +342,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
                         case TaskOrchestrationRequest.MessageOneofCase.AbandonRequest:
                             var abandonRequest = message.AbandonRequest;
                             await _orchestrationService.AbandonTaskOrchestrationWorkItemAsync(workItem);
+                            context.CancellationToken.ThrowIfCancellationRequested();
                             await responseStream.WriteAsync(new TaskOrchestrationResponse
                             {
                                 AbandonResponse = new AbandonTaskOrchestrationWorkItemLockResponse()

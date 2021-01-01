@@ -282,3 +282,6 @@ __pycache__/
 *.db
 *.db-shm
 *.db-wal
+
+# Private configuration
+*.private.json

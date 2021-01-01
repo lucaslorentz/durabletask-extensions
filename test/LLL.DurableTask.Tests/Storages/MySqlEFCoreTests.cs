@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
@@ -13,8 +14,12 @@ namespace LLL.DurableTask.Tests.Storages
 
         protected override void ConfigureStorage(IServiceCollection services)
         {
+            var connectionString = Configuration.GetConnectionString("MySql");
+
+            Skip.If(string.IsNullOrEmpty(connectionString), "MySql connection string not configured");
+
             services.AddDurableTaskEFCoreStorage()
-                .UseMySql("server=localhost;database=durabletask;user=root;password=root");
+                .UseMySql(connectionString);
         }
     }
 }
