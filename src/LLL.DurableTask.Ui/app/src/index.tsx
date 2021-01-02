@@ -9,7 +9,7 @@ import { ThemeProvider } from "@material-ui/core/styles";
 import { customTheme } from "./CustomTheme";
 import { ConfigurationProvider } from "./ConfigurationProvider";
 import { AuthProvider } from "./AuthProvider";
-import { EntrypointProvider } from "./EntrypointProvider";
+import { ApiClientProvider } from "./ApiClientProvider";
 import { ConfirmProvider } from "material-ui-confirm";
 import { SnackbarProvider } from "notistack";
 
@@ -26,9 +26,9 @@ ReactDOM.render(
         <ConfirmProvider>
           <ConfigurationProvider>
             <AuthProvider>
-              <EntrypointProvider>
+              <ApiClientProvider>
                 <App />
-              </EntrypointProvider>
+              </ApiClientProvider>
             </AuthProvider>
           </ConfigurationProvider>
         </ConfirmProvider>

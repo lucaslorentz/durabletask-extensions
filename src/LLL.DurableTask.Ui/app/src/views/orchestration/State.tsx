@@ -10,7 +10,9 @@ import {
 } from "@material-ui/core";
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
+import { useApiClient } from "../../ApiClientProvider";
 import { OrchestrationState } from "../../models/ApiModels";
+import { formatDateTime } from "../../utils/date-utils";
 
 type Props = {
   state: OrchestrationState;
@@ -30,6 +32,7 @@ const useStyles = makeStyles((theme) => ({
 
 export function State(props: Props) {
   const classes = useStyles();
+  const apiClient = useApiClient();
   const { state, definedExecutionId } = props;
 
   return (
@@ -43,12 +46,17 @@ export function State(props: Props) {
           <TableRow>
             <TableCell>ExecutionId</TableCell>
             <TableCell>
-              {definedExecutionId ? (
+              {definedExecutionId ||
+              !apiClient.hasFeature("StatePerExecution") ? (
                 state.orchestrationInstance.executionId
               ) : (
                 <Link
                   component={RouterLink}
-                  to={`/orchestrations/${encodeURIComponent(state.orchestrationInstance.instanceId)}/${encodeURIComponent(state.orchestrationInstance.executionId)}`}
+                  to={`/orchestrations/${encodeURIComponent(
+                    state.orchestrationInstance.instanceId
+                  )}/${encodeURIComponent(
+                    state.orchestrationInstance.executionId
+                  )}`}
                 >
                   {state.orchestrationInstance.executionId}
                 </Link>
@@ -80,7 +88,9 @@ export function State(props: Props) {
               <TableCell>
                 <Link
                   component={RouterLink}
-                  to={`/orchestrations/${encodeURIComponent(state.parentInstance.orchestrationInstance.instanceId)}`}
+                  to={`/orchestrations/${encodeURIComponent(
+                    state.parentInstance.orchestrationInstance.instanceId
+                  )}`}
                 >
                   {state.parentInstance.orchestrationInstance.instanceId}
                 </Link>
@@ -97,19 +107,15 @@ export function State(props: Props) {
           </TableRow>
           <TableRow>
             <TableCell>Created Time</TableCell>
-            <TableCell>{state.createdTime}</TableCell>
+            <TableCell>{formatDateTime(state.createdTime)}</TableCell>
           </TableRow>
           <TableRow>
             <TableCell>Completed Time</TableCell>
-            <TableCell>
-              {state.completedTime.indexOf("9999") !== 0
-                ? state.completedTime
-                : null}
-            </TableCell>
+            <TableCell>{formatDateTime(state.completedTime)}</TableCell>
           </TableRow>
           <TableRow>
             <TableCell>Last Updated Time</TableCell>
-            <TableCell>{state.lastUpdatedTime}</TableCell>
+            <TableCell>{formatDateTime(state.lastUpdatedTime)}</TableCell>
           </TableRow>
         </TableBody>
       </Table>

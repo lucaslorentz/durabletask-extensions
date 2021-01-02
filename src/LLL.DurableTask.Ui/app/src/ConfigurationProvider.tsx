@@ -1,7 +1,6 @@
 import axios from "axios";
-import React, { useContext, useLayoutEffect } from "react";
+import React, { useContext } from "react";
 import { useAsync } from "react-use";
-import { apiAxios } from "./apiAxios";
 import { ErrorAlert } from "./components/ErrorAlert";
 import { Configuration } from "./models/Configuration";
 
@@ -24,12 +23,6 @@ export function ConfigurationProvider(props: Props) {
     const response = await axios.get<Configuration>("configuration.json");
     return response.data;
   }, []);
-
-  useLayoutEffect(() => {
-    if (!configAsync.value) return;
-
-    apiAxios.defaults.baseURL = configAsync.value.apiBaseUrl;
-  }, [configAsync.value]);
 
   if (configAsync.error) {
     return <ErrorAlert error={configAsync.error} />;

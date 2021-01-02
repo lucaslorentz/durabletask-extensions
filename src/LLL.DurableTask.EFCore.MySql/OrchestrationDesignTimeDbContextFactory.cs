@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.Extensions.Configuration;
 
 namespace LLL.DurableTask.EFCore.MySql
 {
@@ -8,11 +7,7 @@ namespace LLL.DurableTask.EFCore.MySql
     {
         public OrchestrationDbContext CreateDbContext(string[] args)
         {
-            var configuration = new ConfigurationBuilder()
-                .Build();
-
             var builder = new DbContextOptionsBuilder<OrchestrationDbContext>();
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
             builder.UseMySql("server=localhost;database=durabletask;user=root;password=root", mysqlOptions =>
             {
                 var assemblyName = typeof(OrchestrationDesignTimeDbContextFactory).Assembly.GetName().Name;

@@ -10,21 +10,21 @@ import {
 } from "@material-ui/core";
 import AppBar from "@material-ui/core/AppBar";
 import CssBaseline from "@material-ui/core/CssBaseline";
+import Link from "@material-ui/core/Link";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
 import { Person } from "@material-ui/icons";
 import React, { Suspense } from "react";
-import { Link as RouterLink, Redirect, Route, Switch } from "react-router-dom";
+import { Link as RouterLink, Route, Switch } from "react-router-dom";
+import { useApiClient } from "./ApiClientProvider";
 import { useAuth } from "./AuthProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useConfiguration } from "./ConfigurationProvider";
-import { useEntrypoint } from "./EntrypointProvider";
 import { Create } from "./views/create";
+import { Home } from "./views/home";
+import { NotFound } from "./views/not_found";
 import { Orchestration } from "./views/orchestration";
 import { Orchestrations } from "./views/orchestrations";
-import { NotFound } from "./views/not_found";
-import { Home } from "./views/home";
-import Link from "@material-ui/core/Link";
 
 const useStyles = makeStyles((theme) => ({
   title: {
@@ -36,10 +36,8 @@ export function App() {
   const classes = useStyles();
 
   const configuration = useConfiguration();
-
   const auth = useAuth();
-
-  const { endpoints } = useEntrypoint();
+  const apiClient = useApiClient();
 
   const [userAnchorEl, setUserAnchorEl] = React.useState<
     HTMLButtonElement | undefined
@@ -79,14 +77,14 @@ export function App() {
                 </Typography>
               </Link>
             </Grid>
-            {endpoints.OrchestrationsCreate.authorized && (
+            {apiClient.isAuthorized("OrchestrationsCreate") && (
               <Grid item>
                 <Button component={RouterLink} to="/create" color="inherit">
                   Create
                 </Button>
               </Grid>
             )}
-            {endpoints.OrchestrationsList.authorized && (
+            {apiClient.isAuthorized("OrchestrationsList") && (
               <Grid item>
                 <Button
                   component={RouterLink}
@@ -153,11 +151,23 @@ export function App() {
                   "OrchestrationsGet",
                   "OrchestrationsGetExecution",
                 ]}
-                path="/orchestrations/:instanceId/:executionId?"
+                path="/orchestrations/:instanceId"
                 exact
               >
                 <Orchestration />
               </ProtectedRoute>
+              {apiClient.hasFeature("StatePerExecution") && (
+                <ProtectedRoute
+                  requiredEndpoints={[
+                    "OrchestrationsGet",
+                    "OrchestrationsGetExecution",
+                  ]}
+                  path="/orchestrations/:instanceId/:executionId?"
+                  exact
+                >
+                  <Orchestration />
+                </ProtectedRoute>
+              )}
               <ProtectedRoute
                 requiredEndpoints={["OrchestrationsCreate"]}
                 path="/create"

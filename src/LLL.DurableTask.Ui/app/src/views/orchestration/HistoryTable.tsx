@@ -6,13 +6,14 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
+  TableRow
 } from "@material-ui/core";
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useWindowSize } from "react-use";
 import { useDynamicRefs } from "../../hooks/useDynamicRefs";
 import { HistoryEvent } from "../../models/ApiModels";
+import { toLocalISO } from "../../utils/date-utils";
 import { LineBuilder } from "./LineBuilder";
 
 type Props = {
@@ -122,7 +123,7 @@ export function HistoryTable(props: Props) {
                     </div>
                   ) : null}
                 </TableCell>
-                <TableCell>{row.event.timestamp}</TableCell>
+                <TableCell>{toLocalISO(row.event.timestamp)}</TableCell>
                 <TableCell>
                   {row.event.name ? (
                     <>
@@ -298,9 +299,7 @@ function prepareData(
     lines: lines,
     dots: dots,
     svgWidth:
-      Math.min(lines.length, maxLines) * linesGap +
-      marginLeft +
-      marginRight,
+      Math.min(lines.length, maxLines) * linesGap + marginLeft + marginRight,
     svgHeight: lastRowCenterY + marginBottom,
   };
 }

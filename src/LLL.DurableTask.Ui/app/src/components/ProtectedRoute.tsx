@@ -2,19 +2,19 @@ import Alert from "@material-ui/lab/Alert";
 import React from "react";
 import { Route, RouteProps } from "react-router-dom";
 import { Endpoint } from "../models/ApiModels";
-import { useEntrypoint } from "../EntrypointProvider";
+import { useApiClient } from "../ApiClientProvider";
 
 type Props = RouteProps & {
   requiredEndpoints: Endpoint[];
 };
 
 export function ProtectedRoute(props: Props) {
-  const { endpoints } = useEntrypoint();
+  const apiClient = useApiClient();
 
   const { requiredEndpoints, render, children, ...other } = props;
 
-  const authorizedEndpoints = requiredEndpoints.filter(
-    (e) => endpoints[e].authorized
+  const authorizedEndpoints = requiredEndpoints.filter((e) =>
+    apiClient.isAuthorized(e)
   );
 
   const authorized = requiredEndpoints.length === authorizedEndpoints.length;

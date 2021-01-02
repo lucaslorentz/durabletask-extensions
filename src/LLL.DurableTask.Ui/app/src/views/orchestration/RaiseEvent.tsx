@@ -2,7 +2,7 @@ import { Button, Grid } from "@material-ui/core";
 import { useSnackbar } from "notistack";
 import React, { useState } from "react";
 import * as yup from "yup";
-import { apiAxios } from "../../apiAxios";
+import { useApiClient } from "../../ApiClientProvider";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { TextField } from "../../form/TextField";
 import { useForm } from "../../form/useForm";
@@ -15,10 +15,11 @@ type Props = {
 
 const schema = yup
   .object({
-    eventName: yup.string().label("Event name").required(),
+    eventName: yup.string().label("Event name").default("").required(),
     eventData: yup
       .string()
       .label("Event data")
+      .default("")
       .test("JSON", "be a json", function (v) {
         if (!v) return true;
         try {
@@ -37,10 +38,8 @@ const schema = yup
 export function RaiseEvent(props: Props) {
   const { instanceId, onRaiseEvent } = props;
 
-  const form = useForm(schema, () => ({
-    eventName: "",
-    eventData: "",
-  }));
+  const form = useForm(schema);
+  const apiClient = useApiClient();
   const [error, setError] = useState<any>();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -55,10 +54,7 @@ export function RaiseEvent(props: Props) {
           : null,
       };
 
-      await apiAxios.post(
-        `/v1/orchestrations/${encodeURIComponent(instanceId)}/raiseevent`,
-        request
-      );
+      await apiClient.raiseOrchestrationEvent(instanceId, request);
 
       enqueueSnackbar("Event raised", {
         variant: "success",

@@ -19,6 +19,16 @@ export interface RewindRequest {
   reason?: string;
 }
 
+export interface OrchestrationsRequest {
+  instanceId?: string;
+  name?: string;
+  createdTimeFrom?: string;
+  createdTimeTo?: string;
+  runtimeStatus?: OrchestrationStatus[];
+  top?: number;
+  continuationToken?: string;
+}
+
 export interface OrchestrationsResponse {
   orchestrations: OrchestrationState[];
   count: number;
@@ -100,7 +110,9 @@ export type Feature =
   | "SearchByCreatedTime"
   | "SearchByStatus"
   | "QueryCount"
-  | "Rewind";
+  | "Rewind"
+  | "Tags"
+  | "StatePerExecution";
 
 export type Endpoint =
   | "Entrypoint"

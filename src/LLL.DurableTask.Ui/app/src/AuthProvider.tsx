@@ -1,7 +1,6 @@
 import { User, UserManager } from "oidc-client";
 import React, { useContext, useLayoutEffect, useMemo, useState } from "react";
 import { useHistory } from "react-router-dom";
-import { apiAxios } from "./apiAxios";
 import { useConfiguration } from "./ConfigurationProvider";
 
 type Props = {
@@ -98,17 +97,6 @@ export function AuthProvider(props: Props) {
       };
     })();
   }, [userManager, history]);
-
-  // Configure axios authorization header
-  useLayoutEffect(() => {
-    if (!user) return;
-
-    apiAxios.defaults.headers.common.Authorization = `Bearer ${user.access_token}`;
-
-    return () => {
-      delete apiAxios.defaults.headers.common.Authorization;
-    };
-  }, [user]);
 
   // Context value
   const auth = useMemo<Auth>(() => {

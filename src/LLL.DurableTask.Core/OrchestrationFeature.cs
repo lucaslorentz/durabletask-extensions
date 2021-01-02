@@ -7,6 +7,8 @@
         SearchByCreatedTime = 3,
         SearchByStatus = 4,
         QueryCount = 5,
-        Rewind = 6
+        Rewind = 6,
+        Tags = 7,
+        StatePerExecution = 8
     }
 }

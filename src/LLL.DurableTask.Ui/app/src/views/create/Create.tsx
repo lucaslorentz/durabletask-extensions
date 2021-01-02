@@ -13,21 +13,18 @@ import { useSnackbar } from "notistack";
 import React, { useState } from "react";
 import { Link as RouterLink, useHistory } from "react-router-dom";
 import * as yup from "yup";
-import { apiAxios } from "../../apiAxios";
+import { useApiClient } from "../../ApiClientProvider";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { TextField } from "../../form/TextField";
 import { useForm } from "../../form/useForm";
-import {
-  CreateOrchestrationRequest,
-  OrchestrationInstance,
-} from "../../models/ApiModels";
+import { CreateOrchestrationRequest } from "../../models/ApiModels";
 
 const schema = yup
   .object({
-    name: yup.string().label("Name").required(),
-    version: yup.string().label("Version"),
-    instanceId: yup.string().label("Instance Id"),
-    input: yup.string().label("Input").json(),
+    name: yup.string().label("Name").default("").required(),
+    version: yup.string().label("Version").default(""),
+    instanceId: yup.string().label("Instance Id").default(""),
+    input: yup.string().label("Input").default("").json(),
     tags: yup
       .array(
         yup
@@ -37,21 +34,17 @@ const schema = yup
           })
           .required()
       )
+      .default(() => [])
       .defined(),
   })
   .required();
 
 export function Create() {
-  const form = useForm(schema, () => ({
-    name: "",
-    version: "",
-    instanceId: "",
-    input: "",
-    tags: [],
-  }));
+  const form = useForm(schema);
   const [error, setError] = useState<any>();
 
   const history = useHistory();
+  const apiClient = useApiClient();
   const { enqueueSnackbar } = useSnackbar();
 
   async function handleSaveClick() {
@@ -69,17 +62,14 @@ export function Create() {
         }, {} as Record<string, string>),
       };
 
-      var response = await apiAxios.post<OrchestrationInstance>(
-        `/v1/orchestrations`,
-        request
-      );
+      const instance = await apiClient.createOrchestration(request);
 
       enqueueSnackbar("Orchestration created", {
         variant: "success",
       });
 
       history.push(
-        `/orchestrations/${encodeURIComponent(response.data.instanceId)}`
+        `/orchestrations/${encodeURIComponent(instance.instanceId)}`
       );
     } catch (error) {
       setError(error);
@@ -112,31 +102,39 @@ export function Create() {
             <Grid item xs={12}>
               <TextField field={form.field("input")} multiline rows={6} />
             </Grid>
-            <Grid item xs={12}>
-              <Button
-                onClick={() => form.field("tags").push({ key: "", value: "" })}
-              >
-                Add tag
-              </Button>
-            </Grid>
-            {form.field("tags").render((field) =>
-              field.fields().map((tagField) => (
-                <Grid key={tagField.path} item xs={12}>
-                  <Box display="flex">
-                    <Box marginX={1} flex={1}>
-                      <TextField field={tagField.field("key")} />
-                    </Box>
-                    <Box marginX={1} flex={1}>
-                      <TextField field={tagField.field("value")} />
-                    </Box>
-                    <Box>
-                      <IconButton onClick={() => field.remove(tagField.value)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </Box>
+            {apiClient.hasFeature("Tags") && (
+              <>
+                <Grid item xs={12}>
+                  <Button
+                    onClick={() =>
+                      form.field("tags").push({ key: "", value: "" })
+                    }
+                  >
+                    Add tag
+                  </Button>
                 </Grid>
-              ))
+                {form.field("tags").render((field) =>
+                  field.fields().map((tagField) => (
+                    <Grid key={tagField.path} item xs={12}>
+                      <Box display="flex">
+                        <Box marginX={1} flex={1}>
+                          <TextField field={tagField.field("key")} />
+                        </Box>
+                        <Box marginX={1} flex={1}>
+                          <TextField field={tagField.field("value")} />
+                        </Box>
+                        <Box>
+                          <IconButton
+                            onClick={() => field.remove(tagField.value)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </Grid>
+                  ))
+                )}
+              </>
             )}
             {error && (
               <Grid item xs={12}>

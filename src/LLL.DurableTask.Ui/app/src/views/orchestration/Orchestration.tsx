@@ -23,9 +23,8 @@ import {
   useHistory,
   useRouteMatch,
 } from "react-router-dom";
-import { apiAxios } from "../../apiAxios";
+import { useApiClient } from "../../ApiClientProvider";
 import { ErrorAlert } from "../../components/ErrorAlert";
-import { useEntrypoint } from "../../EntrypointProvider";
 import { useQueryState } from "../../hooks/useQueryState";
 import { HistoryEvent, OrchestrationState } from "../../models/ApiModels";
 import { HistoryTable } from "./HistoryTable";
@@ -71,7 +70,7 @@ export function Orchestration() {
   const [refreshAnchor, setRefreshAnchor] = useState<HTMLElement | undefined>();
   const [refreshCount, triggerRefresh] = useReducer((x) => x + 1, 0);
   const [loadedCount, incrementLoadedCount] = useReducer((x) => x + 1, 0);
-  const { endpoints, features } = useEntrypoint();
+  const apiClient = useApiClient();
   const history = useHistory();
   const confirm = useConfirm();
   const { enqueueSnackbar } = useSnackbar();
@@ -99,23 +98,18 @@ export function Orchestration() {
       try {
         setIsLoading(true);
 
-        let url = `/v1/orchestrations/${encodeURIComponent(instanceId)}`;
-        if (executionId) {
-          url = `${url}/${executionId}`;
-        }
+        const stateResult = await apiClient.getOrchestrationState(
+          instanceId,
+          executionId
+        );
+        setState(stateResult);
 
-        var stateResponse = await apiAxios.get<OrchestrationState>(url);
-        setState(stateResponse.data);
-
-        if (endpoints.OrchestrationsGetExecutionHistory.authorized) {
-          var historyResponse = await apiAxios.get<HistoryEvent[]>(
-            `/v1/orchestrations/${encodeURIComponent(
-              instanceId
-            )}/${encodeURIComponent(
-              stateResponse.data.orchestrationInstance.executionId
-            )}/history`
+        if (apiClient.isAuthorized("OrchestrationsGetExecutionHistory")) {
+          var historyEventsResult = await apiClient.getOrchestrationHistory(
+            instanceId,
+            stateResult.orchestrationInstance.executionId
           );
-          setHistoryEvents(historyResponse.data);
+          setHistoryEvents(historyEventsResult);
         }
 
         setError(undefined);
@@ -128,16 +122,14 @@ export function Orchestration() {
         incrementLoadedCount();
       }
     })();
-  }, [instanceId, executionId, refreshCount, endpoints]);
+  }, [instanceId, executionId, refreshCount, apiClient]);
 
   function handlePurgeClick() {
     confirm({
       description:
         "This action is irreversible. Do you confirm the purge of this instance?",
     }).then(async () => {
-      await apiAxios.delete(
-        `/v1/orchestrations/${encodeURIComponent(instanceId)}`
-      );
+      await apiClient.purgeOrchestration(instanceId);
       enqueueSnackbar("Instance purged", {
         variant: "success",
       });
@@ -207,7 +199,7 @@ export function Orchestration() {
             ))}
           </Menu>
         </Grid>
-        {endpoints.OrchestrationsPurgeInstance.authorized && state && (
+        {apiClient.isAuthorized("OrchestrationsPurgeInstance") && state && (
           <Grid item>
             <Button
               variant="outlined"
@@ -236,17 +228,17 @@ export function Orchestration() {
           textColor="primary"
         >
           <Tab value="state" label="State" />
-          {endpoints.OrchestrationsGetExecutionHistory.authorized && (
+          {apiClient.isAuthorized("OrchestrationsGetExecutionHistory") && (
             <Tab value="history" label="History" />
           )}
-          {endpoints.OrchestrationsRaiseEvent.authorized && (
+          {apiClient.isAuthorized("OrchestrationsRaiseEvent") && (
             <Tab value="raise_event" label="Raise Event" />
           )}
-          {endpoints.OrchestrationsTerminate.authorized && (
+          {apiClient.isAuthorized("OrchestrationsTerminate") && (
             <Tab value="terminate" label="Terminate" />
           )}
-          {features.includes("Rewind") &&
-            endpoints.OrchestrationsRewind.authorized && (
+          {apiClient.hasFeature("Rewind") &&
+            apiClient.isAuthorized("OrchestrationsRewind") && (
               <Tab value="rewind" label="Rewind" />
             )}
           <Tab value="json" label="Json" />
@@ -256,10 +248,10 @@ export function Orchestration() {
             {tab === "state" && (
               <State state={state} definedExecutionId={Boolean(executionId)} />
             )}
-            {endpoints.OrchestrationsGetExecutionHistory.authorized &&
+            {apiClient.isAuthorized("OrchestrationsGetExecutionHistory") &&
               tab === "history" &&
               historyEvents && <HistoryTable historyEvents={historyEvents} />}
-            {endpoints.OrchestrationsRaiseEvent.authorized &&
+            {apiClient.isAuthorized("OrchestrationsRaiseEvent") &&
               tab === "raise_event" && (
                 <Box padding={2}>
                   <RaiseEvent
@@ -268,7 +260,7 @@ export function Orchestration() {
                   />
                 </Box>
               )}
-            {endpoints.OrchestrationsTerminate.authorized &&
+            {apiClient.isAuthorized("OrchestrationsTerminate") &&
               tab === "terminate" && (
                 <Box padding={2}>
                   <Terminate
@@ -277,8 +269,8 @@ export function Orchestration() {
                   />
                 </Box>
               )}
-            {features.includes("Rewind") &&
-              endpoints.OrchestrationsRewind.authorized &&
+            {apiClient.hasFeature("Rewind") &&
+              apiClient.isAuthorized("OrchestrationsRewind") &&
               tab === "rewind" && (
                 <Box padding={2}>
                   <Rewind instanceId={instanceId} onRewind={triggerRefresh} />

@@ -2,7 +2,7 @@ import { Button, Grid } from "@material-ui/core";
 import { useSnackbar } from "notistack";
 import React, { useState } from "react";
 import * as yup from "yup";
-import { apiAxios } from "../../apiAxios";
+import { useApiClient } from "../../ApiClientProvider";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { TextField } from "../../form/TextField";
 import { useForm } from "../../form/useForm";
@@ -15,16 +15,15 @@ type Props = {
 
 const schema = yup
   .object({
-    reason: yup.string().label("Reason"),
+    reason: yup.string().label("Reason").default(""),
   })
   .required();
 
 export function Rewind(props: Props) {
   const { instanceId, onRewind } = props;
 
-  const form = useForm(schema, () => ({
-    reason: "",
-  }));
+  const form = useForm(schema);
+  const apiClient = useApiClient();
   const [error, setError] = useState<any>();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -36,10 +35,7 @@ export function Rewind(props: Props) {
         reason: form.value.reason,
       };
 
-      await apiAxios.post(
-        `/v1/orchestrations/${encodeURIComponent(instanceId)}/rewind`,
-        request
-      );
+      await apiClient.rewindOrchestration(instanceId, request);
 
       enqueueSnackbar("Failures rewound", {
         variant: "success",

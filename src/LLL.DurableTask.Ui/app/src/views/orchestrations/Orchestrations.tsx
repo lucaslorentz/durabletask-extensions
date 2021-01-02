@@ -33,9 +33,8 @@ import FirstPageIcon from "@material-ui/icons/FirstPage";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import { default as React, useCallback, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { apiAxios } from "../../apiAxios";
+import { useApiClient } from "../../ApiClientProvider";
 import { ErrorAlert } from "../../components/ErrorAlert";
-import { useEntrypoint } from "../../EntrypointProvider";
 import { useDebouncedEffect } from "../../hooks/useDebouncedEffect";
 import { useLocationState } from "../../hooks/useLocationState";
 import { useQueryState } from "../../hooks/useQueryState";
@@ -43,7 +42,7 @@ import {
   OrchestrationsResponse,
   OrchestrationStatus,
 } from "../../models/ApiModels";
-import { toDatetimeLocal, toUtcISO } from "../../utils/date-utils";
+import { formatDateTime, toLocalISO, toUtcISO } from "../../utils/date-utils";
 
 const useStyles = makeStyles((theme) => ({
   chips: {
@@ -59,7 +58,7 @@ const useStyles = makeStyles((theme) => ({
 export function Orchestrations() {
   const classes = useStyles();
 
-  const { features } = useEntrypoint();
+  const apiClient = useApiClient();
 
   const [instanceId, setInstanceId] = useQueryState<string>("instanceId", "");
   const [name, setName] = useQueryState<string>("name", "");
@@ -67,7 +66,6 @@ export function Orchestrations() {
     "createdTimeFrom",
     ""
   );
-
   const [createdTimeTo, setCreatedTimeTo] = useQueryState<string>(
     "createdTimeTo",
     ""
@@ -96,20 +94,19 @@ export function Orchestrations() {
     try {
       setIsLoading(true);
 
-      const params = new URLSearchParams();
-      instanceId && params.append("instanceId", instanceId);
-      name && params.append("name", name);
-      createdTimeFrom && params.append("createdTimeFrom", createdTimeFrom);
-      createdTimeTo && params.append("createdTimeTo", createdTimeTo);
-      statuses.forEach((status) => params.append("runtimeStatus", status));
-      params.append("top", pageSize.toString());
-      continuationTokenStack.length > 0 &&
-        params.append("continuationToken", continuationTokenStack[0]);
-
-      var response = await apiAxios.get<OrchestrationsResponse>(
-        `/v1/orchestrations?${params.toString()}`
-      );
-      setResult(response.data);
+      var response = await apiClient.listOrchestrations({
+        instanceId: instanceId,
+        name: name,
+        createdTimeFrom: createdTimeFrom,
+        createdTimeTo: createdTimeTo,
+        runtimeStatus: statuses,
+        top: pageSize,
+        continuationToken:
+          continuationTokenStack.length > 0
+            ? continuationTokenStack[0]
+            : undefined,
+      });
+      setResult(response);
       setError(undefined);
     } catch (error) {
       setResult(undefined);
@@ -126,6 +123,7 @@ export function Orchestrations() {
     pageSize,
     continuationTokenStack,
     setResult,
+    apiClient,
   ]);
 
   const [skipDebounce] = useDebouncedEffect(load, [load], 500);
@@ -194,7 +192,7 @@ export function Orchestrations() {
         </AccordionSummary>
         <AccordionDetails>
           <Grid container spacing={2}>
-            {features.includes("SearchByInstanceId") && (
+            {apiClient.hasFeature("SearchByInstanceId") && (
               <Grid item xs={3}>
                 <TextField
                   fullWidth
@@ -206,7 +204,7 @@ export function Orchestrations() {
                 />
               </Grid>
             )}
-            {features.includes("SearchByName") && (
+            {apiClient.hasFeature("SearchByName") && (
               <Grid item xs={3}>
                 <TextField
                   fullWidth
@@ -218,7 +216,7 @@ export function Orchestrations() {
                 />
               </Grid>
             )}
-            {features.includes("SearchByCreatedTime") && (
+            {apiClient.hasFeature("SearchByCreatedTime") && (
               <>
                 <Grid item xs={3}>
                   <TextField
@@ -227,7 +225,7 @@ export function Orchestrations() {
                     variant="outlined"
                     type="datetime-local"
                     size="small"
-                    value={toDatetimeLocal(createdTimeFrom)}
+                    value={toLocalISO(createdTimeFrom)}
                     onChange={(e) =>
                       setCreatedTimeFrom(toUtcISO(e.target.value))
                     }
@@ -243,7 +241,7 @@ export function Orchestrations() {
                     variant="outlined"
                     type="datetime-local"
                     size="small"
-                    value={toDatetimeLocal(createdTimeTo)}
+                    value={toLocalISO(createdTimeTo)}
                     onChange={(e) => setCreatedTimeTo(toUtcISO(e.target.value))}
                     InputLabelProps={{
                       shrink: true,
@@ -252,7 +250,7 @@ export function Orchestrations() {
                 </Grid>
               </>
             )}
-            {features.includes("SearchByStatus") && (
+            {apiClient.hasFeature("SearchByStatus") && (
               <Grid item xs={3}>
                 <FormControl fullWidth variant="outlined" size="small">
                   <InputLabel>Status</InputLabel>
@@ -301,8 +299,8 @@ export function Orchestrations() {
               <TableCell>Name</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>CreatedTime</TableCell>
-              <TableCell>CompletedTime</TableCell>
-              <TableCell>Tags</TableCell>
+              <TableCell>LastUpdatedTime</TableCell>
+              {apiClient.hasFeature("Tags") && <TableCell>Tags</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -319,45 +317,55 @@ export function Orchestrations() {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Link
-                    component={RouterLink}
-                    to={`/orchestrations/${encodeURIComponent(
-                      orchestration.orchestrationInstance.instanceId
-                    )}/${encodeURIComponent(
-                      orchestration.orchestrationInstance.executionId
-                    )}`}
-                  >
-                    {orchestration.orchestrationInstance.executionId}
-                  </Link>
+                  {apiClient.hasFeature("StatePerExecution") ? (
+                    <Link
+                      component={RouterLink}
+                      to={`/orchestrations/${encodeURIComponent(
+                        orchestration.orchestrationInstance.instanceId
+                      )}/${encodeURIComponent(
+                        orchestration.orchestrationInstance.executionId
+                      )}`}
+                    >
+                      {orchestration.orchestrationInstance.executionId}
+                    </Link>
+                  ) : (
+                    orchestration.orchestrationInstance.executionId
+                  )}
                 </TableCell>
                 <TableCell>{orchestration.name}</TableCell>
                 <TableCell>{orchestration.orchestrationStatus}</TableCell>
                 <TableCell>
-                  {new Date(orchestration.createdTime).toLocaleString()}
+                  {formatDateTime(orchestration.createdTime)}
                 </TableCell>
                 <TableCell>
-                  {orchestration.completedTime.indexOf("9999") !== 0
-                    ? new Date(orchestration.completedTime).toLocaleString()
-                    : null}
+                  {formatDateTime(orchestration.lastUpdatedTime)}
                 </TableCell>
-                <TableCell padding="none">
-                  <div className={classes.chips}>
-                    {orchestration.tags &&
-                      Object.entries(orchestration.tags).map(([key, value]) => (
-                        <Chip
-                          key={key}
-                          size="small"
-                          label={`${key}: ${value}`}
-                        />
-                      ))}
-                  </div>
-                </TableCell>
+                {apiClient.hasFeature("Tags") && (
+                  <TableCell padding="none">
+                    <div className={classes.chips}>
+                      {orchestration.tags &&
+                        Object.entries(
+                          orchestration.tags
+                        ).map(([key, value]) => (
+                          <Chip
+                            key={key}
+                            size="small"
+                            label={`${key}: ${value}`}
+                          />
+                        ))}
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={7} padding="none" style={{ color: "#000" }}>
+              <TableCell
+                colSpan={apiClient.hasFeature("Tags") ? 7 : 6}
+                padding="none"
+                style={{ color: "#000" }}
+              >
                 {RenderFooter()}
               </TableCell>
             </TableRow>
@@ -393,7 +401,7 @@ export function Orchestrations() {
           {continuationTokenStack.length * pageSize + 1}-
           {continuationTokenStack.length * pageSize +
             (result?.orchestrations.length ?? 0)}{" "}
-          {features.includes("QueryCount") && `of ${result?.count}`}
+          {apiClient.hasFeature("QueryCount") && `of ${result?.count}`}
         </Box>
         <IconButton
           disabled={continuationTokenStack.length === 0}

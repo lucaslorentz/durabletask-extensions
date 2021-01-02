@@ -3,8 +3,8 @@ import { Observer } from "mobx-react-lite";
 import React, { useState } from "react";
 import { reach, Schema, ValidationError } from "yup";
 
-export function useForm<T>(schema: Schema<T>, valueFactory: () => T): Form<T> {
-  const [form] = useState(() => new Form<T>(valueFactory, schema));
+export function useForm<T>(schema: Schema<T>): Form<T> {
+  const [form] = useState(() => new Form<T>(schema));
 
   return form;
 }
@@ -12,12 +12,14 @@ export function useForm<T>(schema: Schema<T>, valueFactory: () => T): Form<T> {
 export class Form<T> {
   private cache: Map<PropertyKey, Field<any>> = new Map();
 
+  public schema: Schema<T>;
   public value: T;
   public errors: Record<string, string>;
   public pendingValidation = true;
 
-  constructor(public valueFactory: () => T, public schema: Schema<T>) {
-    this.value = valueFactory();
+  constructor(schema: Schema<T>) {
+    this.schema = schema;
+    this.value = this.createDefaultValue();
     this.errors = {};
 
     makeObservable(this, {
@@ -77,12 +79,12 @@ export class Form<T> {
     }
   }
 
-  public render<R>(fn: (form: Form<T>) => React.ReactNode) {
+  public render(fn: (form: Form<T>) => React.ReactNode) {
     return <Observer>{() => <>{fn(this)}</>}</Observer>;
   }
 
   public reset() {
-    this.value = this.valueFactory();
+    this.value = this.createDefaultValue();
   }
 
   public field<P extends keyof T>(prop: P): Field<T[P]> {
@@ -102,6 +104,10 @@ export class Form<T> {
     this.cache.set(prop, field);
 
     return field;
+  }
+
+  private createDefaultValue() {
+    return (this.schema as any).getDefault();
   }
 }
 
