@@ -65,9 +65,11 @@ namespace LLL.DurableTask.Tests.Storages
             builder.AddOrchestration<ContinueAsNewOrchestration>(ContinueAsNewOrchestration.Name, ContinueAsNewOrchestration.Version);
             builder.AddOrchestration<ContinueAsNewEmptyOrchestration>(ContinueAsNewEmptyOrchestration.Name, ContinueAsNewEmptyOrchestration.Version);
             builder.AddOrchestration<ParentOrchestration>(ParentOrchestration.Name, ParentOrchestration.Version);
+            builder.AddOrchestration<ParallelTasksOrchestration>(ParallelTasksOrchestration.Name, ParallelTasksOrchestration.Version);
             builder.AddOrchestration<FibonacciRecursiveOrchestration>(FibonacciRecursiveOrchestration.Name, FibonacciRecursiveOrchestration.Version);
             builder.AddActivity<SumActivity>(SumActivity.Name, SumActivity.Version);
             builder.AddActivity<SubtractActivity>(SubtractActivity.Name, SubtractActivity.Version);
+            builder.AddActivity<MeasuredDelayActivity>(MeasuredDelayActivity.Name, MeasuredDelayActivity.Version);
         }
 
         public virtual async Task DisposeAsync()
@@ -131,6 +133,25 @@ namespace LLL.DurableTask.Tests.Storages
 
             state.Should().NotBeNull();
             state.Output.Should().Be("5");
+            state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
+        }
+
+        [Trait("Category", "Integration")]
+        [SkippableFact]
+        public async Task ParallelTasksOrchestration_ShouldExecuteInParallel()
+        {
+            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+            var orchestrationService = _host.Services.GetRequiredService<IOrchestrationService>();
+
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                ParallelTasksOrchestration.Name,
+                ParallelTasksOrchestration.Version,
+                orchestrationService.MaxConcurrentTaskActivityWorkItems);
+
+            var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
+
+            state.Should().NotBeNull();
+            state.Output.Should().Be(orchestrationService.MaxConcurrentTaskActivityWorkItems.ToString());
             state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
         }
 
