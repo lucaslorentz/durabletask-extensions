@@ -54,6 +54,8 @@ Extends Durable Task Azure storage with:
 - Distributed workers: no
 - Storing activity input: no
 - Failures rewind: yes
+- Tags: no
+- State per execution: no
 
 #### Configuration
 
@@ -77,6 +79,8 @@ Extends Durable Task Emulator storage with:
 - Distributed workers: no
 - Storing activity input: no
 - Failures rewind: no
+- Tags: no
+- State per execution: no
 
 #### Configuration
 
@@ -96,6 +100,8 @@ The implementation uses a combination of **row locking**, **skip locked** and **
 - Distributed workers: yes
 - Storing activity input: yes
 - Failures rewind: yes
+- Tags: yes
+- State per execution: yes
 
 #### LLL.DurableTask.EFCore.MySql [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.EFCore.MySql)](https://www.nuget.org/packages/LLL.DurableTask.EFCore.MySql/)
 
