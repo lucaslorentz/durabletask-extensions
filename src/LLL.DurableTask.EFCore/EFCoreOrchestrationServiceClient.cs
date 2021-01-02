@@ -172,7 +172,9 @@ namespace LLL.DurableTask.EFCore
                 OrchestrationFeature.SearchByCreatedTime,
                 OrchestrationFeature.SearchByStatus,
                 OrchestrationFeature.QueryCount,
-                OrchestrationFeature.Rewind
+                OrchestrationFeature.Rewind,
+                OrchestrationFeature.Tags,
+                OrchestrationFeature.StatePerExecution
             });
         }
 
