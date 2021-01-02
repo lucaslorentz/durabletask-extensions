@@ -16,7 +16,7 @@ namespace LLL.DurableTask.Tests.Storages
         {
             var connectionString = Configuration.GetConnectionString("SqlServer");
 
-            Skip.If(string.IsNullOrEmpty(connectionString), "SqlServer connection string not configured");
+            Skip.If(string.IsNullOrWhiteSpace(connectionString), "SqlServer connection string not configured");
 
             services.AddDurableTaskEFCoreStorage()
                 .UseSqlServer(connectionString);

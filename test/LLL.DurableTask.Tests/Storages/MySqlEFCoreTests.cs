@@ -16,7 +16,7 @@ namespace LLL.DurableTask.Tests.Storages
         {
             var connectionString = Configuration.GetConnectionString("MySql");
 
-            Skip.If(string.IsNullOrEmpty(connectionString), "MySql connection string not configured");
+            Skip.If(string.IsNullOrWhiteSpace(connectionString), "MySql connection string not configured");
 
             services.AddDurableTaskEFCoreStorage()
                 .UseMySql(connectionString);

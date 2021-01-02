@@ -22,7 +22,7 @@ namespace LLL.DurableTask.Tests.Storages
         {
             var connectionString = Configuration.GetConnectionString("AzureStorageAccount");
 
-            Skip.If(string.IsNullOrEmpty(connectionString), "AzureStorageAccount connection string not configured");
+            Skip.If(string.IsNullOrWhiteSpace(connectionString), "AzureStorageAccount connection string not configured");
 
             services.AddDurableTaskAzureStorage(options =>
             {

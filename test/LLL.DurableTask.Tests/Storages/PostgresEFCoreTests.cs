@@ -16,7 +16,7 @@ namespace LLL.DurableTask.Tests.Storages
         {
             var connectionString = Configuration.GetConnectionString("Postgres");
 
-            Skip.If(string.IsNullOrEmpty(connectionString), "Postgres connection string not configured");
+            Skip.If(string.IsNullOrWhiteSpace(connectionString), "Postgres connection string not configured");
 
             services.AddDurableTaskEFCoreStorage()
                 .UseNpgsql(connectionString);
