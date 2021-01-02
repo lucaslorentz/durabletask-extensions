@@ -13,6 +13,8 @@ env:
   Authors: Lucas Lorentz
   RepositoryUrl: https://github.com/lucaslorentz/durabletask-extensions
   PackageTags: DurableTask
+  # Test settings
+  ConnectionStrings__AzureStorageAccount: ""
 jobs:
   build:
     runs-on: ubuntu-latest
