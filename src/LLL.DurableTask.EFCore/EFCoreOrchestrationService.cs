@@ -10,19 +10,19 @@ using LLL.DurableTask.EFCore.Entities;
 using LLL.DurableTask.EFCore.Mappers;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace LLL.DurableTask.EFCore
 {
-    public abstract partial class EFCoreOrchestrationService :
+    public partial class EFCoreOrchestrationService :
         IOrchestrationService,
         IExtendedOrchestrationService
     {
         private readonly EFCoreOrchestrationOptions _options;
         private readonly Func<OrchestrationDbContext> _dbContextFactory;
-        private readonly OrchestrationMessageMapper _orchestratorMessageMapper;
+        private readonly OrchestrationDbContextExtensions _dbContextExtensions;
+        private readonly OrchestrationMessageMapper _orchestrationMessageMapper;
         private readonly ActivityMessageMapper _activityMessageMapper;
         private readonly InstanceMapper _instanceMapper;
         private readonly ExecutionMapper _executionMapper;
@@ -33,7 +33,8 @@ namespace LLL.DurableTask.EFCore
         public EFCoreOrchestrationService(
             IOptions<EFCoreOrchestrationOptions> options,
             Func<OrchestrationDbContext> dbContextFactory,
-            OrchestrationMessageMapper orchestratorMessageMapper,
+            OrchestrationDbContextExtensions dbContextExtensions,
+            OrchestrationMessageMapper orchestrationMessageMapper,
             ActivityMessageMapper activityMessageMapper,
             InstanceMapper instanceMapper,
             ExecutionMapper executionMapper,
@@ -41,7 +42,8 @@ namespace LLL.DurableTask.EFCore
         {
             _options = options.Value;
             _dbContextFactory = dbContextFactory;
-            _orchestratorMessageMapper = orchestratorMessageMapper;
+            _dbContextExtensions = dbContextExtensions;
+            _orchestrationMessageMapper = orchestrationMessageMapper;
             _activityMessageMapper = activityMessageMapper;
             _instanceMapper = instanceMapper;
             _executionMapper = executionMapper;
@@ -66,7 +68,7 @@ namespace LLL.DurableTask.EFCore
                 if (recreateInstanceStore)
                     await dbContext.Database.EnsureDeletedAsync();
 
-                await Migrate(dbContext);
+                await _dbContextExtensions.Migrate(dbContext);
             }
         }
 
@@ -74,7 +76,7 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
-                await Migrate(dbContext);
+                await _dbContextExtensions.Migrate(dbContext);
             }
         }
 
@@ -123,7 +125,7 @@ namespace LLL.DurableTask.EFCore
             {
                 using (var dbContext = _dbContextFactory())
                 {
-                    using (var transaction = await BeginTransaction(dbContext))
+                    using (var transaction = await _dbContextExtensions.BeginTransaction(dbContext))
                     {
                         var instance = await LockNextInstance(dbContext, orchestrations);
 
@@ -204,7 +206,7 @@ namespace LLL.DurableTask.EFCore
             {
                 using (var dbContext = _dbContextFactory())
                 {
-                    using (var transaction = await BeginTransaction(dbContext))
+                    using (var transaction = await _dbContextExtensions.BeginTransaction(dbContext))
                     {
                         var activityMessage = await LockActivityMessage(dbContext, activities);
 
@@ -219,7 +221,7 @@ namespace LLL.DurableTask.EFCore
 
                         return new TaskActivityWorkItem
                         {
-                            Id = CreateTaskActivityWorkItemId(activityMessage.Id, activityMessage.LockId),
+                            Id = CreateTaskActivityWorkItemId(activityMessage.Id, activityMessage.LockId, activityMessage.ReplyQueue),
                             TaskMessage = _options.DataConverter.Deserialize<TaskMessage>(activityMessage.Message),
                             LockedUntilUtc = activityMessage.AvailableAt
                         };
@@ -284,9 +286,9 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
-                var (id, lockId) = ParseTaskActivityWorkItemId(workItem.Id);
+                var (id, lockId, _) = ParseTaskActivityWorkItemId(workItem.Id);
 
-                await ReleaseActivityMessageLock(dbContext, id, lockId);
+                await _dbContextExtensions.ReleaseActivityMessageLock(dbContext, id, lockId);
             }
         }
 
@@ -294,11 +296,11 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
-                var (id, lockId) = ParseTaskActivityWorkItemId(workItem.Id);
+                var (id, lockId, _) = ParseTaskActivityWorkItemId(workItem.Id);
 
                 var lockedUntilUTC = DateTime.UtcNow.Add(_options.ActivtyLockTimeout);
 
-                var renewedCount = await RenewActivityMessageLock(dbContext, id, lockId, lockedUntilUTC);
+                var renewedCount = await _dbContextExtensions.RenewActivityMessageLock(dbContext, id, lockId, lockedUntilUTC);
 
                 if (renewedCount == 0)
                     throw new Exception("Lost task activity lock");
@@ -351,24 +353,32 @@ namespace LLL.DurableTask.EFCore
                     await dbContext.Executions.AddAsync(childExecution);
                 }
 
+                var queueName = QueueMapper.ToQueueName(orchestrationState.Name, orchestrationState.Version);
+
                 // Write messages
-                var activityMessages = outboundMessages.Select(_activityMessageMapper.CreateActivityMessage).ToArray();
-                var orchestatorMessages = orchestratorMessages.Select(_orchestratorMessageMapper.CreateOrchestratorMessage).ToArray();
-                var timerOrchestratorMessages = timerMessages.Select(_orchestratorMessageMapper.CreateOrchestratorMessage).ToArray();
-                var newOrchestratorWorkItem = continuedAsNewMessage != null
-                    ? _orchestratorMessageMapper.CreateOrchestratorMessage(continuedAsNewMessage, 0)
+                var activityMessages = outboundMessages
+                    .Select(m => _activityMessageMapper.CreateActivityMessage(m, queueName))
+                    .ToArray();
+                var orchestatorMessages = orchestratorMessages
+                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessage(m, i, queueName))
+                    .ToArray();
+                var timerOrchestrationMessages = timerMessages
+                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessage(m, i, queueName))
+                    .ToArray();
+                var continuedAsNewOrchestrationMessage = continuedAsNewMessage != null
+                    ? _orchestrationMessageMapper.CreateOrchestrationMessage(continuedAsNewMessage, 0, queueName)
                     : null;
 
                 await dbContext.ActivityMessages.AddRangeAsync(activityMessages);
-                await dbContext.OrchestratorMessages.AddRangeAsync(orchestatorMessages);
-                await dbContext.OrchestratorMessages.AddRangeAsync(timerOrchestratorMessages);
+                await dbContext.OrchestrationMessages.AddRangeAsync(orchestatorMessages);
+                await dbContext.OrchestrationMessages.AddRangeAsync(timerOrchestrationMessages);
 
-                if (newOrchestratorWorkItem != null)
-                    await dbContext.OrchestratorMessages.AddAsync(newOrchestratorWorkItem);
+                if (continuedAsNewOrchestrationMessage != null)
+                    await dbContext.OrchestrationMessages.AddAsync(continuedAsNewOrchestrationMessage);
 
                 // Remove executed messages
                 dbContext.AttachRange(session.Messages);
-                dbContext.OrchestratorMessages.RemoveRange(session.Messages);
+                dbContext.OrchestrationMessages.RemoveRange(session.Messages);
 
                 // Update instance
                 var instance = session.Instance;
@@ -397,35 +407,20 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
-                var (id, lockId) = ParseTaskActivityWorkItemId(workItem.Id);
+                var (id, lockId, replyQueue) = ParseTaskActivityWorkItemId(workItem.Id);
 
                 var dbWorkItem = await dbContext.ActivityMessages
                     .FirstAsync(w => w.Id == id && w.LockId == lockId);
 
-                var orchestratorWorkItem = _orchestratorMessageMapper.CreateOrchestratorMessage(responseMessage, 0);
+                var orchestrationMessage = _orchestrationMessageMapper
+                    .CreateOrchestrationMessage(responseMessage, 0, replyQueue);
 
                 dbContext.ActivityMessages.Remove(dbWorkItem);
 
-                await dbContext.OrchestratorMessages.AddAsync(orchestratorWorkItem);
+                await dbContext.OrchestrationMessages.AddAsync(orchestrationMessage);
                 await dbContext.SaveChangesAsync();
             }
         }
-
-        protected abstract Task Migrate(OrchestrationDbContext dbContext);
-
-        protected abstract Task<IDbContextTransaction> BeginTransaction(OrchestrationDbContext dbContext);
-
-        protected abstract Task<Instance> LockAnyQueueInstance(OrchestrationDbContext dbContext);
-
-        protected abstract Task<Instance> LockQueuesInstance(OrchestrationDbContext dbContext, string[] queues);
-
-        protected abstract Task<ActivityMessage> LockAnyQueueActivityMessage(OrchestrationDbContext dbContext);
-
-        protected abstract Task<ActivityMessage> LockQueuesActivityMessage(OrchestrationDbContext dbContext, string[] queues);
-
-        protected abstract Task<int> RenewActivityMessageLock(OrchestrationDbContext dbContext, Guid id, string lockId, DateTime lockedUntilUTC);
-
-        protected abstract Task<int> ReleaseActivityMessageLock(OrchestrationDbContext dbContext, Guid id, string lockId);
 
         private async Task<Execution> SaveExecutionAsync(
             OrchestrationDbContext dbContext,
@@ -466,13 +461,13 @@ namespace LLL.DurableTask.EFCore
         private async Task<Instance> LockNextInstance(OrchestrationDbContext dbContext, INameVersionInfo[] orchestrations)
         {
             if (orchestrations == null)
-                return await LockAnyQueueInstance(dbContext);
+                return await _dbContextExtensions.LockNextInstanceForUpdate(dbContext);
 
             var queues = orchestrations
                 .Select(nv => QueueMapper.ToQueueName(nv.Name, nv.Version))
                 .ToArray();
 
-            var instance = await LockQueuesInstance(dbContext, queues);
+            var instance = await _dbContextExtensions.LockNextInstanceForUpdate(dbContext, queues);
             if (instance != null)
                 return instance;
 
@@ -482,28 +477,28 @@ namespace LLL.DurableTask.EFCore
         private async Task<ActivityMessage> LockActivityMessage(OrchestrationDbContext dbContext, INameVersionInfo[] activities)
         {
             if (activities == null)
-                return await LockAnyQueueActivityMessage(dbContext);
+                return await _dbContextExtensions.LockNextActivityMessageForUpdate(dbContext);
 
             var queues = activities
                 .Select(nv => QueueMapper.ToQueueName(nv.Name, nv.Version))
                 .ToArray();
 
-            var activityMessage = await LockQueuesActivityMessage(dbContext, queues);
+            var activityMessage = await _dbContextExtensions.LockNextActivityMessageForUpdate(dbContext, queues);
             if (activityMessage != null)
                 return activityMessage;
 
             return null;
         }
 
-        private static string CreateTaskActivityWorkItemId(Guid id, string lockId)
+        private static string CreateTaskActivityWorkItemId(Guid id, string lockId, string replyQueue)
         {
-            return $"{id}|{lockId}";
+            return $"{id}|{lockId}|{replyQueue}";
         }
 
-        private static (Guid id, string lockId) ParseTaskActivityWorkItemId(string id)
+        private static (Guid id, string lockId, string replyQueue) ParseTaskActivityWorkItemId(string id)
         {
             var parts = id.Split('|');
-            return (Guid.Parse(parts[0]), parts[1]);
+            return (Guid.Parse(parts[0]), parts[1], parts[2]);
         }
 
         private static void EnrichNewEventsInput(OrchestrationRuntimeState orchestrationRuntimeState, IList<TaskMessage> outboundMessages, IList<TaskMessage> orchestratorMessages)
@@ -523,9 +518,9 @@ namespace LLL.DurableTask.EFCore
                         break;
                 }
             }
-            foreach (var orchestratorEvent in orchestratorMessages.Select(e => e.Event))
+            foreach (var orchestrationEvent in orchestratorMessages.Select(e => e.Event))
             {
-                switch (orchestratorEvent)
+                switch (orchestrationEvent)
                 {
                     case ExecutionStartedEvent executionStartedEvent:
                         foreach (var subOrchestrationCreatedEvent in orchestrationRuntimeState.NewEvents.OfType<SubOrchestrationInstanceCreatedEvent>())

@@ -22,7 +22,7 @@ namespace LLL.DurableTask.EFCore.Mappers
                 InstanceId = executionStartedEvent.OrchestrationInstance.InstanceId,
                 LastExecutionId = executionStartedEvent.OrchestrationInstance.ExecutionId,
                 AvailableAt = DateTime.UtcNow,
-                Queue = QueueMapper.ToQueueName(executionStartedEvent.Name, executionStartedEvent.Version)
+                LastQueueName = QueueMapper.ToQueueName(executionStartedEvent.Name, executionStartedEvent.Version)
             };
             return instance;
         }
@@ -32,7 +32,7 @@ namespace LLL.DurableTask.EFCore.Mappers
             OrchestrationRuntimeState runtimeState)
         {
             instance.LastExecutionId = runtimeState.OrchestrationInstance.ExecutionId;
-            instance.Queue = QueueMapper.ToQueueName(runtimeState.Name, runtimeState.Version);
+            instance.LastQueueName = QueueMapper.ToQueueName(runtimeState.Name, runtimeState.Version);
         }
     }
 }

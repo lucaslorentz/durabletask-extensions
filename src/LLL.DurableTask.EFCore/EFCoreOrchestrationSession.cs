@@ -64,7 +64,7 @@ namespace LLL.DurableTask.EFCore
             OrchestrationDbContext dbContext,
             CancellationToken cancellationToken = default)
         {
-            var dbWorkItems = await dbContext.OrchestratorMessages
+            var dbWorkItems = await dbContext.OrchestrationMessages
                 .Where(w => w.Instance.InstanceId == Instance.InstanceId && w.Instance.LockId == Instance.LockId)
                 .Where(w => w.AvailableAt <= DateTime.UtcNow)
                 .Where(w => !Messages.Contains(w))
@@ -83,8 +83,8 @@ namespace LLL.DurableTask.EFCore
             {
                 foreach (var message in messagesToDiscard)
                 {
-                    dbContext.OrchestratorMessages.Attach(message);
-                    dbContext.OrchestratorMessages.Remove(message);
+                    dbContext.OrchestrationMessages.Attach(message);
+                    dbContext.OrchestrationMessages.Remove(message);
                 }
 
                 dbWorkItems = dbWorkItems

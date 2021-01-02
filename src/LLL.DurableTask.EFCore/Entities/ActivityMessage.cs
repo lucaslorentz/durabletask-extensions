@@ -10,6 +10,7 @@ namespace LLL.DurableTask.EFCore.Entities
         public Instance Instance { get; set; }
 
         public string Queue { get; set; }
+        public string ReplyQueue { get; set; }
 
         public string Message { get; set; }
 

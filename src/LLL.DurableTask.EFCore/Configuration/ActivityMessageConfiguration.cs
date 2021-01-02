@@ -20,6 +20,7 @@ namespace LLL.DurableTask.EFCore.Configuration
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.Property(x => x.Queue).HasMaxLength(500).IsRequired();
+            builder.Property(x => x.ReplyQueue).HasMaxLength(500).IsRequired();
 
             builder.Property(x => x.Message).HasMaxLength(int.MaxValue);
 
@@ -27,7 +28,7 @@ namespace LLL.DurableTask.EFCore.Configuration
             builder.Property(x => x.AvailableAt).HasConversion(new UtcDateTimeConverter());
             builder.Property(x => x.LockId).HasMaxLength(100).IsConcurrencyToken();
 
-            builder.HasIndex(x => new { x.Queue, x.AvailableAt });
+            builder.HasIndex(x => new { x.AvailableAt, x.Queue });
             builder.HasIndex(x => new { x.AvailableAt });
         }
     }

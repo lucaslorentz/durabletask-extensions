@@ -10,6 +10,8 @@ namespace LLL.DurableTask.EFCore.Entities
         public Instance Instance { get; set; }
 
         public string ExecutionId { get; set; }
+        
+        public string Queue { get; set; }
 
         public DateTime AvailableAt { get; set; }
 

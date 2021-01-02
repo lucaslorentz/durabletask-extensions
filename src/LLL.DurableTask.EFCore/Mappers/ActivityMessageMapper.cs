@@ -15,7 +15,9 @@ namespace LLL.DurableTask.EFCore.Mappers
             _options = options.Value;
         }
 
-        public ActivityMessage CreateActivityMessage(TaskMessage message)
+        public ActivityMessage CreateActivityMessage(
+            TaskMessage message,
+            string replyQueue)
         {
             var taskScheduledEvent = message.Event as TaskScheduledEvent;
 
@@ -24,6 +26,7 @@ namespace LLL.DurableTask.EFCore.Mappers
                 Id = Guid.NewGuid(),
                 CreatedAt = DateTime.UtcNow,
                 Queue = QueueMapper.ToQueueName(taskScheduledEvent.Name, taskScheduledEvent.Version),
+                ReplyQueue = replyQueue,
                 InstanceId = message.OrchestrationInstance.InstanceId,
                 Message = _options.DataConverter.Serialize(message),
                 AvailableAt = DateTime.UtcNow

@@ -16,7 +16,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                .HasAnnotation("ProductVersion", "3.1.8")
+                .HasAnnotation("ProductVersion", "3.1.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
@@ -50,13 +50,18 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .HasColumnType("character varying(500)")
                         .HasMaxLength(500);
 
+                    b.Property<string>("ReplyQueue")
+                        .IsRequired()
+                        .HasColumnType("character varying(500)")
+                        .HasMaxLength(500);
+
                     b.HasKey("Id");
 
                     b.HasIndex("AvailableAt");
 
                     b.HasIndex("InstanceId");
 
-                    b.HasIndex("Queue", "AvailableAt");
+                    b.HasIndex("AvailableAt", "Queue");
 
                     b.ToTable("ActivityMessages");
                 });
@@ -167,23 +172,21 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
 
+                    b.Property<string>("LastQueueName")
+                        .IsRequired()
+                        .HasColumnType("character varying(500)")
+                        .HasMaxLength(500);
+
                     b.Property<string>("LockId")
                         .IsConcurrencyToken()
                         .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
-
-                    b.Property<string>("Queue")
-                        .IsRequired()
-                        .HasColumnType("character varying(500)")
-                        .HasMaxLength(500);
 
                     b.HasKey("InstanceId");
 
                     b.HasIndex("AvailableAt");
 
                     b.HasIndex("LastExecutionId");
-
-                    b.HasIndex("Queue", "AvailableAt");
 
                     b.ToTable("Instances");
                 });
@@ -210,6 +213,11 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .HasColumnType("text")
                         .HasMaxLength(2147483647);
 
+                    b.Property<string>("Queue")
+                        .IsRequired()
+                        .HasColumnType("character varying(500)")
+                        .HasMaxLength(500);
+
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("integer");
 
@@ -219,7 +227,9 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.HasIndex("InstanceId");
 
-                    b.ToTable("OrchestratorMessages");
+                    b.HasIndex("AvailableAt", "Queue");
+
+                    b.ToTable("OrchestrationMessages");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>

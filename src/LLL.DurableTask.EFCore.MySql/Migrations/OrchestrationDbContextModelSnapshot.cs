@@ -14,7 +14,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "3.1.8")
+                .HasAnnotation("ProductVersion", "3.1.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
@@ -48,13 +48,18 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
                         .HasMaxLength(500);
 
+                    b.Property<string>("ReplyQueue")
+                        .IsRequired()
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
+
                     b.HasKey("Id");
 
                     b.HasIndex("AvailableAt");
 
                     b.HasIndex("InstanceId");
 
-                    b.HasIndex("Queue", "AvailableAt");
+                    b.HasIndex("AvailableAt", "Queue");
 
                     b.ToTable("ActivityMessages");
                 });
@@ -165,23 +170,21 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
                         .HasMaxLength(100);
 
+                    b.Property<string>("LastQueueName")
+                        .IsRequired()
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
+
                     b.Property<string>("LockId")
                         .IsConcurrencyToken()
                         .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
                         .HasMaxLength(100);
-
-                    b.Property<string>("Queue")
-                        .IsRequired()
-                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
-                        .HasMaxLength(500);
 
                     b.HasKey("InstanceId");
 
                     b.HasIndex("AvailableAt");
 
                     b.HasIndex("LastExecutionId");
-
-                    b.HasIndex("Queue", "AvailableAt");
 
                     b.ToTable("Instances");
                 });
@@ -208,6 +211,11 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasColumnType("longtext CHARACTER SET utf8mb4")
                         .HasMaxLength(2147483647);
 
+                    b.Property<string>("Queue")
+                        .IsRequired()
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
+                        .HasMaxLength(500);
+
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
 
@@ -217,7 +225,9 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.HasIndex("InstanceId");
 
-                    b.ToTable("OrchestratorMessages");
+                    b.HasIndex("AvailableAt", "Queue");
+
+                    b.ToTable("OrchestrationMessages");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>

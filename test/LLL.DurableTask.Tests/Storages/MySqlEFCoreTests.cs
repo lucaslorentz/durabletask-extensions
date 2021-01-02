@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 namespace LLL.DurableTask.Tests.Storages
 {
     [Collection("MySql")]
-    public class MySqlEFCoreTests : StorageTestBase
+    public class MySqlEFCoreTests : EFCoreTestBase
     {
         public MySqlEFCoreTests(ITestOutputHelper output) : base(output)
         {

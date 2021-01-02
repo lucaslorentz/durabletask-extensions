@@ -19,7 +19,7 @@ namespace LLL.DurableTask.Tests.Storages
     public abstract class StorageTestBase : IAsyncLifetime
     {
         private readonly ITestOutputHelper _output;
-        private IHost _host;
+        protected IHost _host;
         protected IConfiguration Configuration { get; }
         protected TimeSpan FastWaitTimeout { get; set; } = TimeSpan.FromSeconds(20);
         protected TimeSpan SlowWaitTimeout { get; set; } = TimeSpan.FromSeconds(30);

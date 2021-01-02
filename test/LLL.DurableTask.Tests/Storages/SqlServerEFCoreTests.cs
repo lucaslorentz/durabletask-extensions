@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 namespace LLL.DurableTask.Tests.Storages
 {
     [Collection("SqlServer")]
-    public class SqlServerEFCoreTests : StorageTestBase
+    public class SqlServerEFCoreTests : EFCoreTestBase
     {
         public SqlServerEFCoreTests(ITestOutputHelper output) : base(output)
         {

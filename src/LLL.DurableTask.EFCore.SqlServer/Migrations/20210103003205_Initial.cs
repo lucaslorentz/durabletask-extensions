@@ -1,8 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
+namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 {
     public partial class Initial : Migration
     {
@@ -59,7 +58,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 {
                     ExecutionId = table.Column<string>(nullable: false),
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(maxLength: 100, nullable: false),
                     Value = table.Column<string>(maxLength: 2000, nullable: false)
                 },
@@ -80,7 +79,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 {
                     InstanceId = table.Column<string>(maxLength: 500, nullable: false),
                     LastExecutionId = table.Column<string>(maxLength: 100, nullable: false),
-                    Queue = table.Column<string>(maxLength: 500, nullable: false),
+                    LastQueueName = table.Column<string>(maxLength: 500, nullable: false),
                     AvailableAt = table.Column<DateTime>(nullable: false),
                     LockId = table.Column<string>(maxLength: 100, nullable: true)
                 },
@@ -102,6 +101,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                     Id = table.Column<Guid>(nullable: false),
                     InstanceId = table.Column<string>(maxLength: 500, nullable: false),
                     Queue = table.Column<string>(maxLength: 500, nullable: false),
+                    ReplyQueue = table.Column<string>(maxLength: 500, nullable: false),
                     Message = table.Column<string>(maxLength: 2147483647, nullable: true),
                     CreatedAt = table.Column<DateTime>(nullable: false),
                     AvailableAt = table.Column<DateTime>(nullable: false),
@@ -119,21 +119,22 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OrchestratorMessages",
+                name: "OrchestrationMessages",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
                     InstanceId = table.Column<string>(maxLength: 500, nullable: false),
                     ExecutionId = table.Column<string>(maxLength: 100, nullable: true),
+                    Queue = table.Column<string>(maxLength: 500, nullable: false),
                     AvailableAt = table.Column<DateTime>(nullable: false),
                     SequenceNumber = table.Column<int>(nullable: false),
                     Message = table.Column<string>(maxLength: 2147483647, nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OrchestratorMessages", x => x.Id);
+                    table.PrimaryKey("PK_OrchestrationMessages", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_OrchestratorMessages_Instances_InstanceId",
+                        name: "FK_OrchestrationMessages_Instances_InstanceId",
                         column: x => x.InstanceId,
                         principalTable: "Instances",
                         principalColumn: "InstanceId",
@@ -151,9 +152,9 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 column: "InstanceId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ActivityMessages_Queue_AvailableAt",
+                name: "IX_ActivityMessages_AvailableAt_Queue",
                 table: "ActivityMessages",
-                columns: new[] { "Queue", "AvailableAt" });
+                columns: new[] { "AvailableAt", "Queue" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Events_ExecutionId",
@@ -177,19 +178,19 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 column: "LastExecutionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Instances_Queue_AvailableAt",
-                table: "Instances",
-                columns: new[] { "Queue", "AvailableAt" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OrchestratorMessages_AvailableAt",
-                table: "OrchestratorMessages",
+                name: "IX_OrchestrationMessages_AvailableAt",
+                table: "OrchestrationMessages",
                 column: "AvailableAt");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrchestratorMessages_InstanceId",
-                table: "OrchestratorMessages",
+                name: "IX_OrchestrationMessages_InstanceId",
+                table: "OrchestrationMessages",
                 column: "InstanceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrchestrationMessages_AvailableAt_Queue",
+                table: "OrchestrationMessages",
+                columns: new[] { "AvailableAt", "Queue" });
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
@@ -204,7 +205,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 name: "ExecutionTags");
 
             migrationBuilder.DropTable(
-                name: "OrchestratorMessages");
+                name: "OrchestrationMessages");
 
             migrationBuilder.DropTable(
                 name: "Instances");

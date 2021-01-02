@@ -15,15 +15,22 @@ namespace LLL.DurableTask.EFCore.Mappers
             _options = options.Value;
         }
 
-        public OrchestrationMessage CreateOrchestratorMessage(
+        public OrchestrationMessage CreateOrchestrationMessage(
             TaskMessage message,
-            int sequence)
+            int sequence,
+            string queue)
         {
+            var executionStarted = message.Event as ExecutionStartedEvent;
+
+            if (executionStarted != null)
+                queue = QueueMapper.ToQueueName(executionStarted.Name, executionStarted.Version);
+
             return new OrchestrationMessage
             {
                 Id = Guid.NewGuid(),
                 InstanceId = message.OrchestrationInstance.InstanceId,
                 ExecutionId = message.OrchestrationInstance.ExecutionId,
+                Queue = queue,
                 SequenceNumber = sequence,
                 AvailableAt = message.Event is TimerFiredEvent timerFiredEvent
                     ? timerFiredEvent.FireAt

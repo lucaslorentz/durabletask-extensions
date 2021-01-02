@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 namespace LLL.DurableTask.Tests.Storages
 {
     [Collection("Postgres")]
-    public class PostgresEFCoreTests : StorageTestBase
+    public class PostgresEFCoreTests : EFCoreTestBase
     {
         public PostgresEFCoreTests(ITestOutputHelper output) : base(output)
         {

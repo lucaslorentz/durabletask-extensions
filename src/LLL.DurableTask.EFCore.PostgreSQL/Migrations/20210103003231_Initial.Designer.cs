@@ -3,53 +3,58 @@ using System;
 using LLL.DurableTask.EFCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace LLL.DurableTask.EFCore.SqlServer.Migrations
+namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 {
     [DbContext(typeof(OrchestrationDbContext))]
-    [Migration("20201231110830_Initial")]
+    [Migration("20210103003231_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "3.1.8")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128)
-                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
+                .HasAnnotation("ProductVersion", "3.1.10")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasMaxLength(500);
 
                     b.Property<string>("LockId")
                         .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
 
                     b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasMaxLength(2147483647);
 
                     b.Property<string>("Queue")
                         .IsRequired()
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
+                        .HasMaxLength(500);
+
+                    b.Property<string>("ReplyQueue")
+                        .IsRequired()
+                        .HasColumnType("character varying(500)")
                         .HasMaxLength(500);
 
                     b.HasKey("Id");
@@ -58,7 +63,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasIndex("InstanceId");
 
-                    b.HasIndex("Queue", "AvailableAt");
+                    b.HasIndex("AvailableAt", "Queue");
 
                     b.ToTable("ActivityMessages");
                 });
@@ -67,25 +72,25 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasMaxLength(2147483647);
 
                     b.Property<string>("ExecutionId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasMaxLength(500);
 
                     b.Property<int>("SequenceNumber")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -100,42 +105,42 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
                     b.Property<string>("ExecutionId")
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
 
                     b.Property<DateTime>("CompletedTime")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<long>("CompressedSize")
                         .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedTime")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("CustomStatus")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Input")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasMaxLength(500);
 
                     b.Property<DateTime>("LastUpdatedTime")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasMaxLength(500);
 
                     b.Property<string>("Output")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<string>("ParentInstance")
-                        .HasColumnType("nvarchar(2000)")
+                        .HasColumnType("character varying(2000)")
                         .HasMaxLength(2000);
 
                     b.Property<long>("Size")
@@ -143,11 +148,11 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Version")
                         .IsRequired()
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
 
                     b.HasKey("ExecutionId");
@@ -158,34 +163,32 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
                 {
                     b.Property<string>("InstanceId")
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasMaxLength(500);
 
                     b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("LastExecutionId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
+
+                    b.Property<string>("LastQueueName")
+                        .IsRequired()
+                        .HasColumnType("character varying(500)")
+                        .HasMaxLength(500);
 
                     b.Property<string>("LockId")
                         .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
-
-                    b.Property<string>("Queue")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(500)")
-                        .HasMaxLength(500);
 
                     b.HasKey("InstanceId");
 
                     b.HasIndex("AvailableAt");
 
                     b.HasIndex("LastExecutionId");
-
-                    b.HasIndex("Queue", "AvailableAt");
 
                     b.ToTable("Instances");
                 });
@@ -194,26 +197,31 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("ExecutionId")
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasMaxLength(500);
 
                     b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasMaxLength(2147483647);
 
+                    b.Property<string>("Queue")
+                        .IsRequired()
+                        .HasColumnType("character varying(500)")
+                        .HasMaxLength(500);
+
                     b.Property<int>("SequenceNumber")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -221,7 +229,9 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasIndex("InstanceId");
 
-                    b.ToTable("OrchestratorMessages");
+                    b.HasIndex("AvailableAt", "Queue");
+
+                    b.ToTable("OrchestrationMessages");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
@@ -247,21 +257,21 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
                             b1.Property<string>("ExecutionId")
-                                .HasColumnType("nvarchar(100)");
+                                .HasColumnType("character varying(100)");
 
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("int")
-                                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                                .HasColumnType("integer")
+                                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                             b1.Property<string>("Name")
                                 .IsRequired()
-                                .HasColumnType("nvarchar(100)")
+                                .HasColumnType("character varying(100)")
                                 .HasMaxLength(100);
 
                             b1.Property<string>("Value")
                                 .IsRequired()
-                                .HasColumnType("nvarchar(2000)")
+                                .HasColumnType("character varying(2000)")
                                 .HasMaxLength(2000);
 
                             b1.HasKey("ExecutionId", "Id");

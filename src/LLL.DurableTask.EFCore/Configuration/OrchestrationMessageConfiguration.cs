@@ -20,12 +20,15 @@ namespace LLL.DurableTask.EFCore.Configuration
 
             builder.Property(x => x.ExecutionId).HasMaxLength(100);
 
+            builder.Property(x => x.Queue).HasMaxLength(500).IsRequired();
+
             builder.Property(x => x.AvailableAt).IsRequired().HasConversion(new UtcDateTimeConverter());
 
             builder.Property(x => x.SequenceNumber).IsRequired();
 
             builder.Property(x => x.Message).HasMaxLength(int.MaxValue);
 
+            builder.HasIndex(x => new { x.AvailableAt, x.Queue });
             builder.HasIndex(x => new { x.AvailableAt });
         }
     }

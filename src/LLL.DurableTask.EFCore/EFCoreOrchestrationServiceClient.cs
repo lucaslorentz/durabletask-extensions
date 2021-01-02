@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using LLL.DurableTask.Core;
+using LLL.DurableTask.EFCore.Mappers;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
 
 namespace LLL.DurableTask.EFCore
 {
-    public abstract partial class EFCoreOrchestrationService :
+    public partial class EFCoreOrchestrationService :
         IOrchestrationServiceClient,
         IExtendedOrchestrationServiceClient
     {
@@ -51,8 +52,9 @@ namespace LLL.DurableTask.EFCore
                 var execution = _executionMapper.CreateExecution(runtimeState);
                 await dbContext.Executions.AddAsync(execution);
 
-                var orchestrationWorkItem = _orchestratorMessageMapper.CreateOrchestratorMessage(creationMessage, 0);
-                await dbContext.OrchestratorMessages.AddAsync(orchestrationWorkItem);
+                var queueName = QueueMapper.ToQueueName(runtimeState.Name, runtimeState.Version);
+                var orchestrationWorkItem = _orchestrationMessageMapper.CreateOrchestrationMessage(creationMessage, 0, queueName);
+                await dbContext.OrchestrationMessages.AddAsync(orchestrationWorkItem);
 
                 await dbContext.SaveChangesAsync();
             }
@@ -111,7 +113,7 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
-                await PurgeOrchestrationHistoryAsync(dbContext, thresholdDateTimeUtc, timeRangeFilterType);
+                await _dbContextExtensions.PurgeOrchestrationHistoryAsync(dbContext, thresholdDateTimeUtc, timeRangeFilterType);
             }
         }
 
@@ -124,11 +126,19 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
+                var instancesIds = messages.Select(m => m.OrchestrationInstance.InstanceId).ToArray();
+
+                var queueByInstanceId = await dbContext.Instances
+                    .Where(i => instancesIds.Contains(i.InstanceId))
+                    .ToDictionaryAsync(i => i.InstanceId, i => i.LastQueueName);
+
                 var orchestrationMessage = messages
-                    .Select(_orchestratorMessageMapper.CreateOrchestratorMessage)
+                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessage(
+                        m, i,
+                        queueByInstanceId.TryGetValue(m.OrchestrationInstance.InstanceId, out var queue) ? queue : null))
                     .ToArray();
 
-                await dbContext.OrchestratorMessages.AddRangeAsync(orchestrationMessage);
+                await dbContext.OrchestrationMessages.AddRangeAsync(orchestrationMessage);
 
                 await dbContext.SaveChangesAsync();
             }
@@ -249,7 +259,7 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
-                var deletedRows = await PurgeInstanceHistoryAsync(dbContext, instanceId);
+                var deletedRows = await _dbContextExtensions.PurgeInstanceHistoryAsync(dbContext, instanceId);
 
                 return new PurgeInstanceHistoryResult
                 {
@@ -267,10 +277,6 @@ namespace LLL.DurableTask.EFCore
                 await dbContext.SaveChangesAsync();
             }
         }
-
-        protected abstract Task PurgeOrchestrationHistoryAsync(OrchestrationDbContext dbContext, DateTime thresholdDateTimeUtc, OrchestrationStateTimeRangeFilterType timeRangeFilterType);
-
-        protected abstract Task<int> PurgeInstanceHistoryAsync(OrchestrationDbContext dbContext, string instanceId);
 
         private async Task RewindInstanceAsync(OrchestrationDbContext dbContext, string instanceId, string reason)
         {
@@ -408,9 +414,10 @@ namespace LLL.DurableTask.EFCore
                     Event = new GenericEvent(-1, reason)
                 };
 
-                var orchestrationMessage = _orchestratorMessageMapper.CreateOrchestratorMessage(taskMessage, 0);
+                var queueName = QueueMapper.ToQueueName(lastExecution.Name, lastExecution.Version);
+                var orchestrationMessage = _orchestrationMessageMapper.CreateOrchestrationMessage(taskMessage, 0, queueName);
 
-                await dbContext.OrchestratorMessages.AddAsync(orchestrationMessage);
+                await dbContext.OrchestrationMessages.AddAsync(orchestrationMessage);
             }
         }
 
