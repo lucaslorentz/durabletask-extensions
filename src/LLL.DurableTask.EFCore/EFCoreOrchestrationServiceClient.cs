@@ -30,11 +30,17 @@ namespace LLL.DurableTask.EFCore
                 var instanceId = creationMessage.OrchestrationInstance.InstanceId;
                 var executionId = creationMessage.OrchestrationInstance.ExecutionId;
 
-                var instance = await dbContext.Instances.FindAsync(instanceId);
+                var instance = await dbContext.Instances
+                    .Include(i => i.LastExecution)
+                    .FirstOrDefaultAsync(i => i.InstanceId == instanceId);
 
-                if (instance != null && dedupeStatuses != null && dedupeStatuses.Contains(instance.LastExecution.Status))
+                if (instance != null)
                 {
-                    return;
+                    if (dedupeStatuses != null && dedupeStatuses.Contains(instance.LastExecution.Status))
+                        return;
+
+                    if (!IsFinalInstanceStatus(instance.LastExecution.Status))
+                        throw new Exception("Orchestration is already running");
                 }
 
                 var runtimeState = new OrchestrationRuntimeState(new[] { executionStartedEvent });
@@ -162,12 +168,12 @@ namespace LLL.DurableTask.EFCore
             {
                 return await GetOrchestrationStateAsync(instanceId, executionId);
             },
-            s => IsFinalStatus(s.OrchestrationStatus),
+            s => IsFinalExecutionStatus(s.OrchestrationStatus),
             timeout,
             _options.PollingInterval,
             stoppableCancellationToken);
 
-            if (!IsFinalStatus(state.OrchestrationStatus))
+            if (!IsFinalExecutionStatus(state.OrchestrationStatus))
                 return null;
 
             return state;
@@ -421,7 +427,13 @@ namespace LLL.DurableTask.EFCore
             }
         }
 
-        private bool IsFinalStatus(OrchestrationStatus status)
+        private bool IsFinalInstanceStatus(OrchestrationStatus status)
+        {
+            return !IsFinalExecutionStatus(status) &&
+                status != OrchestrationStatus.ContinuedAsNew;
+        }
+
+        private bool IsFinalExecutionStatus(OrchestrationStatus status)
         {
             return status != OrchestrationStatus.Running &&
                 status != OrchestrationStatus.Pending;
