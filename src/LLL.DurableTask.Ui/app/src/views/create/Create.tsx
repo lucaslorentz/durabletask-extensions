@@ -10,11 +10,10 @@ import {
 } from "@material-ui/core";
 import DeleteIcon from "@material-ui/icons/Delete";
 import { useSnackbar } from "notistack";
-import React, { useState } from "react";
+import React from "react";
 import { Link as RouterLink, useHistory } from "react-router-dom";
 import * as yup from "yup";
 import { useApiClient } from "../../ApiClientProvider";
-import { ErrorAlert } from "../../components/ErrorAlert";
 import { TextField } from "../../form/TextField";
 import { useForm } from "../../form/useForm";
 import { CreateOrchestrationRequest } from "../../models/ApiModels";
@@ -41,16 +40,12 @@ const schema = yup
 
 export function Create() {
   const form = useForm(schema);
-  const [error, setError] = useState<any>();
-
   const history = useHistory();
   const apiClient = useApiClient();
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   async function handleSaveClick() {
     try {
-      setError(undefined);
-
       const request: CreateOrchestrationRequest = {
         name: form.value.name,
         version: form.value.version,
@@ -72,7 +67,15 @@ export function Create() {
         `/orchestrations/${encodeURIComponent(instance.instanceId)}`
       );
     } catch (error) {
-      setError(error);
+      enqueueSnackbar(String(error), {
+        variant: "error",
+        persist: true,
+        action: (key) => (
+          <Button color="inherit" onClick={() => closeSnackbar(key)}>
+            Dismiss
+          </Button>
+        ),
+      });
     }
   }
 
@@ -135,11 +138,6 @@ export function Create() {
                   ))
                 )}
               </>
-            )}
-            {error && (
-              <Grid item xs={12}>
-                <ErrorAlert error={error} />
-              </Grid>
             )}
             {form.render((form) => (
               <Grid item xs={12} container spacing={1} justify="space-between">

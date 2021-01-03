@@ -73,7 +73,7 @@ export function Orchestration() {
   const apiClient = useApiClient();
   const history = useHistory();
   const confirm = useConfirm();
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const route = useRouteMatch<RouteParams>();
 
   const instanceId =
@@ -129,11 +129,23 @@ export function Orchestration() {
       description:
         "This action is irreversible. Do you confirm the purge of this instance?",
     }).then(async () => {
-      await apiClient.purgeOrchestration(instanceId);
-      enqueueSnackbar("Instance purged", {
-        variant: "success",
-      });
-      history.goBack();
+      try {
+        await apiClient.purgeOrchestration(instanceId);
+        enqueueSnackbar("Instance purged", {
+          variant: "success",
+        });
+        history.push(`/orchestrations`);
+      } catch (error) {
+        enqueueSnackbar(String(error), {
+          variant: "error",
+          persist: true,
+          action: (key) => (
+            <Button color="inherit" onClick={() => closeSnackbar(key)}>
+              Dismiss
+            </Button>
+          ),
+        });
+      }
     });
   }
 
