@@ -1,4 +1,5 @@
 import {
+  Box,
   Chip,
   Link,
   makeStyles,
@@ -28,6 +29,10 @@ const useStyles = makeStyles((theme) => ({
       margin: theme.spacing(0.25),
     },
   },
+  header: {
+    minWidth: 200,
+    width: 200,
+  },
 }));
 
 export function State(props: Props) {
@@ -40,11 +45,15 @@ export function State(props: Props) {
       <Table>
         <TableBody>
           <TableRow>
-            <TableCell>InstanceId</TableCell>
+            <TableCell variant="head" className={classes.header}>
+              InstanceId
+            </TableCell>
             <TableCell>{state.orchestrationInstance.instanceId}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>ExecutionId</TableCell>
+            <TableCell variant="head" className={classes.header}>
+              ExecutionId
+            </TableCell>
             <TableCell>
               {definedExecutionId ||
               !apiClient.hasFeature("StatePerExecution") ? (
@@ -64,15 +73,21 @@ export function State(props: Props) {
             </TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>Name</TableCell>
+            <TableCell variant="head" className={classes.header}>
+              Name
+            </TableCell>
             <TableCell>{state.name}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>Version</TableCell>
+            <TableCell variant="head" className={classes.header}>
+              Version
+            </TableCell>
             <TableCell>{state.version}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>Tags</TableCell>
+            <TableCell variant="head" className={classes.header}>
+              Tags
+            </TableCell>
             <TableCell padding="none">
               <div className={classes.chips}>
                 {state.tags &&
@@ -84,7 +99,9 @@ export function State(props: Props) {
           </TableRow>
           {state.parentInstance && (
             <TableRow>
-              <TableCell>Parent</TableCell>
+              <TableCell variant="head" className={classes.header}>
+                Parent
+              </TableCell>
               <TableCell>
                 <Link
                   component={RouterLink}
@@ -98,23 +115,41 @@ export function State(props: Props) {
             </TableRow>
           )}
           <TableRow>
-            <TableCell>Status</TableCell>
+            <TableCell variant="head" className={classes.header}>
+              Status
+            </TableCell>
             <TableCell>{state.orchestrationStatus}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>Custom Status</TableCell>
-            <TableCell>{state.status}</TableCell>
+            <TableCell
+              variant="head"
+              className={classes.header}
+              style={{ width: 200 }}
+            >
+              Custom Status
+            </TableCell>
+            <TableCell padding="none" style={{ wordBreak: "break-all" }}>
+              <Box padding={2} style={{ maxHeight: 100, overflow: "auto" }}>
+                {state.status}
+              </Box>
+            </TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>Created Time</TableCell>
+            <TableCell variant="head" className={classes.header}>
+              Created Time
+            </TableCell>
             <TableCell>{formatDateTime(state.createdTime)}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>Completed Time</TableCell>
+            <TableCell variant="head" className={classes.header}>
+              Completed Time
+            </TableCell>
             <TableCell>{formatDateTime(state.completedTime)}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>Last Updated Time</TableCell>
+            <TableCell variant="head" className={classes.header}>
+              Last Updated Time
+            </TableCell>
             <TableCell>{formatDateTime(state.lastUpdatedTime)}</TableCell>
           </TableRow>
         </TableBody>
