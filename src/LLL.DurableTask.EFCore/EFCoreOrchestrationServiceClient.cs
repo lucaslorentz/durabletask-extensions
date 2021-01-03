@@ -34,7 +34,7 @@ namespace LLL.DurableTask.EFCore
 
                 if (instance != null && dedupeStatuses != null && dedupeStatuses.Contains(instance.LastExecution.Status))
                 {
-                    throw new Exception($"Orchestration with id {instanceId} already exists");
+                    return;
                 }
 
                 var runtimeState = new OrchestrationRuntimeState(new[] { executionStartedEvent });
