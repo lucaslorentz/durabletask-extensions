@@ -180,12 +180,14 @@ message RenewTaskOrchestrationWorkItemLockResponse {
 
 message CompleteTaskOrchestrationWorkItemRequest {
     repeated string new_events = 1;
-    repeated string new_orchestration_runtime_state_events = 2;
-    repeated string outbound_messages = 3;
-    repeated string orchestrator_messages = 4;
-    repeated string timer_messages = 5;
-    google.protobuf.StringValue continued_as_new_message = 6;
-    string orchestration_state = 7;
+    google.protobuf.StringValue new_status = 2;
+    repeated string new_orchestration_events = 3;
+    google.protobuf.StringValue new_orchestration_status = 4;
+    repeated string outbound_messages = 5;
+    repeated string orchestrator_messages = 6;
+    repeated string timer_messages = 7;
+    google.protobuf.StringValue continued_as_new_message = 8;
+    string orchestration_state = 9;
 }
 
 message CompleteTaskOrchestrationWorkItemResponse {

@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Common;
 using DurableTask.Core.History;
 using DurableTaskGrpc;
 using Google.Protobuf.WellKnownTypes;
@@ -254,7 +255,6 @@ namespace LLL.DurableTask.Server.Grpc.Server
                             var continuedAsNewMessage = string.IsNullOrEmpty(completeRequest.ContinuedAsNewMessage)
                                 ? null
                                 : _options.DataConverter.Deserialize<TaskMessage>(completeRequest.ContinuedAsNewMessage);
-                            var orchestrationState = _options.DataConverter.Deserialize<OrchestrationState>(completeRequest.OrchestrationState);
 
                             var newEvents = completeRequest.NewEvents.Select(x => _options.DataConverter.Deserialize<HistoryEvent>(x)).ToArray();
                             workItem.OrchestrationRuntimeState ??= new OrchestrationRuntimeState();
@@ -262,9 +262,10 @@ namespace LLL.DurableTask.Server.Grpc.Server
                             {
                                 workItem.OrchestrationRuntimeState.AddEvent(newEvent);
                             }
+                            workItem.OrchestrationRuntimeState.Status = completeRequest.NewStatus;
 
                             var newOrchestrationRuntimeState = workItem.OrchestrationRuntimeState;
-                            var newOrchestrationRuntimeStateEvents = completeRequest.NewOrchestrationRuntimeStateEvents.Select(x => _options.DataConverter.Deserialize<HistoryEvent>(x)).ToArray();
+                            var newOrchestrationRuntimeStateEvents = completeRequest.NewOrchestrationEvents.Select(x => _options.DataConverter.Deserialize<HistoryEvent>(x)).ToArray();
                             if (newOrchestrationRuntimeStateEvents.Length > 0)
                             {
                                 newOrchestrationRuntimeState = new OrchestrationRuntimeState();
@@ -272,7 +273,10 @@ namespace LLL.DurableTask.Server.Grpc.Server
                                 {
                                     newOrchestrationRuntimeState.AddEvent(newEvent);
                                 }
+                                newOrchestrationRuntimeState.Status = completeRequest.NewOrchestrationStatus;
                             }
+
+                            var orchestrationState = Utils.BuildOrchestrationState(newOrchestrationRuntimeState);
 
                             await _orchestrationService.CompleteTaskOrchestrationWorkItemAsync(
                                 workItem,
