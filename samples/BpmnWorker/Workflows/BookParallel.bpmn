@@ -8,7 +8,7 @@
       <bpmn:extensionElements>
         <camunda:inputOutput>
           <camunda:outputParameter name="carBookingId">
-            <camunda:script scriptFormat="javascript">result.BookingId</camunda:script>
+            <camunda:script scriptFormat="javascript">result.bookingId</camunda:script>
           </camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
@@ -19,7 +19,7 @@
       <bpmn:extensionElements>
         <camunda:inputOutput>
           <camunda:outputParameter name="hotelBookingId">
-            <camunda:script scriptFormat="javascript">result.BookingId</camunda:script>
+            <camunda:script scriptFormat="javascript">result.bookingId</camunda:script>
           </camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
@@ -30,7 +30,7 @@
       <bpmn:extensionElements>
         <camunda:inputOutput>
           <camunda:outputParameter name="flightBookingId">
-            <camunda:script scriptFormat="javascript">result.BookingId</camunda:script>
+            <camunda:script scriptFormat="javascript">result.bookingId</camunda:script>
           </camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>

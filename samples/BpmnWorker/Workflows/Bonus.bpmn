@@ -15,8 +15,8 @@
     <bpmn:serviceTask id="Activity_0055avi" name="Log Luke Skywalker" camunda:type="external" camunda:topic="Empty">
       <bpmn:extensionElements>
         <camunda:inputOutput>
-          <camunda:inputParameter name="Object">
-            <camunda:script scriptFormat="javascript">variables.Luke</camunda:script>
+          <camunda:inputParameter name="object">
+            <camunda:script scriptFormat="javascript">variables.luke</camunda:script>
           </camunda:inputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
@@ -153,9 +153,9 @@ Console.WriteLine("Hello from C# script")</bpmn:script>
           <camunda:expression>${fieldInjectionExpression}</camunda:expression>
         </camunda:field>
         <camunda:inputOutput>
-          <camunda:inputParameter name="Url">http://swapi.dev/api/people/1/</camunda:inputParameter>
-          <camunda:outputParameter name="Luke">
-            <camunda:script scriptFormat="javascript">result.Content</camunda:script>
+          <camunda:inputParameter name="url">http://swapi.dev/api/people/1/</camunda:inputParameter>
+          <camunda:outputParameter name="luke">
+            <camunda:script scriptFormat="javascript">result.content</camunda:script>
           </camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>

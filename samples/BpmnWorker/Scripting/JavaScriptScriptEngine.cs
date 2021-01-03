@@ -28,7 +28,13 @@ namespace BpmnWorker.Scripting
                 engine.AddHostType("Console", typeof(Console));
 
                 var outputJs = engine.Evaluate(script);
+                if (outputJs == null)
+                    return Task.FromResult(default(T));
+
                 var outputJson = engine.Script.JSON.stringify(outputJs) as string;
+                if (outputJson == null)
+                    return Task.FromResult(default(T));
+
                 var output = JsonConvert.DeserializeObject<T>(outputJson);
                 return Task.FromResult(output);
             }
