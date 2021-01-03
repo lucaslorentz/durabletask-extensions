@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     configuration(options);
                 }
-            }, ServiceLifetime.Transient);
+            }, ServiceLifetime.Transient, ServiceLifetime.Transient);
 
             services.AddSingleton<Func<OrchestrationDbContext>>(p => () => p.GetRequiredService<OrchestrationDbContext>());
 
