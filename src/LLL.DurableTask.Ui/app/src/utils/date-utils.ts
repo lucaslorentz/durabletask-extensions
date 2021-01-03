@@ -1,7 +1,7 @@
 export function toLocalISO(value: string) {
   if (!value) return "";
 
-  var date = new Date(value);
+  let date = new Date(value);
 
   const year = String(date.getFullYear()).padStart(4, "0"),
     month = String(date.getMonth() + 1).padStart(2, "0"),
@@ -21,9 +21,13 @@ export function toUtcISO(value: string) {
 }
 
 export function formatDateTime(value: string) {
-  if (value.indexOf("9999") !== -1 || value.indexOf("0001") !== -1) {
+  if (!value) return "";
+
+  let date = new Date(value);
+
+  if (date.getFullYear() <= 1 || date.getFullYear() >= 9999) {
     return "";
   }
 
-  return new Date(value).toLocaleString();
+  return date.toLocaleString();
 }
