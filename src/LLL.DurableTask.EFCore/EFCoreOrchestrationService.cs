@@ -464,7 +464,7 @@ namespace LLL.DurableTask.EFCore
                 return await _dbContextExtensions.LockNextInstanceForUpdate(dbContext);
 
             var queues = orchestrations
-                .Select(nv => QueueMapper.ToQueueName(nv.Name, nv.Version))
+                .Select(QueueMapper.ToQueueName)
                 .ToArray();
 
             var instance = await _dbContextExtensions.LockNextInstanceForUpdate(dbContext, queues);
@@ -480,7 +480,7 @@ namespace LLL.DurableTask.EFCore
                 return await _dbContextExtensions.LockNextActivityMessageForUpdate(dbContext);
 
             var queues = activities
-                .Select(nv => QueueMapper.ToQueueName(nv.Name, nv.Version))
+                .Select(QueueMapper.ToQueueName)
                 .ToArray();
 
             var activityMessage = await _dbContextExtensions.LockNextActivityMessageForUpdate(dbContext, queues);

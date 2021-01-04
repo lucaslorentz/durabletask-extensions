@@ -36,7 +36,6 @@ namespace LLL.DurableTask.EFCore
 
         public Instance Instance { get; }
         public Execution Execution { get; set; }
-        public Event[] Events { get; set; }
         public OrchestrationRuntimeState RuntimeState { get; set; }
         public List<OrchestrationMessage> Messages { get; } = new List<OrchestrationMessage>();
 
