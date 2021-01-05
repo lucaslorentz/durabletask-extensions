@@ -1,8 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
+namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 {
     public partial class Initial : Migration
     {
@@ -59,7 +58,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 {
                     ExecutionId = table.Column<string>(nullable: false),
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(maxLength: 100, nullable: false),
                     Value = table.Column<string>(maxLength: 2000, nullable: false)
                 },
@@ -81,7 +80,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                     InstanceId = table.Column<string>(maxLength: 500, nullable: false),
                     LastExecutionId = table.Column<string>(maxLength: 100, nullable: false),
                     LastQueueName = table.Column<string>(maxLength: 500, nullable: false),
-                    AvailableAt = table.Column<DateTime>(nullable: false),
+                    LockedUntil = table.Column<DateTime>(nullable: false),
                     LockId = table.Column<string>(maxLength: 100, nullable: true)
                 },
                 constraints: table =>
@@ -105,7 +104,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                     ReplyQueue = table.Column<string>(maxLength: 500, nullable: false),
                     Message = table.Column<string>(maxLength: 2147483647, nullable: true),
                     CreatedAt = table.Column<DateTime>(nullable: false),
-                    AvailableAt = table.Column<DateTime>(nullable: false),
+                    LockedUntil = table.Column<DateTime>(nullable: false),
                     LockId = table.Column<string>(maxLength: 100, nullable: true)
                 },
                 constraints: table =>
@@ -143,19 +142,19 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ActivityMessages_AvailableAt",
-                table: "ActivityMessages",
-                column: "AvailableAt");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ActivityMessages_InstanceId",
                 table: "ActivityMessages",
                 column: "InstanceId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ActivityMessages_AvailableAt_Queue",
+                name: "IX_ActivityMessages_LockedUntil",
                 table: "ActivityMessages",
-                columns: new[] { "AvailableAt", "Queue" });
+                column: "LockedUntil");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ActivityMessages_LockedUntil_Queue",
+                table: "ActivityMessages",
+                columns: new[] { "LockedUntil", "Queue" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Events_ExecutionId",
@@ -169,14 +168,14 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Instances_AvailableAt",
-                table: "Instances",
-                column: "AvailableAt");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Instances_LastExecutionId",
                 table: "Instances",
                 column: "LastExecutionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Instances_LockedUntil",
+                table: "Instances",
+                column: "LockedUntil");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrchestrationMessages_AvailableAt",

@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 {
     [DbContext(typeof(OrchestrationDbContext))]
-    [Migration("20210103003205_Initial")]
+    [Migration("20210105225618_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,9 +27,6 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -42,6 +39,9 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(100)")
                         .HasMaxLength(100);
+
+                    b.Property<DateTime>("LockedUntil")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Message")
                         .HasColumnType("nvarchar(max)")
@@ -59,11 +59,11 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AvailableAt");
-
                     b.HasIndex("InstanceId");
 
-                    b.HasIndex("AvailableAt", "Queue");
+                    b.HasIndex("LockedUntil");
+
+                    b.HasIndex("LockedUntil", "Queue");
 
                     b.ToTable("ActivityMessages");
                 });
@@ -166,9 +166,6 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasMaxLength(500);
 
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("LastExecutionId")
                         .IsRequired()
                         .HasColumnType("nvarchar(100)")
@@ -184,11 +181,14 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasMaxLength(100);
 
+                    b.Property<DateTime>("LockedUntil")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("InstanceId");
 
-                    b.HasIndex("AvailableAt");
-
                     b.HasIndex("LastExecutionId");
+
+                    b.HasIndex("LockedUntil");
 
                     b.ToTable("Instances");
                 });

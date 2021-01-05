@@ -23,9 +23,6 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -38,6 +35,9 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
                         .HasMaxLength(100);
+
+                    b.Property<DateTime>("LockedUntil")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Message")
                         .HasColumnType("longtext CHARACTER SET utf8mb4")
@@ -55,11 +55,11 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AvailableAt");
-
                     b.HasIndex("InstanceId");
 
-                    b.HasIndex("AvailableAt", "Queue");
+                    b.HasIndex("LockedUntil");
+
+                    b.HasIndex("LockedUntil", "Queue");
 
                     b.ToTable("ActivityMessages");
                 });
@@ -162,9 +162,6 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasColumnType("varchar(500) CHARACTER SET utf8mb4")
                         .HasMaxLength(500);
 
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<string>("LastExecutionId")
                         .IsRequired()
                         .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
@@ -180,11 +177,14 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
                         .HasMaxLength(100);
 
+                    b.Property<DateTime>("LockedUntil")
+                        .HasColumnType("datetime(6)");
+
                     b.HasKey("InstanceId");
 
-                    b.HasIndex("AvailableAt");
-
                     b.HasIndex("LastExecutionId");
+
+                    b.HasIndex("LockedUntil");
 
                     b.ToTable("Instances");
                 });

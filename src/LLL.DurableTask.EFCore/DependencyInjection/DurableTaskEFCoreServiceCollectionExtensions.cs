@@ -4,6 +4,7 @@ using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore;
 using LLL.DurableTask.EFCore.DependencyInjection;
 using LLL.DurableTask.EFCore.Mappers;
+using Microsoft.EntityFrameworkCore;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -20,15 +21,22 @@ namespace Microsoft.Extensions.DependencyInjection
             if (configure != null)
                 services.Configure<EFCoreOrchestrationOptions>(configure);
 
-            services.AddDbContext<OrchestrationDbContext>(options =>
+            services.AddSingleton<DbContextOptions<OrchestrationDbContext>>(_ =>
             {
+                var optionsBuilder = new DbContextOptionsBuilder<OrchestrationDbContext>();
                 foreach (var configuration in builder.DbContextConfigurations)
                 {
-                    configuration(options);
+                    configuration(optionsBuilder);
                 }
-            }, ServiceLifetime.Transient, ServiceLifetime.Transient);
+                return optionsBuilder.Options;
+            });
 
-            services.AddSingleton<Func<OrchestrationDbContext>>(p => () => p.GetRequiredService<OrchestrationDbContext>());
+            // Switch to DbContextFactory after updating to EF Core 5
+            services.AddSingleton<Func<OrchestrationDbContext>>(p => () =>
+            {
+                var options = p.GetRequiredService<DbContextOptions<OrchestrationDbContext>>();
+                return new OrchestrationDbContext(options);
+            });
 
             services.AddSingleton<EFCoreOrchestrationService>();
             services.AddSingleton<IExtendedOrchestrationService>(p => p.GetRequiredService<EFCoreOrchestrationService>());

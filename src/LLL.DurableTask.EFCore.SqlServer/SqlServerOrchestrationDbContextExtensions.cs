@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace LLL.DurableTask.EFCore.SqlServer
 {
@@ -18,74 +17,121 @@ namespace LLL.DurableTask.EFCore.SqlServer
             await dbContext.Database.MigrateAsync();
         }
 
-        public override async Task<IDbContextTransaction> BeginTransaction(OrchestrationDbContext dbContext)
+        public override async Task<Instance> TryLockNextInstanceAsync(
+            OrchestrationDbContext dbContext,
+            TimeSpan lockTimeout)
         {
-            return await dbContext.Database.BeginTransactionAsync(TransactionIsolationLevel);
+            using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
+            {
+                var instance = await dbContext.Instances.FromSqlRaw(@"
+                    SELECT TOP 1 Instances.* FROM OrchestrationMessages
+                        INNER JOIN Instances WITH (UPDLOCK, READPAST, FORCESEEK)
+                            ON OrchestrationMessages.InstanceId = Instances.InstanceId
+                    WHERE
+                        OrchestrationMessages.AvailableAt <= {0}
+                        AND Instances.LockedUntil <= {0}
+                    ORDER BY OrchestrationMessages.AvailableAt
+                ", DateTime.UtcNow).FirstOrDefaultAsync();
+
+                if (instance == null)
+                    return null;
+
+                instance.LockId = Guid.NewGuid().ToString();
+                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                await dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return instance;
+            }
         }
 
-        public override async Task<Instance> LockNextInstanceForUpdate(OrchestrationDbContext dbContext)
+        public override async Task<Instance> TryLockNextInstanceAsync(
+            OrchestrationDbContext dbContext,
+            string[] queues,
+            TimeSpan lockTimeout)
         {
-            return (await dbContext.Instances.FromSqlRaw(@"
-                SELECT TOP 1 Instances.* FROM OrchestrationMessages
-                    INNER JOIN Instances WITH (UPDLOCK, READPAST, FORCESEEK)
-                        ON OrchestrationMessages.InstanceId = Instances.InstanceId
-                WHERE
-                    OrchestrationMessages.AvailableAt <= {0}
-                    AND Instances.AvailableAt <= {0}
-                ORDER BY OrchestrationMessages.AvailableAt
-            ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
+            using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
+            {
+                var queuesParams = string.Join(",", queues.Select((_, i) => $"{{{i}}}"));
+                var utcNowParam = $"{{{queues.Length}}}";
+                var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
+
+                var instance = await dbContext.Instances.FromSqlRaw($@"
+                    SELECT TOP 1 Instances.* FROM OrchestrationMessages
+                        INNER JOIN Instances WITH (UPDLOCK, READPAST, FORCESEEK)
+                            ON OrchestrationMessages.InstanceId = Instances.InstanceId
+                    WHERE
+                        OrchestrationMessages.AvailableAt <= {utcNowParam}
+                        AND OrchestrationMessages.Queue IN ({queuesParams})
+                        AND Instances.LockedUntil <= {utcNowParam}
+                    ORDER BY OrchestrationMessages.AvailableAt
+                ", parameters).FirstOrDefaultAsync();
+
+                if (instance == null)
+                    return null;
+
+                instance.LockId = Guid.NewGuid().ToString();
+                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                await dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return instance;
+            }
         }
 
-        public override async Task<Instance> LockNextInstanceForUpdate(OrchestrationDbContext dbContext, string[] queues)
+        public override async Task<ActivityMessage> TryLockNextActivityMessageAsync(
+            OrchestrationDbContext dbContext,
+            TimeSpan lockTimeout)
         {
-            var queuesParams = string.Join(",", queues.Select((_, i) => $"{{{i}}}"));
-            var utcNowParam = $"{{{queues.Length}}}";
-            var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
+            using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
+            {
+                var instance = await dbContext.ActivityMessages.FromSqlRaw(@"
+                    SELECT TOP 1 * FROM ActivityMessages WITH (UPDLOCK, READPAST)
+                    WHERE LockedUntil <= {0}
+                    ORDER BY LockedUntil
+                ", DateTime.UtcNow).FirstOrDefaultAsync();
 
-            return (await dbContext.Instances.FromSqlRaw($@"
-                SELECT TOP 1 Instances.* FROM OrchestrationMessages
-                    INNER JOIN Instances WITH (UPDLOCK, READPAST, FORCESEEK)
-                        ON OrchestrationMessages.InstanceId = Instances.InstanceId
-                WHERE
-                    OrchestrationMessages.AvailableAt <= {utcNowParam}
-                    AND OrchestrationMessages.Queue IN ({queuesParams})
-                    AND Instances.AvailableAt <= {utcNowParam}
-                ORDER BY OrchestrationMessages.AvailableAt
-            ", parameters).ToArrayAsync()).FirstOrDefault();
+                if (instance == null)
+                    return null;
+
+                instance.LockId = Guid.NewGuid().ToString();
+                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                await dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return instance;
+            }
         }
 
-        public override async Task<ActivityMessage> LockNextActivityMessageForUpdate(OrchestrationDbContext dbContext)
+        public override async Task<ActivityMessage> TryLockNextActivityMessageAsync(
+            OrchestrationDbContext dbContext,
+            string[] queues,
+            TimeSpan lockTimeout)
         {
-            return (await dbContext.ActivityMessages.FromSqlRaw(@"
-                SELECT TOP 1 * FROM ActivityMessages WITH (UPDLOCK, READPAST)
-                WHERE AvailableAt <= {0}
-                ORDER BY AvailableAt
-            ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
-        }
+            using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
+            {
+                var queuesParams = string.Join(",", queues.Select((_, i) => $"{{{i}}}"));
+                var utcNowParam = $"{{{queues.Length}}}";
+                var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-        public override async Task<ActivityMessage> LockNextActivityMessageForUpdate(OrchestrationDbContext dbContext, string[] queues)
-        {
-            var queuesParams = string.Join(",", queues.Select((_, i) => $"{{{i}}}"));
-            var utcNowParam = $"{{{queues.Length}}}";
-            var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
+                var instance = await dbContext.ActivityMessages.FromSqlRaw($@"
+                    SELECT TOP 1 * FROM ActivityMessages
+                    WITH (UPDLOCK, READPAST)
+                    WHERE Queue IN ({queuesParams})
+                        AND LockedUntil <= {utcNowParam}
+                    ORDER BY LockedUntil
+                ", parameters).FirstOrDefaultAsync();
 
-            return (await dbContext.ActivityMessages.FromSqlRaw($@"
-                SELECT TOP 1 * FROM ActivityMessages
-                WITH (UPDLOCK, READPAST)
-                WHERE Queue IN ({queuesParams})
-                    AND AvailableAt <= {utcNowParam}
-                ORDER BY AvailableAt
-            ", parameters).ToArrayAsync()).FirstOrDefault();
-        }
+                if (instance == null)
+                    return null;
 
-        public override async Task<int> RenewActivityMessageLock(OrchestrationDbContext dbContext, Guid id, string lockId, DateTime newLockedUntilUTC)
-        {
-            return await dbContext.Database.ExecuteSqlInterpolatedAsync($"UPDATE ActivityMessages SET AvailableAt = {newLockedUntilUTC} WHERE Id = {id} AND LockId = {lockId}");
-        }
+                instance.LockId = Guid.NewGuid().ToString();
+                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                await dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
 
-        public override async Task<int> ReleaseActivityMessageLock(OrchestrationDbContext dbContext, Guid id, string lockId)
-        {
-            return await dbContext.Database.ExecuteSqlInterpolatedAsync($"UPDATE ActivityMessages SET AvailableAt = {DateTime.UtcNow} WHERE Id = {id} AND LockId = {lockId}");
+                return instance;
+            }
         }
 
         public override async Task PurgeOrchestrationHistoryAsync(

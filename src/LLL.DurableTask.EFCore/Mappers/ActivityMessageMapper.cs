@@ -29,7 +29,7 @@ namespace LLL.DurableTask.EFCore.Mappers
                 ReplyQueue = replyQueue,
                 InstanceId = message.OrchestrationInstance.InstanceId,
                 Message = _options.DataConverter.Serialize(message),
-                AvailableAt = DateTime.UtcNow
+                LockedUntil = DateTime.UtcNow
             };
         }
     }

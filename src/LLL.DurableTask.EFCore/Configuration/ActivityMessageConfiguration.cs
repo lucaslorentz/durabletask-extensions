@@ -25,11 +25,11 @@ namespace LLL.DurableTask.EFCore.Configuration
             builder.Property(x => x.Message).HasMaxLength(int.MaxValue);
 
             builder.Property(x => x.CreatedAt).IsRequired().HasConversion(new UtcDateTimeConverter());
-            builder.Property(x => x.AvailableAt).HasConversion(new UtcDateTimeConverter());
+            builder.Property(x => x.LockedUntil).HasConversion(new UtcDateTimeConverter());
             builder.Property(x => x.LockId).HasMaxLength(100).IsConcurrencyToken();
 
-            builder.HasIndex(x => new { x.AvailableAt, x.Queue });
-            builder.HasIndex(x => new { x.AvailableAt });
+            builder.HasIndex(x => new { x.LockedUntil, x.Queue });
+            builder.HasIndex(x => new { x.LockedUntil });
         }
     }
 }

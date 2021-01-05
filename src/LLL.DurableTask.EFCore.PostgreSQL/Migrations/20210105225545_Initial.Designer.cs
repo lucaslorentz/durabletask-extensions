@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 {
     [DbContext(typeof(OrchestrationDbContext))]
-    [Migration("20210103003231_Initial")]
+    [Migration("20210105225545_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,9 +27,6 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("timestamp without time zone");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
@@ -42,6 +39,9 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
+
+                    b.Property<DateTime>("LockedUntil")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Message")
                         .HasColumnType("text")
@@ -59,11 +59,11 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AvailableAt");
-
                     b.HasIndex("InstanceId");
 
-                    b.HasIndex("AvailableAt", "Queue");
+                    b.HasIndex("LockedUntil");
+
+                    b.HasIndex("LockedUntil", "Queue");
 
                     b.ToTable("ActivityMessages");
                 });
@@ -166,9 +166,6 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .HasColumnType("character varying(500)")
                         .HasMaxLength(500);
 
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("timestamp without time zone");
-
                     b.Property<string>("LastExecutionId")
                         .IsRequired()
                         .HasColumnType("character varying(100)")
@@ -184,11 +181,14 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .HasColumnType("character varying(100)")
                         .HasMaxLength(100);
 
+                    b.Property<DateTime>("LockedUntil")
+                        .HasColumnType("timestamp without time zone");
+
                     b.HasKey("InstanceId");
 
-                    b.HasIndex("AvailableAt");
-
                     b.HasIndex("LastExecutionId");
+
+                    b.HasIndex("LockedUntil");
 
                     b.ToTable("Instances");
                 });

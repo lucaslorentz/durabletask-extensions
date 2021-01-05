@@ -21,7 +21,7 @@ namespace LLL.DurableTask.EFCore.Mappers
             {
                 InstanceId = executionStartedEvent.OrchestrationInstance.InstanceId,
                 LastExecutionId = executionStartedEvent.OrchestrationInstance.ExecutionId,
-                AvailableAt = DateTime.UtcNow,
+                LockedUntil = DateTime.UtcNow,
                 LastQueueName = QueueMapper.ToQueueName(executionStartedEvent.Name, executionStartedEvent.Version)
             };
             return instance;

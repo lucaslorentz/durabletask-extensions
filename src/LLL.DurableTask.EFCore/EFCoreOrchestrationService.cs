@@ -125,62 +125,55 @@ namespace LLL.DurableTask.EFCore
             {
                 using (var dbContext = _dbContextFactory())
                 {
-                    using (var transaction = await _dbContextExtensions.BeginTransaction(dbContext))
+                    var instance = await LockNextInstance(dbContext, orchestrations);
+
+                    if (instance == null)
+                        return null;
+
+                    var execution = await dbContext.Executions
+                        .Where(e => e.InstanceId == instance.InstanceId && e.ExecutionId == instance.LastExecutionId)
+                        .FirstOrDefaultAsync();
+
+                    var events = await dbContext.Events
+                        .Where(e => e.InstanceId == instance.InstanceId && e.ExecutionId == instance.LastExecutionId)
+                        .OrderBy(e => e.SequenceNumber)
+                        .AsNoTracking()
+                        .ToArrayAsync();
+
+                    var deserializedEvents = events
+                        .Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content))
+                        .ToArray();
+
+                    var runtimeState = new OrchestrationRuntimeState(deserializedEvents);
+
+                    var session = new EFCoreOrchestrationSession(
+                        _options,
+                        _dbContextFactory,
+                        instance,
+                        execution,
+                        runtimeState,
+                        _stopCts.Token);
+
+                    var messages = await session.FetchNewMessagesAsync(dbContext);
+
+                    if (messages.Count == 0)
                     {
-                        var instance = await LockNextInstance(dbContext, orchestrations);
-
-                        if (instance == null)
-                            return null;
-
-                        var execution = await dbContext.Executions
-                            .Where(e => e.InstanceId == instance.InstanceId && e.ExecutionId == instance.LastExecutionId)
-                            .FirstOrDefaultAsync();
-
-                        var events = await dbContext.Events
-                            .Where(e => e.InstanceId == instance.InstanceId && e.ExecutionId == instance.LastExecutionId)
-                            .OrderBy(e => e.SequenceNumber)
-                            .AsNoTracking()
-                            .ToArrayAsync();
-
-                        var deserializedEvents = events
-                            .Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content))
-                            .ToArray();
-
-                        var runtimeState = new OrchestrationRuntimeState(deserializedEvents);
-
-                        var session = new EFCoreOrchestrationSession(
-                            _options,
-                            _dbContextFactory,
-                            instance,
-                            execution,
-                            runtimeState,
-                            _stopCts.Token);
-
-                        var messages = await session.FetchNewMessagesAsync(dbContext);
-
-                        if (messages.Count == 0)
-                        {
-                            await dbContext.SaveChangesAsync();
-                            await transaction.CommitAsync();
-                            return null;
-                        }
-
-                        instance.LockId = Guid.NewGuid().ToString();
-                        instance.AvailableAt = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
-
+                        instance.LockId = null;
+                        instance.LockedUntil = DateTime.UtcNow;
                         await dbContext.SaveChangesAsync();
-
-                        await transaction.CommitAsync();
-
-                        return new TaskOrchestrationWorkItem
-                        {
-                            InstanceId = instance.InstanceId,
-                            LockedUntilUtc = instance.AvailableAt,
-                            OrchestrationRuntimeState = runtimeState,
-                            NewMessages = messages,
-                            Session = session
-                        };
+                        return null;
                     }
+
+                    await dbContext.SaveChangesAsync();
+
+                    return new TaskOrchestrationWorkItem
+                    {
+                        InstanceId = instance.InstanceId,
+                        LockedUntilUtc = instance.LockedUntil,
+                        OrchestrationRuntimeState = runtimeState,
+                        NewMessages = messages,
+                        Session = session
+                    };
                 }
             },
             r => r != null,
@@ -206,26 +199,17 @@ namespace LLL.DurableTask.EFCore
             {
                 using (var dbContext = _dbContextFactory())
                 {
-                    using (var transaction = await _dbContextExtensions.BeginTransaction(dbContext))
+                    var activityMessage = await LockActivityMessage(dbContext, activities);
+
+                    if (activityMessage == null)
+                        return null;
+
+                    return new TaskActivityWorkItem
                     {
-                        var activityMessage = await LockActivityMessage(dbContext, activities);
-
-                        if (activityMessage == null)
-                            return null;
-
-                        activityMessage.LockId = Guid.NewGuid().ToString();
-                        activityMessage.AvailableAt = DateTime.UtcNow.Add(_options.ActivtyLockTimeout);
-
-                        await dbContext.SaveChangesAsync();
-                        await transaction.CommitAsync();
-
-                        return new TaskActivityWorkItem
-                        {
-                            Id = CreateTaskActivityWorkItemId(activityMessage.Id, activityMessage.LockId, activityMessage.ReplyQueue),
-                            TaskMessage = _options.DataConverter.Deserialize<TaskMessage>(activityMessage.Message),
-                            LockedUntilUtc = activityMessage.AvailableAt
-                        };
-                    }
+                        Id = CreateTaskActivityWorkItemId(activityMessage.Id, activityMessage.LockId, activityMessage.ReplyQueue),
+                        TaskMessage = _options.DataConverter.Deserialize<TaskMessage>(activityMessage.Message),
+                        LockedUntilUtc = activityMessage.LockedUntil
+                    };
                 }
             },
             x => x != null,
@@ -243,7 +227,7 @@ namespace LLL.DurableTask.EFCore
                 {
                     dbContext.Instances.Attach(session.Instance);
                     session.Instance.LockId = null;
-                    session.Instance.AvailableAt = DateTime.UtcNow;
+                    session.Instance.LockedUntil = DateTime.UtcNow;
                     await dbContext.SaveChangesAsync();
                     session.Released = true;
                 }
@@ -260,7 +244,8 @@ namespace LLL.DurableTask.EFCore
 
                 dbContext.Instances.Attach(session.Instance);
                 session.Instance.LockId = null;
-                session.Instance.AvailableAt = DateTime.UtcNow.AddMinutes(1); //TODO: Exponential backoff
+                // TODO: Exponential backoff
+                session.Instance.LockedUntil = DateTime.UtcNow.AddMinutes(1);
                 await dbContext.SaveChangesAsync();
                 session.Released = true;
             }
@@ -275,7 +260,7 @@ namespace LLL.DurableTask.EFCore
                 var lockedUntilUTC = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
 
                 dbContext.Instances.Attach(session.Instance);
-                session.Instance.AvailableAt = DateTime.UtcNow.AddMinutes(5);
+                session.Instance.LockedUntil = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
                 await dbContext.SaveChangesAsync();
 
                 workItem.LockedUntilUtc = lockedUntilUTC;
@@ -288,7 +273,14 @@ namespace LLL.DurableTask.EFCore
             {
                 var (id, lockId, _) = ParseTaskActivityWorkItemId(workItem.Id);
 
-                await _dbContextExtensions.ReleaseActivityMessageLock(dbContext, id, lockId);
+                var activityMessage = await dbContext.ActivityMessages.FindAsync(id);
+
+                if (activityMessage.LockId != lockId)
+                    throw new Exception("Lost task activity lock");
+
+                activityMessage.LockId = null;
+                activityMessage.LockedUntil = DateTime.UtcNow;
+                await dbContext.SaveChangesAsync();
             }
         }
 
@@ -298,12 +290,14 @@ namespace LLL.DurableTask.EFCore
             {
                 var (id, lockId, _) = ParseTaskActivityWorkItemId(workItem.Id);
 
-                var lockedUntilUTC = DateTime.UtcNow.Add(_options.ActivtyLockTimeout);
+                var activityMessage = await dbContext.ActivityMessages.FindAsync(id);
 
-                var renewedCount = await _dbContextExtensions.RenewActivityMessageLock(dbContext, id, lockId, lockedUntilUTC);
-
-                if (renewedCount == 0)
+                if (activityMessage.LockId != lockId)
                     throw new Exception("Lost task activity lock");
+
+                var lockedUntilUTC = DateTime.UtcNow.Add(_options.ActivtyLockTimeout);
+                activityMessage.LockedUntil = lockedUntilUTC;
+                await dbContext.SaveChangesAsync();
 
                 workItem.LockedUntilUtc = lockedUntilUTC;
 
@@ -461,13 +455,13 @@ namespace LLL.DurableTask.EFCore
         private async Task<Instance> LockNextInstance(OrchestrationDbContext dbContext, INameVersionInfo[] orchestrations)
         {
             if (orchestrations == null)
-                return await _dbContextExtensions.LockNextInstanceForUpdate(dbContext);
+                return await _dbContextExtensions.TryLockNextInstanceAsync(dbContext, _options.OrchestrationLockTimeout);
 
             var queues = orchestrations
                 .Select(QueueMapper.ToQueueName)
                 .ToArray();
 
-            var instance = await _dbContextExtensions.LockNextInstanceForUpdate(dbContext, queues);
+            var instance = await _dbContextExtensions.TryLockNextInstanceAsync(dbContext, queues, _options.OrchestrationLockTimeout);
             if (instance != null)
                 return instance;
 
@@ -476,14 +470,17 @@ namespace LLL.DurableTask.EFCore
 
         private async Task<ActivityMessage> LockActivityMessage(OrchestrationDbContext dbContext, INameVersionInfo[] activities)
         {
+            var lockId = Guid.NewGuid().ToString();
+            var lockUntilUtc = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
+
             if (activities == null)
-                return await _dbContextExtensions.LockNextActivityMessageForUpdate(dbContext);
+                return await _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, _options.OrchestrationLockTimeout);
 
             var queues = activities
                 .Select(QueueMapper.ToQueueName)
                 .ToArray();
 
-            var activityMessage = await _dbContextExtensions.LockNextActivityMessageForUpdate(dbContext, queues);
+            var activityMessage = await _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, queues, _options.OrchestrationLockTimeout);
             if (activityMessage != null)
                 return activityMessage;
 

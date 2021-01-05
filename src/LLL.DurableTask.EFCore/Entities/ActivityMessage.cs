@@ -15,7 +15,7 @@ namespace LLL.DurableTask.EFCore.Entities
         public string Message { get; set; }
 
         public DateTime CreatedAt { get; set; }
-        public DateTime AvailableAt { get; set; }
+        public DateTime LockedUntil { get; set; }
         public string LockId { get; set; }
     }
 }

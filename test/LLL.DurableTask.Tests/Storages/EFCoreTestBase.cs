@@ -17,7 +17,7 @@ namespace LLL.DurableTask.Tests.Storages
         }
 
         [SkippableFact]
-        public async Task LockNextInstanceForUpdate_AnyQueue()
+        public async Task TryLockNextInstanceAsync_AnyQueue()
         {
             var taskHubClient = _host.Services.GetService<TaskHubClient>();
 
@@ -31,13 +31,15 @@ namespace LLL.DurableTask.Tests.Storages
             var dbContextFactory = _host.Services.GetService<Func<OrchestrationDbContext>>();
             var dbContextExtensions = _host.Services.GetService<OrchestrationDbContextExtensions>();
 
-            using var dbContextDispenser = new DbContextDispenser(dbContextFactory, dbContextExtensions);
+            using var dbContextDispenser = new DbContextDispenser(dbContextFactory);
 
-            var instance1 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get());
-            var instance2 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get());
-            var instance3 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get());
-            var instance4 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get());
-            var instanceNull = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get());
+            var lockTimeout = TimeSpan.FromMinutes(1);
+
+            var instance1 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
+            var instance2 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
+            var instance3 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
+            var instance4 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
+            var instanceNull = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
 
             instance1.Should().NotBeNull();
             instance1.InstanceId.Should().Be("i1");
@@ -51,7 +53,7 @@ namespace LLL.DurableTask.Tests.Storages
         }
 
         [SkippableFact]
-        public async Task LockNextInstanceForUpdate_SpecificQueues()
+        public async Task TryLockNextInstanceAsync_SpecificQueues()
         {
             var taskHubClient = _host.Services.GetService<TaskHubClient>();
 
@@ -72,18 +74,20 @@ namespace LLL.DurableTask.Tests.Storages
             var dbContextFactory = _host.Services.GetService<Func<OrchestrationDbContext>>();
             var dbContextExtensions = _host.Services.GetService<OrchestrationDbContextExtensions>();
 
-            using var dbContextDispenser = new DbContextDispenser(dbContextFactory, dbContextExtensions);
+            using var dbContextDispenser = new DbContextDispenser(dbContextFactory);
 
-            var instance3 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get(), new[] { "o3" });
-            var instance2 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get(), new[] { "o2" });
-            var instance1 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get(), new[] { "o1" });
-            var instance4 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get(), new[] { "o1" });
-            var instance5 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get(), new[] { "o2" });
-            var instance6 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get(), new[] { "o3" });
-            var instance7 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get(), new[] { "o1", "o2", "o3" });
-            var instance8 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get(), new[] { "o1", "o2", "o3" });
-            var instance9 = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get(), new[] { "o1", "o2", "o3" });
-            var instanceNull = await dbContextExtensions.LockNextInstanceForUpdate(await dbContextDispenser.Get(), new[] { "o1", "o2", "o3" });
+            var lockTimeout = TimeSpan.FromMinutes(1);
+
+            var instance3 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o3" }, lockTimeout);
+            var instance2 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o2" }, lockTimeout);
+            var instance1 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1" }, lockTimeout);
+            var instance4 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1" }, lockTimeout);
+            var instance5 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o2" }, lockTimeout);
+            var instance6 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o3" }, lockTimeout);
+            var instance7 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
+            var instance8 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
+            var instance9 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
+            var instanceNull = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
 
             instance1.Should().NotBeNull();
             instance1.InstanceId.Should().Be("i1");

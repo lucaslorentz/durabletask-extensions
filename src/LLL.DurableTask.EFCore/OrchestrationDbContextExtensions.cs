@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace LLL.DurableTask.EFCore
 {
@@ -10,19 +9,23 @@ namespace LLL.DurableTask.EFCore
     {
         public abstract Task Migrate(OrchestrationDbContext dbContext);
 
-        public abstract Task<IDbContextTransaction> BeginTransaction(OrchestrationDbContext dbContext);
+        public abstract Task<Instance> TryLockNextInstanceAsync(
+            OrchestrationDbContext dbContext,
+            TimeSpan lockTimeout);
 
-        public abstract Task<Instance> LockNextInstanceForUpdate(OrchestrationDbContext dbContext);
+        public abstract Task<Instance> TryLockNextInstanceAsync(
+            OrchestrationDbContext dbContext,
+            string[] queues,
+            TimeSpan lockTimeout);
 
-        public abstract Task<Instance> LockNextInstanceForUpdate(OrchestrationDbContext dbContext, string[] queues);
+        public abstract Task<ActivityMessage> TryLockNextActivityMessageAsync(
+            OrchestrationDbContext dbContext,
+            TimeSpan lockTimeout);
 
-        public abstract Task<ActivityMessage> LockNextActivityMessageForUpdate(OrchestrationDbContext dbContext);
-
-        public abstract Task<ActivityMessage> LockNextActivityMessageForUpdate(OrchestrationDbContext dbContext, string[] queues);
-
-        public abstract Task<int> RenewActivityMessageLock(OrchestrationDbContext dbContext, Guid id, string lockId, DateTime lockedUntilUTC);
-
-        public abstract Task<int> ReleaseActivityMessageLock(OrchestrationDbContext dbContext, Guid id, string lockId);
+        public abstract Task<ActivityMessage> TryLockNextActivityMessageAsync(
+            OrchestrationDbContext dbContext,
+            string[] queues,
+            TimeSpan lockTimeout);
 
         public abstract Task PurgeOrchestrationHistoryAsync(OrchestrationDbContext dbContext, DateTime thresholdDateTimeUtc, OrchestrationStateTimeRangeFilterType timeRangeFilterType);
 
