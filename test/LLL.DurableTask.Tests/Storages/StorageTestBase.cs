@@ -62,10 +62,12 @@ namespace LLL.DurableTask.Tests.Storages
         protected virtual void ConigureWorker(IDurableTaskWorkerBuilder builder)
         {
             builder.AddOrchestration<EmptyOrchestration>(EmptyOrchestration.Name, EmptyOrchestration.Version);
+            builder.AddOrchestration<TimerOrchestration>(TimerOrchestration.Name, TimerOrchestration.Version);
             builder.AddOrchestration<ContinueAsNewOrchestration>(ContinueAsNewOrchestration.Name, ContinueAsNewOrchestration.Version);
             builder.AddOrchestration<ContinueAsNewEmptyOrchestration>(ContinueAsNewEmptyOrchestration.Name, ContinueAsNewEmptyOrchestration.Version);
             builder.AddOrchestration<ParentOrchestration>(ParentOrchestration.Name, ParentOrchestration.Version);
             builder.AddOrchestration<ParallelTasksOrchestration>(ParallelTasksOrchestration.Name, ParallelTasksOrchestration.Version);
+            builder.AddOrchestration<WaitForEventOrchestration>(WaitForEventOrchestration.Name, WaitForEventOrchestration.Version);
             builder.AddOrchestration<FibonacciRecursiveOrchestration>(FibonacciRecursiveOrchestration.Name, FibonacciRecursiveOrchestration.Version);
             builder.AddActivity<SumActivity>(SumActivity.Name, SumActivity.Version);
             builder.AddActivity<SubtractActivity>(SubtractActivity.Name, SubtractActivity.Version);
@@ -88,6 +90,23 @@ namespace LLL.DurableTask.Tests.Storages
             var input = Guid.NewGuid();
 
             var instance = await taskHubClient.CreateOrchestrationInstanceAsync(EmptyOrchestration.Name, EmptyOrchestration.Version, input);
+
+            var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
+
+            state.Should().NotBeNull();
+            state.Output.Should().Be($"\"{input}\"");
+            state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
+        }
+
+        [Trait("Category", "Integration")]
+        [SkippableFact]
+        public async Task TimerOrchestration_ShouldComplete()
+        {
+            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+
+            var input = Guid.NewGuid();
+
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(TimerOrchestration.Name, TimerOrchestration.Version, input);
 
             var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
 
@@ -152,6 +171,25 @@ namespace LLL.DurableTask.Tests.Storages
 
             state.Should().NotBeNull();
             state.Output.Should().Be(orchestrationService.MaxConcurrentTaskActivityWorkItems.ToString());
+            state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
+        }
+
+        [Trait("Category", "Integration")]
+        [SkippableFact]
+        public async Task WaitEventOrchestration_ShouldComplete()
+        {
+            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+
+            var eventData = Guid.NewGuid();
+
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(WaitForEventOrchestration.Name, WaitForEventOrchestration.Version, null);
+
+            await taskHubClient.RaiseEventAsync(instance, "SetResult", eventData);
+
+            var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
+
+            state.Should().NotBeNull();
+            state.Output.Should().Be($"\"{eventData}\"");
             state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
         }
 

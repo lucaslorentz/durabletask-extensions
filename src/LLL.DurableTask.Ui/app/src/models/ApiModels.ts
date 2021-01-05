@@ -6,11 +6,6 @@ export interface CreateOrchestrationRequest {
   tags?: Record<string, string>;
 }
 
-export interface RaiseEventRequest {
-  eventName: string;
-  eventData?: any;
-}
-
 export interface TerminateRequest {
   reason?: string;
 }

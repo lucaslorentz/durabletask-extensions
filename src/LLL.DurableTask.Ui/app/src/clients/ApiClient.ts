@@ -147,11 +147,14 @@ export class ApiClient {
 
   public async raiseOrchestrationEvent(
     instanceId: string,
-    request: RaiseEventRequest
+    eventName: string,
+    eventData: any
   ): Promise<void> {
     await this.apiAxios.post(
-      `/v1/orchestrations/${encodeURIComponent(instanceId)}/raiseevent`,
-      request
+      `/v1/orchestrations/${encodeURIComponent(
+        instanceId
+      )}/raiseevent/${eventName}`,
+      eventData
     );
   }
 }

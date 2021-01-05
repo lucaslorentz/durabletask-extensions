@@ -68,7 +68,6 @@ namespace LLL.DurableTask.Api.Extensions
         }
 
         public static async Task<T> ParseBody<T>(this HttpContext context)
-            where T : new()
         {
             using var reader = new StreamReader(context.Request.Body, Encoding.UTF8);
             var json = await reader.ReadToEndAsync();

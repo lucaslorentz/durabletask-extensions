@@ -5,7 +5,6 @@ import * as yup from "yup";
 import { useApiClient } from "../../ApiClientProvider";
 import { TextField } from "../../form/TextField";
 import { useForm } from "../../form/useForm";
-import { RaiseEventRequest } from "../../models/ApiModels";
 
 type Props = {
   instanceId: string;
@@ -43,14 +42,12 @@ export function RaiseEvent(props: Props) {
 
   async function handleSaveClick() {
     try {
-      const request: RaiseEventRequest = {
-        eventName: form.value.eventName,
-        eventData: form.value.eventData
-          ? JSON.parse(form.value.eventData)
-          : null,
-      };
+      const eventName = form.value.eventName;
+      const eventData = form.value.eventData
+        ? JSON.parse(form.value.eventData)
+        : null;
 
-      await apiClient.raiseOrchestrationEvent(instanceId, request);
+      await apiClient.raiseOrchestrationEvent(instanceId, eventName, eventData);
 
       enqueueSnackbar("Event raised", {
         variant: "success",

@@ -10,6 +10,7 @@
     <PackageReference Include="MartinCostello.Logging.XUnit" Version="0.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="3.1.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
+    <PackageReference Include="System.Net.Http.Json" Version="3.2.1" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <PrivateAssets>all</PrivateAssets>
@@ -24,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\LLL.DurableTask.Api\LLL.DurableTask.Api.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.MySql\LLL.DurableTask.EFCore.MySql.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.PostgreSQL\LLL.DurableTask.EFCore.PostgreSQL.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.AzureStorage\LLL.DurableTask.AzureStorage.csproj" />

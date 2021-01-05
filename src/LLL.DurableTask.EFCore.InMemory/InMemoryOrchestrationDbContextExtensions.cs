@@ -136,7 +136,6 @@ namespace LLL.DurableTask.EFCore.InMemory
 
             dbContext.Executions.RemoveRange(executions);
             dbContext.SaveChanges();
-
             return Task.CompletedTask;
         }
 
@@ -144,14 +143,10 @@ namespace LLL.DurableTask.EFCore.InMemory
             OrchestrationDbContext dbContext,
             string instanceId)
         {
-            var instance = dbContext.Instances.Find(instanceId);
-            if (instance == null)
-                return Task.FromResult(0);
-
-            dbContext.Instances.Remove(instance);
+            var executions = dbContext.Executions.Where(e => e.InstanceId == instanceId).ToArray();
+            dbContext.Executions.RemoveRange(executions);
             dbContext.SaveChanges();
-
-            return Task.FromResult(1);
+            return Task.FromResult(executions.Length);
         }
     }
 }

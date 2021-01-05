@@ -1,6 +1,7 @@
 ﻿using DurableTask.Core;
 using LLL.DurableTask.Core.Serializing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -13,7 +14,8 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 var orchestrationServiceClient = serviceProvider.GetRequiredService<IOrchestrationServiceClient>();
                 var jsonDataConverter = new UntypedJsonDataConverter();
-                return new TaskHubClient(orchestrationServiceClient, jsonDataConverter);
+                var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+                return new TaskHubClient(orchestrationServiceClient, jsonDataConverter, loggerFactory);
             });
 
             return services;

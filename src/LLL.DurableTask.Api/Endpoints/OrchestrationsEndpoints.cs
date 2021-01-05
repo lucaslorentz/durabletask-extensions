@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using LLL.DurableTask.Api.Extensions;
@@ -10,8 +11,10 @@ using LLL.DurableTask.Core.Serializing;
 using LLL.DurableTask.Server.Api.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LLL.DurableTask.Api.Endpoints
 {
@@ -40,8 +43,16 @@ namespace LLL.DurableTask.Api.Endpoints
             endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations", async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
+                var linkGenerator = context.RequestServices.GetRequiredService<LinkGenerator>();
 
                 var request = await context.ParseBody<CreateOrchestrationRequest>();
+
+                var validationResults = new List<ValidationResult>();
+                if (!Validator.TryValidateObject(request, new ValidationContext(request), validationResults))
+                {
+                    await context.RespondJson(validationResults, 400);
+                    return;
+                }
 
                 var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
                     request.Name,
@@ -51,7 +62,10 @@ namespace LLL.DurableTask.Api.Endpoints
                     request.Tags);
 
                 var typedHeaders = context.Response.GetTypedHeaders();
-                typedHeaders.Location = new Uri($"/v1/orchestrations/{instance.InstanceId}", System.UriKind.Relative);
+                typedHeaders.Location = new Uri(linkGenerator.GetUriByName("DurableTaskApi_OrchestrationsGet", new
+                {
+                    instanceId = instance.InstanceId
+                }, context.Request.Scheme, context.Request.Host, context.Request.PathBase));
 
                 await context.RespondJson(instance, 201);
             }).RequireAuthorization(DurableTaskPolicy.Create).WithMetadata(new DurableTaskEndpointMetadata
@@ -74,7 +88,9 @@ namespace LLL.DurableTask.Api.Endpoints
                 }
 
                 await context.RespondJson(state);
-            }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata
+            }).RequireAuthorization(DurableTaskPolicy.Read)
+            .WithMetadata(new EndpointNameMetadata("DurableTaskApi_OrchestrationsGet"))
+            .WithMetadata(new DurableTaskEndpointMetadata
             {
                 Id = "OrchestrationsGet"
             }));
@@ -95,7 +111,9 @@ namespace LLL.DurableTask.Api.Endpoints
                 }
 
                 await context.RespondJson(state);
-            }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata
+            }).RequireAuthorization(DurableTaskPolicy.Read)
+            .WithMetadata(new EndpointNameMetadata("DurableTaskApi_OrchestrationsGetExecution"))
+            .WithMetadata(new DurableTaskEndpointMetadata
             {
                 Id = "OrchestrationsGetExecution"
             }));
@@ -160,20 +178,21 @@ namespace LLL.DurableTask.Api.Endpoints
                 Id = "OrchestrationsRewind"
             }));
 
-            endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/raiseevent", async context =>
+            endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/raiseevent/{eventName}", async context =>
             {
                 var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
                 var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+                var eventName = Uri.UnescapeDataString(context.Request.RouteValues["eventName"].ToString());
 
                 var orchestrationInstance = new OrchestrationInstance
                 {
                     InstanceId = instanceId
                 };
 
-                var request = await context.ParseBody<RaiseEventRequest>();
+                var eventData = await context.ParseBody<JToken>();
 
-                await taskHubClient.RaiseEventAsync(orchestrationInstance, request.EventName, request.EventData);
+                await taskHubClient.RaiseEventAsync(orchestrationInstance, eventName, eventData);
 
                 await context.RespondJson(new { });
             }).RequireAuthorization(DurableTaskPolicy.RaiseEvent).WithMetadata(new DurableTaskEndpointMetadata
