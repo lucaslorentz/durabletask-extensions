@@ -3,6 +3,8 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Serializing;
+using LLL.DurableTask.Core.Serializing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -11,6 +13,7 @@ namespace LLL.DurableTask.Worker.Orchestrations
     public class MethodTaskActivity : TaskActivity
     {
         private readonly MethodInfo _methodInfo;
+        private readonly DataConverter _dataConverter;
 
         public MethodTaskActivity(
             object instance,
@@ -18,6 +21,7 @@ namespace LLL.DurableTask.Worker.Orchestrations
         {
             Instance = instance;
             _methodInfo = methodInfo;
+            _dataConverter = new UntypedJsonDataConverter();
         }
 
         public object Instance { get; }
@@ -29,15 +33,32 @@ namespace LLL.DurableTask.Worker.Orchestrations
 
         public override async Task<string> RunAsync(TaskContext context, string input)
         {
-            var deserializedInput = JsonConvert.DeserializeObject<JArray>(input);
-
-            var parameters = _methodInfo
-                .GetParameters()
-                .Select(p => deserializedInput[p.Position].ToObject(p.ParameterType))
-                .ToArray();
+            var parameters = PrepareParameters(input);
 
             var result = _methodInfo.Invoke(Instance, parameters);
 
+            return await SerializeResult(result);
+        }
+
+        private object[] PrepareParameters(string input)
+        {
+            var deserializedInput = JsonConvert.DeserializeObject<JToken[]>(input);
+
+            return _methodInfo
+                .GetParameters()
+                .Select(p =>
+                {
+                    deserializedInput[p.Position].ToObject(p.ParameterType);
+
+                    if (input == null)
+                        return null;
+
+                    return _dataConverter.Deserialize(input, p.ParameterType);
+                }).ToArray();
+        }
+
+        private async Task<string> SerializeResult(object result)
+        {
             if (result is Task task)
             {
                 await task;
@@ -52,7 +73,7 @@ namespace LLL.DurableTask.Worker.Orchestrations
                 }
             }
 
-            var serializedResult = JsonConvert.SerializeObject(result);
+            var serializedResult = _dataConverter.Serialize(result);
 
             return serializedResult;
         }
