@@ -105,7 +105,7 @@ The implementation uses a combination of **row locking**, **skip locked** and **
 
 #### LLL.DurableTask.EFCore.InMemory [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.EFCore.InMemory)](https://www.nuget.org/packages/LLL.DurableTask.EFCore.InMemory/)
 
-Extension to EFCore storage with migrations and queries specific to InMemory database.
+Extension to EFCore storage with queries specific to InMemory database.
 
 ##### Configuration
 
