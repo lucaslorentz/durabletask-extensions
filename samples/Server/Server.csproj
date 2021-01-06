@@ -7,6 +7,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore\LLL.DurableTask.EFCore.csproj" />
+    <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.InMemory\LLL.DurableTask.EFCore.InMemory.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.MySql\LLL.DurableTask.EFCore.MySql.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.PostgreSQL\LLL.DurableTask.EFCore.PostgreSQL.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.SqlServer\LLL.DurableTask.EFCore.SqlServer.csproj" />

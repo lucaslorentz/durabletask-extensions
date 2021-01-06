@@ -19,8 +19,9 @@ namespace Server
             services.AddGrpc();
 
             services.AddDurableTaskEFCoreStorage()
+                .UseInMemoryDatabase("Sample");
                 //.UseNpgsql("Server=localhost;Port=5432;Database=durabletask;User Id=postgres;Password=root");
-                .UseMySql("server=localhost;database=durabletask;user=root;password=root");
+                //.UseMySql("server=localhost;database=durabletask;user=root;password=root");
                 //.UseSqlServer("server=localhost;database=durabletask;user=sa;password=P1ssw0rd");
 
             services.AddDurableTaskServer(builder =>
