@@ -10,7 +10,6 @@ import {
   OrchestrationsRequest,
   OrchestrationsResponse,
   OrchestrationState,
-  RaiseEventRequest,
   RewindRequest,
   TerminateRequest,
 } from "../models/ApiModels";
