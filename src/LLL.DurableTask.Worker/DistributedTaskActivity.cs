@@ -7,7 +7,7 @@ namespace LLL.DurableTask.Worker
     public abstract class DistributedAsyncTaskActivity<TInput, TResult> : AsyncTaskActivity<TInput, TResult>
     {
         public DistributedAsyncTaskActivity()
-            : base(new UntypedJsonDataConverter())
+            : base(new TypelessJsonDataConverter())
         {
         }
     }

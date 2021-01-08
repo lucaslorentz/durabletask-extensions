@@ -4,10 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace LLL.DurableTask.Tests.Server
+namespace LLL.DurableTask.Tests.Storages
 {
     [Collection("AzureStorage")]
-    public class AzureStorageServerTests : ServerTestsBase
+    public class AzureStorageServerTests : ServerStorageTestBase
     {
         public AzureStorageServerTests(ITestOutputHelper output) : base(output)
         {

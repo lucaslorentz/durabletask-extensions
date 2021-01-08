@@ -9,14 +9,14 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
-namespace LLL.DurableTask.Tests.Server
+namespace LLL.DurableTask.Tests.Storages
 {
-    public abstract class ServerTestsBase : StorageTestBase
+    public abstract class ServerStorageTestBase : StorageTestBase
     {
         private readonly ITestOutputHelper _output;
         private IHost _serverHost;
 
-        protected ServerTestsBase(ITestOutputHelper output)
+        protected ServerStorageTestBase(ITestOutputHelper output)
             : base(output)
         {
             _output = output;

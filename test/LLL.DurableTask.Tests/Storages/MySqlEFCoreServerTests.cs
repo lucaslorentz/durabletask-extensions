@@ -3,10 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace LLL.DurableTask.Tests.Server
+namespace LLL.DurableTask.Tests.Storages
 {
     [Collection("MySql")]
-    public class MySqlEFCoreServerTests : ServerTestsBase
+    public class MySqlEFCoreServerTests : ServerStorageTestBase
     {
         public MySqlEFCoreServerTests(ITestOutputHelper output) : base(output)
         {

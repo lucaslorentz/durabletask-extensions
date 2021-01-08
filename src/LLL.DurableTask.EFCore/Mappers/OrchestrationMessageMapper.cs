@@ -33,7 +33,7 @@ namespace LLL.DurableTask.EFCore.Mappers
                 Queue = queue,
                 SequenceNumber = sequence,
                 AvailableAt = message.Event is TimerFiredEvent timerFiredEvent
-                    ? timerFiredEvent.FireAt
+                    ? timerFiredEvent.FireAt.ToUniversalTime()
                     : DateTime.UtcNow,
                 Message = _options.DataConverter.Serialize(message),
             };

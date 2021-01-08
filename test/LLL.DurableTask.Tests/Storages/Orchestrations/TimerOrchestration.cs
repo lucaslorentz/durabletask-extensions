@@ -1,11 +1,10 @@
 using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using LLL.DurableTask.Worker;
 
-namespace LLL.DurableTask.Tests.Orchestrations
+namespace LLL.DurableTask.Tests.Storage.Orchestrations
 {
-    public class TimerOrchestration : DistributedTaskOrchestration<object, object>
+    public class TimerOrchestration : TaskOrchestration<object, object>
     {
         public const string Name = "Timer";
         public const string Version = "v1";

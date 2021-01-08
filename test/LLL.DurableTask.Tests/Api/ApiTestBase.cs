@@ -85,7 +85,7 @@ namespace LLL.DurableTask.Tests.Api
             var dbContextFactory = _host.Services.GetRequiredService<Func<OrchestrationDbContext>>();
             using (var dbContext = dbContextFactory())
             {
-                var dataConverter = new UntypedJsonDataConverter();
+                var dataConverter = new TypelessJsonDataConverter();
 
                 return dbContext.OrchestrationMessages
                     .OrderBy(m => m.AvailableAt)

@@ -20,26 +20,39 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddOrchestrationsFromAssembly(assembly)
                 .AddActivitiesFromAssembly(assembly);
         }
+        public static IDurableTaskWorkerBuilder AddFromType(
+            this IDurableTaskWorkerBuilder builder,
+            Type type)
+        {
+            return builder
+                .AddOrchestrationsFromType(type)
+                .AddActivitiesFromType(type);
+        }
 
         public static IDurableTaskWorkerBuilder AddOrchestrationsFromAssembly(
             this IDurableTaskWorkerBuilder builder,
             Assembly assembly)
         {
             foreach (var type in assembly.GetTypes())
-            {
-                var typeOrchestrationAttribute = type.GetCustomAttribute<OrchestrationAttribute>();
-                if (typeOrchestrationAttribute != null)
-                {
-                    builder.AddOrchestration(type, typeOrchestrationAttribute.Name, typeOrchestrationAttribute.Version);
-                }
+                builder.AddOrchestrationsFromType(type);
+            return builder;
+        }
 
-                foreach (var methodInfo in type.GetMethods())
+        public static IDurableTaskWorkerBuilder AddOrchestrationsFromType(
+            this IDurableTaskWorkerBuilder builder,
+            Type type)
+        {
+            var typeOrchestrationAttribute = type.GetCustomAttribute<OrchestrationAttribute>();
+            if (typeOrchestrationAttribute != null)
+            {
+                builder.AddOrchestration(type, typeOrchestrationAttribute.Name, typeOrchestrationAttribute.Version);
+            }
+            foreach (var methodInfo in type.GetMethods())
+            {
+                var orchestrationAttribute = methodInfo.GetCustomAttribute<OrchestrationAttribute>();
+                if (orchestrationAttribute != null)
                 {
-                    var orchestrationAttribute = methodInfo.GetCustomAttribute<OrchestrationAttribute>();
-                    if (orchestrationAttribute != null)
-                    {
-                        builder.AddOrchestrationMethod(type, methodInfo, orchestrationAttribute.Name, orchestrationAttribute.Version);
-                    }
+                    builder.AddOrchestrationMethod(type, methodInfo, orchestrationAttribute.Name, orchestrationAttribute.Version);
                 }
             }
             return builder;
@@ -86,20 +99,25 @@ namespace Microsoft.Extensions.DependencyInjection
             Assembly assembly)
         {
             foreach (var type in assembly.GetTypes())
-            {
-                var typeActivityAttribute = type.GetCustomAttribute<ActivityAttribute>();
-                if (typeActivityAttribute != null)
-                {
-                    builder.AddActivity(type, typeActivityAttribute.Name, typeActivityAttribute.Version);
-                }
+                builder.AddActivitiesFromType(type);
+            return builder;
+        }
 
-                foreach (var methodInfo in type.GetMethods())
+        public static IDurableTaskWorkerBuilder AddActivitiesFromType(
+            this IDurableTaskWorkerBuilder builder,
+            Type type)
+        {
+            var typeActivityAttribute = type.GetCustomAttribute<ActivityAttribute>();
+            if (typeActivityAttribute != null)
+            {
+                builder.AddActivity(type, typeActivityAttribute.Name, typeActivityAttribute.Version);
+            }
+            foreach (var methodInfo in type.GetMethods())
+            {
+                var methodActivityAttribute = methodInfo.GetCustomAttribute<ActivityAttribute>();
+                if (methodActivityAttribute != null)
                 {
-                    var methodActivityAttribute = methodInfo.GetCustomAttribute<ActivityAttribute>();
-                    if (methodActivityAttribute != null)
-                    {
-                        builder.AddActivityMethod(type, methodInfo, methodActivityAttribute.Name, methodActivityAttribute.Version);
-                    }
+                    builder.AddActivityMethod(type, methodInfo, methodActivityAttribute.Name, methodActivityAttribute.Version);
                 }
             }
             return builder;

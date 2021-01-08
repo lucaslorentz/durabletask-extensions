@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using LLL.DurableTask.Tests.Activities;
-using LLL.DurableTask.Worker;
+using LLL.DurableTask.Tests.Storage.Activities;
 
-namespace LLL.DurableTask.Tests.Orchestrations
+namespace LLL.DurableTask.Tests.Storage.Orchestrations
 {
-    public class FibonacciRecursiveOrchestration : DistributedTaskOrchestration<int, int>
+    public class FibonacciRecursiveOrchestration : TaskOrchestration<int, int>
     {
         public const string Name = "FibonnaciRecursive";
         public const string Version = "v1";

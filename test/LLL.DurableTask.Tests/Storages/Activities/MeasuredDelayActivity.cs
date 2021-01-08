@@ -1,11 +1,10 @@
 using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using LLL.DurableTask.Worker;
 
-namespace LLL.DurableTask.Tests.Activities
+namespace LLL.DurableTask.Tests.Storage.Activities
 {
-    public class MeasuredDelayActivity : DistributedAsyncTaskActivity<int, MeasuredDelayActivity.Output>
+    public class MeasuredDelayActivity : AsyncTaskActivity<int, MeasuredDelayActivity.Output>
     {
         public const string Name = "MeasuredDelay";
         public const string Version = "v1";

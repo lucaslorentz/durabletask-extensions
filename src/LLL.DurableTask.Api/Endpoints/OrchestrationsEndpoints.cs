@@ -133,7 +133,7 @@ namespace LLL.DurableTask.Api.Endpoints
 
                 var history = await taskHubClient.GetOrchestrationHistoryAsync(orchestrationInstance);
 
-                var events = new UntypedJsonDataConverter().Deserialize<HistoryEvent[]>(history);
+                var events = new TypelessJsonDataConverter().Deserialize<HistoryEvent[]>(history);
 
                 await context.RespondJson(events);
             }).RequireAuthorization(DurableTaskPolicy.ReadHistory).WithMetadata(new DurableTaskEndpointMetadata

@@ -7,7 +7,7 @@ namespace LLL.DurableTask.Server.Client
     public class GrpcClientOrchestrationServiceOptions
     {
         public Uri BaseAddress { get; set; }
-        public DataConverter DataConverter { get; set; } = new UntypedJsonDataConverter();
+        public DataConverter DataConverter { get; set; } = new TypelessJsonDataConverter();
         public int TaskOrchestrationDispatcherCount { get; set; } = 1;
         public int TaskActivityDispatcherCount { get; set; } = 1;
         public int MaxConcurrentTaskOrchestrationWorkItems { get; set; } = 20;

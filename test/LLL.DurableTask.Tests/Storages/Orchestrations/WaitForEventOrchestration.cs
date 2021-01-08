@@ -1,10 +1,9 @@
 using System.Threading.Tasks;
 using DurableTask.Core;
-using LLL.DurableTask.Worker;
 
-namespace LLL.DurableTask.Tests.Orchestrations
+namespace LLL.DurableTask.Tests.Storage.Orchestrations
 {
-    public class WaitForEventOrchestration : DistributedTaskOrchestration<object, object, string, object>
+    public class WaitForEventOrchestration : TaskOrchestration<object, object, string, object>
     {
         public const string Name = "WaitForEvent";
         public const string Version = "v1";

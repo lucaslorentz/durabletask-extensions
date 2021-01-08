@@ -1,12 +1,11 @@
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using LLL.DurableTask.Tests.Activities;
-using LLL.DurableTask.Worker;
+using LLL.DurableTask.Tests.Storage.Activities;
 
-namespace LLL.DurableTask.Tests.Orchestrations
+namespace LLL.DurableTask.Tests.Storage.Orchestrations
 {
-    public class ParallelTasksOrchestration : DistributedTaskOrchestration<object, int>
+    public class ParallelTasksOrchestration : TaskOrchestration<object, int>
     {
         public const string Name = "ParallelTasks";
         public const string Version = "v1";

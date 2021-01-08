@@ -5,9 +5,9 @@ using Newtonsoft.Json.Serialization;
 
 namespace LLL.DurableTask.Core.Serializing
 {
-    public class UntypedJsonDataConverter : JsonDataConverter
+    public class TypelessJsonDataConverter : JsonDataConverter
     {
-        public UntypedJsonDataConverter()
+        public TypelessJsonDataConverter()
             : base(new JsonSerializerSettings
             {
                 ContractResolver = new DefaultContractResolver

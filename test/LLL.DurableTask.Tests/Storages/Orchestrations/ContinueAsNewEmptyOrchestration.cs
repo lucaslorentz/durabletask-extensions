@@ -1,10 +1,9 @@
 using System.Threading.Tasks;
 using DurableTask.Core;
-using LLL.DurableTask.Worker;
 
-namespace LLL.DurableTask.Tests.Orchestrations
+namespace LLL.DurableTask.Tests.Storage.Orchestrations
 {
-    public class ContinueAsNewEmptyOrchestration : DistributedTaskOrchestration<int, int>
+    public class ContinueAsNewEmptyOrchestration : TaskOrchestration<int, int>
     {
         public const string Name = "ContinueAsNewEmpty";
         public const string Version = "v1";

@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton(serviceProvider =>
             {
                 var orchestrationServiceClient = serviceProvider.GetRequiredService<IOrchestrationServiceClient>();
-                var jsonDataConverter = new UntypedJsonDataConverter();
+                var jsonDataConverter = new TypelessJsonDataConverter();
                 var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
                 return new TaskHubClient(orchestrationServiceClient, jsonDataConverter, loggerFactory);
             });
