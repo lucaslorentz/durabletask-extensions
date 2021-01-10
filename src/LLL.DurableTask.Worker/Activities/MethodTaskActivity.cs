@@ -47,22 +47,35 @@ namespace LLL.DurableTask.Worker.Orchestrations
             string input,
             Dictionary<Type, Func<object>> factories)
         {
-            var deserializedInput = _dataConverter.Deserialize<JToken[]>(input);
+            var jsonParameters = _dataConverter.Deserialize<JToken[]>(input);
 
             var inputPosition = 0;
 
-            return _methodInfo
-                .GetParameters()
-                .Select(p =>
+            var parameters = new List<object>();
+
+            foreach (var parameter in _methodInfo.GetParameters())
+            {
+                object value;
+
+                if (factories.TryGetValue(parameter.ParameterType, out var factory))
                 {
-                    if (factories.TryGetValue(p.ParameterType, out var factory))
-                        return factory();
+                    value = factory();
+                }
+                else if (inputPosition < jsonParameters.Length)
+                {
+                    value = jsonParameters[inputPosition++].ToObject(parameter.ParameterType);
+                }
+                else if (parameter.IsOptional)
+                {
+                    value = parameter.DefaultValue;
+                }
+                else
+                    throw new Exception($"Activity expects at least {inputPosition + 1} parameters but {jsonParameters.Length} were provided.");
 
-                    if (input == null)
-                        return null;
+                parameters.Add(value);
+            }
 
-                    return deserializedInput[inputPosition++].ToObject(p.ParameterType);
-                }).ToArray();
+            return parameters.ToArray();
         }
 
         private async Task<string> SerializeResult(object result)

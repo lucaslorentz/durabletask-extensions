@@ -4,9 +4,11 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.Serializing;
 using LLL.DurableTask.Core.Serializing;
 using LLL.DurableTask.Worker.Utils;
+using DUtils = DurableTask.Core.Common.Utils;
 
 namespace LLL.DurableTask.Worker.Orchestrations
 {
@@ -37,9 +39,18 @@ namespace LLL.DurableTask.Worker.Orchestrations
                 [typeof(OrchestrationGuidGenerator)] = () => new OrchestrationGuidGenerator(context.OrchestrationInstance.ExecutionId)
             });
 
-            var result = _methodInfo.Invoke(Instance, parameters);
-
-            return await SerializeResult(result);
+            string serializedResult;
+            try
+            {
+                var result = _methodInfo.Invoke(Instance, parameters);
+                serializedResult = await SerializeResult(result);
+            }
+            catch (Exception e) when (!DUtils.IsFatal(e) && !DUtils.IsExecutionAborting(e))
+            {
+                var details = DUtils.SerializeCause(e, _dataConverter);
+                throw new OrchestrationFailureException(e.Message, details);
+            }
+            return serializedResult;
         }
 
         public override string GetStatus()

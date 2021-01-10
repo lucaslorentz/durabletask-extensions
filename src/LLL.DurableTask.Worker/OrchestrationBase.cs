@@ -25,22 +25,22 @@ namespace LLL.DurableTask.Worker
         public override async Task<string> Execute(OrchestrationContext context, string input)
         {
             var parameter = DataConverter.Deserialize<TInput>(input);
-            string result;
 
+            string serializedResult;
             try
             {
                 context.MessageDataConverter = new TypelessJsonDataConverter();
                 context.ErrorDataConverter = new TypelessJsonDataConverter();
                 Context = context;
-                result = DataConverter.Serialize(await RunTask(parameter));
+                var result = await RunTask(parameter);
+                serializedResult = DataConverter.Serialize(result);
             }
             catch (Exception e) when (!DUtils.IsFatal(e) && !DUtils.IsExecutionAborting(e))
             {
                 var details = DUtils.SerializeCause(e, DataConverter);
                 throw new OrchestrationFailureException(e.Message, details);
             }
-
-            return result;
+            return serializedResult;
         }
 
         public override string GetStatus()
