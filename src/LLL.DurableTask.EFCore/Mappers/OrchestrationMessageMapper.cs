@@ -18,12 +18,16 @@ namespace LLL.DurableTask.EFCore.Mappers
         public OrchestrationMessage CreateOrchestrationMessage(
             TaskMessage message,
             int sequence,
-            string queue)
+            string orchestrationQueue,
+            string parentOrchestrationQueue)
         {
-            var executionStarted = message.Event as ExecutionStartedEvent;
-
-            if (executionStarted != null)
-                queue = QueueMapper.ToQueueName(executionStarted.Name, executionStarted.Version);
+            var queue = message.Event switch
+            {
+                ExecutionStartedEvent executionStarted => QueueMapper.ToQueueName(executionStarted.Name, executionStarted.Version),
+                SubOrchestrationInstanceCompletedEvent => parentOrchestrationQueue,
+                SubOrchestrationInstanceFailedEvent => parentOrchestrationQueue,
+                _ => orchestrationQueue
+            };
 
             return new OrchestrationMessage
             {

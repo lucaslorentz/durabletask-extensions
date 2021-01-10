@@ -59,7 +59,7 @@ namespace LLL.DurableTask.EFCore
                 await dbContext.Executions.AddAsync(execution);
 
                 var queueName = QueueMapper.ToQueueName(runtimeState.Name, runtimeState.Version);
-                var orchestrationWorkItem = _orchestrationMessageMapper.CreateOrchestrationMessage(creationMessage, 0, queueName);
+                var orchestrationWorkItem = _orchestrationMessageMapper.CreateOrchestrationMessage(creationMessage, 0, queueName, null);
                 await dbContext.OrchestrationMessages.AddAsync(orchestrationWorkItem);
 
                 await dbContext.SaveChangesAsync();
@@ -138,10 +138,15 @@ namespace LLL.DurableTask.EFCore
                     .Where(i => instancesIds.Contains(i.InstanceId))
                     .ToDictionaryAsync(i => i.InstanceId, i => i.LastQueueName);
 
+                var queuesNotFound = queueByInstanceId.Keys.Except(instancesIds).ToArray();
+                if (queuesNotFound.Length > 0)
+                    throw new Exception($"Queue not found for instances {string.Join(",", instancesIds)}");
+
                 var orchestrationMessage = messages
                     .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessage(
                         m, i,
-                        queueByInstanceId.TryGetValue(m.OrchestrationInstance.InstanceId, out var queue) ? queue : null))
+                        queueByInstanceId[m.OrchestrationInstance.InstanceId],
+                        null))
                     .ToArray();
 
                 await dbContext.OrchestrationMessages.AddRangeAsync(orchestrationMessage);
@@ -421,7 +426,7 @@ namespace LLL.DurableTask.EFCore
                 };
 
                 var queueName = QueueMapper.ToQueueName(lastExecution.Name, lastExecution.Version);
-                var orchestrationMessage = _orchestrationMessageMapper.CreateOrchestrationMessage(taskMessage, 0, queueName);
+                var orchestrationMessage = _orchestrationMessageMapper.CreateOrchestrationMessage(taskMessage, 0, queueName, null);
 
                 await dbContext.OrchestrationMessages.AddAsync(orchestrationMessage);
             }
