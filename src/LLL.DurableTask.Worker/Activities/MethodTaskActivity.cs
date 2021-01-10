@@ -69,7 +69,7 @@ namespace LLL.DurableTask.Worker.Orchestrations
         {
             if (result is Task task)
             {
-                if (task.GetType().IsGenericType)
+                if (_methodInfo.ReturnType.IsGenericType)
                 {
                     result = await (dynamic)task;
                 }
