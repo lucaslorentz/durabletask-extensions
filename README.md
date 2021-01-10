@@ -419,6 +419,11 @@ Examples:
 
 ![Diagram](readme/diagrams/architecture_4.png)
 
+## Build requirements
+
+- .NET 5 SDK
+- .NET 3.1 Runtime
+
 ## Sample
 
 Inside the [sample](samples) folder you will find an implementation of the classic book Flight, Car, Hotel with compensation problem.
