@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace HotelWorker.Activities
 {
     [Activity(Name = "BookHotel", Version = "v1")]
-    public class BookHotelActivity : DistributedTaskActivity<BookHotelInput, BookHotelResult>
+    public class BookHotelActivity : ActivityBase<BookHotelInput, BookHotelResult>
     {
         private readonly ILogger<BookHotelActivity> _logger;
 

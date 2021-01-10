@@ -10,9 +10,9 @@ using static OrchestrationWorker.Orchestrations.BookParallelOrchestration;
 namespace OrchestrationWorker.Orchestrations
 {
     [Orchestration(Name = "BookParallel", Version = "v1")]
-    public class BookParallelOrchestration : DistributedTaskOrchestration<BookParallelResult, BookParallelInput>
+    public class BookParallelOrchestration : OrchestrationBase<BookParallelResult, BookParallelInput>
     {
-        public override async Task<BookParallelResult> RunTask(OrchestrationContext context, BookParallelInput input)
+        public override async Task<BookParallelResult> RunTask(BookParallelInput input)
         {
             var compensations = new List<Func<Task>>();
 
@@ -21,8 +21,8 @@ namespace OrchestrationWorker.Orchestrations
                 var tasks = new List<Task>();
                 tasks.Add(new Func<Task>(async () =>
                 {
-                    var bookCarResult = await context.ScheduleTask<BookItemResult>("BookCar", "v1");
-                    compensations.Add(() => context.ScheduleTask<CancelItemResult>("CancelCar", "v1", new
+                    var bookCarResult = await Context.ScheduleTask<BookItemResult>("BookCar", "v1");
+                    compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelCar", "v1", new
                     {
                         BookingId = bookCarResult.BookingId
                     }));
@@ -30,8 +30,8 @@ namespace OrchestrationWorker.Orchestrations
 
                 tasks.Add(new Func<Task>(async () =>
                 {
-                    var bookHotelResult = await context.ScheduleTask<BookItemResult>("BookHotel", "v1");
-                    compensations.Add(() => context.ScheduleTask<CancelItemResult>("CancelHotel", "v1", new
+                    var bookHotelResult = await Context.ScheduleTask<BookItemResult>("BookHotel", "v1");
+                    compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelHotel", "v1", new
                     {
                         BookingId = bookHotelResult.BookingId
                     }));
@@ -39,8 +39,8 @@ namespace OrchestrationWorker.Orchestrations
 
                 tasks.Add(new Func<Task>(async () =>
                 {
-                    var bookFlightResult = await context.ScheduleTask<BookItemResult>("BookFlight", "v1");
-                    compensations.Add(() => context.ScheduleTask<CancelItemResult>("CancelFlight", "v1", new
+                    var bookFlightResult = await Context.ScheduleTask<BookItemResult>("BookFlight", "v1");
+                    compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelFlight", "v1", new
                     {
                         BookingId = bookFlightResult.BookingId
                     }));

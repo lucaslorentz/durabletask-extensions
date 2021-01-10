@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace HotelWorker.Activities
 {
     [Activity(Name = "CancelHotel", Version = "v1")]
-    public class CancelHotelActivity : DistributedTaskActivity<CancelHotelInput, CancelHotelResult>
+    public class CancelHotelActivity : ActivityBase<CancelHotelInput, CancelHotelResult>
     {
         private readonly ILogger<CancelHotelActivity> _logger;
 

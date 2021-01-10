@@ -20,16 +20,15 @@ using Spec.BPMN.MODEL;
 namespace BpmnWorker.Orchestrations
 {
     [Orchestration(Name = "BPMN")]
-    public class BPMNOrchestrator : DistributedTaskOrchestration<object, BPMNOrchestratorInput, JObject, object>
+    public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
     {
         private readonly IBPMNProvider _bpmnProvider;
         private readonly IScriptExecutor _scriptExecutor;
         private readonly ILogger<BPMNOrchestrator> _logger;
 
-        private OrchestrationContext _context;
         private TDefinitions _model;
+        private CancellationTokenSource _terminateCancellationTokenSource;
         private TaskCompletionSource<object> _terminateTaskCompletionSource;
-        private ConcurrentDictionary<string, TaskCompletionSource<JObject>> _eventsTaskCompletionSource;
         private ConcurrentBag<Func<Task>> _compensations;
         private ConcurrentDictionary<string, int> _nodeHits;
         private JObject _variables;
@@ -44,13 +43,12 @@ namespace BpmnWorker.Orchestrations
             _logger = logger;
         }
 
-        public override async Task<object> RunTask(OrchestrationContext context, BPMNOrchestratorInput input)
+        public override async Task<object> RunTask(BPMNOrchestratorInput input)
         {
-            _context = context;
             _model = await GetBpmnDefinition(input);
 
+            _terminateCancellationTokenSource = new CancellationTokenSource();
             _terminateTaskCompletionSource = new TaskCompletionSource<object>();
-            _eventsTaskCompletionSource = new ConcurrentDictionary<string, TaskCompletionSource<JObject>>();
             _compensations = new ConcurrentBag<Func<Task>>();
             _nodeHits = new ConcurrentDictionary<string, int>();
             _variables = new JObject();
@@ -63,6 +61,8 @@ namespace BpmnWorker.Orchestrations
                 _terminateTaskCompletionSource.Task,
                 VisitProcess(executableProcess)
             );
+
+            _terminateCancellationTokenSource.Cancel();
 
             return null;
         }
@@ -197,7 +197,7 @@ namespace BpmnWorker.Orchestrations
 
             var input = await PrepareInput(inputOutput);
 
-            var output = await _context.ScheduleTask<JToken>(name, version, input);
+            var output = await Context.ScheduleTask<JToken>(name, version, input);
 
             var compensationsBoundaryEvents = GetBoundaryEvents<TCompensateEventDefinition>(serviceTask);
             if (compensationsBoundaryEvents.Length != 0)
@@ -284,7 +284,7 @@ namespace BpmnWorker.Orchestrations
                 Variables = _variables
             };
 
-            var output = await _context.ScheduleTask<JToken>("Script", string.Empty, input);
+            var output = await Context.ScheduleTask<JToken>("Script", string.Empty, input);
 
             var resultVariable = scriptTask.AnyAttribute.FirstOrDefault(a => a.LocalName == "resultVariable")?.Value;
             if (resultVariable != null)
@@ -321,15 +321,9 @@ namespace BpmnWorker.Orchestrations
         {
             var messageRef = messageEventDefinition.MessageRef.ToString();
 
-            _context.SendEvent(_context.OrchestrationInstance, messageRef, null);
+            Context.SendEvent(Context.OrchestrationInstance, messageRef, null);
 
             await VisitFlowNodes(GetParallelOutgoingNodes(intermediateThrowEvent));
-        }
-
-        public override void OnEvent(OrchestrationContext context, string name, JObject input)
-        {
-            if (_eventsTaskCompletionSource.TryGetValue(name, out var tsc))
-                tsc.SetResult(input);
         }
 
         private async Task VisitIntermediateCatchEvent(TIntermediateCatchEvent intermediateCatchEvent)
@@ -355,7 +349,7 @@ namespace BpmnWorker.Orchestrations
             var messageRef = messageEventDefinition.MessageRef.ToString();
             _logger.LogWarning("Waiting for message {message}", messageRef);
 
-            var result = await _eventsTaskCompletionSource.GetOrAdd(messageRef, _ => new TaskCompletionSource<JObject>()).Task;
+            var result = await EventReceiver.WaitForEventAsync<JObject>(messageRef, _terminateCancellationTokenSource.Token);
             _logger.LogWarning("Received message {message}", messageRef);
 
             await VisitFlowNodes(GetParallelOutgoingNodes(intermediateCatchEvent));
@@ -369,7 +363,7 @@ namespace BpmnWorker.Orchestrations
             {
                 var fireAt = XmlConvert.ToDateTime(timerEventDefinition.TimeDate.Text.First(), XmlDateTimeSerializationMode.Local);
                 _logger.LogWarning("Waiting for timer {fireAt}", fireAt);
-                await _context.CreateTimer(fireAt, CancellationToken.None);
+                await Context.CreateTimer(fireAt, CancellationToken.None);
                 _logger.LogWarning("Received timer {fireAt}", fireAt);
 
                 await VisitFlowNodes(GetParallelOutgoingNodes(intermediateCatchEvent));
@@ -377,9 +371,9 @@ namespace BpmnWorker.Orchestrations
             else if (timerEventDefinition.TimeDuration != null)
             {
                 var duration = XmlConvert.ToTimeSpan(timerEventDefinition.TimeDuration.Text.First());
-                var fireAt = _context.CurrentUtcDateTime.Add(duration);
+                var fireAt = Context.CurrentUtcDateTime.Add(duration);
                 _logger.LogWarning("Waiting for timer {fireAt}", fireAt);
-                await _context.CreateTimer(fireAt, CancellationToken.None);
+                await Context.CreateTimer(fireAt, CancellationToken.None);
                 _logger.LogWarning("Received timer {fireAt}", fireAt);
 
                 await VisitFlowNodes(GetParallelOutgoingNodes(intermediateCatchEvent));

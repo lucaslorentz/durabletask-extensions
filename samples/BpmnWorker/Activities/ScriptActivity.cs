@@ -9,7 +9,7 @@ using Newtonsoft.Json.Linq;
 namespace BpmnWorker.Activities
 {
     [Activity(Name = "Script")]
-    public class ScriptActivity : DistributedAsyncTaskActivity<ScriptActivity.Input, object>
+    public class ScriptActivity : ActivityBase<ScriptActivity.Input, object>
     {
         private readonly IScriptExecutor _scriptExecutor;
         private readonly ILogger<ScriptActivity> _logger;

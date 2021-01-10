@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Serializing;
 using LLL.DurableTask.Core.Serializing;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace LLL.DurableTask.Worker.Orchestrations
@@ -33,27 +33,35 @@ namespace LLL.DurableTask.Worker.Orchestrations
 
         public override async Task<string> RunAsync(TaskContext context, string input)
         {
-            var parameters = PrepareParameters(input);
+            var parameters = PrepareParameters(input, new Dictionary<Type, Func<object>>
+            {
+                [typeof(TaskContext)] = () => context
+            });
 
             var result = _methodInfo.Invoke(Instance, parameters);
 
             return await SerializeResult(result);
         }
 
-        private object[] PrepareParameters(string input)
+        private object[] PrepareParameters(
+            string input,
+            Dictionary<Type, Func<object>> factories)
         {
-            var deserializedInput = JsonConvert.DeserializeObject<JToken[]>(input);
+            var deserializedInput = _dataConverter.Deserialize<JToken[]>(input);
+
+            var inputPosition = 0;
 
             return _methodInfo
                 .GetParameters()
                 .Select(p =>
                 {
-                    deserializedInput[p.Position].ToObject(p.ParameterType);
+                    if (factories.TryGetValue(p.ParameterType, out var factory))
+                        return factory();
 
                     if (input == null)
                         return null;
 
-                    return _dataConverter.Deserialize(input, p.ParameterType);
+                    return deserializedInput[inputPosition++].ToObject(p.ParameterType);
                 }).ToArray();
         }
 
@@ -61,14 +69,13 @@ namespace LLL.DurableTask.Worker.Orchestrations
         {
             if (result is Task task)
             {
-                await task;
-
                 if (task.GetType().IsGenericType)
                 {
-                    result = task.GetType().GetProperty("Result").GetValue(task);
+                    result = await (dynamic)task;
                 }
                 else
                 {
+                    await task;
                     result = null;
                 }
             }

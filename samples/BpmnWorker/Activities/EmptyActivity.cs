@@ -6,11 +6,11 @@ using LLL.DurableTask.Worker.Attributes;
 namespace BpmnWorker.Activities
 {
     [Activity(Name = "Empty")]
-    public class EmptyActivity : DistributedAsyncTaskActivity<object, object>
+    public class EmptyActivity : ActivityBase<object, object>
     {
-        protected override Task<object> ExecuteAsync(TaskContext context, object input)
+        protected override object Execute(TaskContext context, object input)
         {
-            return Task.FromResult(default(object));
+            return base.Execute(context, null);
         }
     }
 }

@@ -74,14 +74,13 @@ namespace LLL.DurableTask.Worker.Orchestrations
         {
             if (result is Task task)
             {
-                await task;
-
                 if (task.GetType().IsGenericType)
                 {
-                    result = task.GetType().GetProperty("Result").GetValue(task);
+                    result = await (dynamic)task;
                 }
                 else
                 {
+                    await task;
                     result = null;
                 }
             }

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace FlightWorker.Activities
 {
     [Activity(Name = "CancelFlight", Version = "v1")]
-    public class CancelFlightActivity : DistributedTaskActivity<CancelFlightInput, CancelFlightResult>
+    public class CancelFlightActivity : ActivityBase<CancelFlightInput, CancelFlightResult>
     {
         private readonly ILogger<CancelFlightActivity> _logger;
 

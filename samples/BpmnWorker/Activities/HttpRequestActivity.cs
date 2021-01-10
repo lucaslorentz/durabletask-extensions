@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 namespace BpmnWorker.Activities
 {
     [Activity(Name = "HttpRequest")]
-    public class HttpRequestActivity : DistributedAsyncTaskActivity<HttpRequestActivity.Input, HttpRequestActivity.Output>
+    public class HttpRequestActivity : ActivityBase<HttpRequestActivity.Input, HttpRequestActivity.Output>
     {
         protected override async Task<Output> ExecuteAsync(TaskContext context, Input input)
         {

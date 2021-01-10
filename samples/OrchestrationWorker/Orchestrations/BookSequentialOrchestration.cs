@@ -9,28 +9,28 @@ using static OrchestrationWorker.Orchestrations.BookSequentialOrchestration;
 namespace OrchestrationWorker.Orchestrations
 {
     [Orchestration(Name = "BookSequential", Version = "v1")]
-    public class BookSequentialOrchestration : DistributedTaskOrchestration<BookSequentialResult, BookSequentialInput>
+    public class BookSequentialOrchestration : OrchestrationBase<BookSequentialResult, BookSequentialInput>
     {
-        public override async Task<BookSequentialResult> RunTask(OrchestrationContext context, BookSequentialInput input)
+        public override async Task<BookSequentialResult> RunTask(BookSequentialInput input)
         {
             var compensations = new List<Func<Task>>();
 
             try
             {
-                var bookCarResult = await context.ScheduleTask<BookItemResult>("BookCar", "v1");
-                compensations.Add(() => context.ScheduleTask<CancelItemResult>("CancelCar", "v1", new
+                var bookCarResult = await Context.ScheduleTask<BookItemResult>("BookCar", "v1");
+                compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelCar", "v1", new
                 {
                     BookingId = bookCarResult.BookingId
                 }));
 
-                var bookHotelResult = await context.ScheduleTask<BookItemResult>("BookHotel", "v1");
-                compensations.Add(() => context.ScheduleTask<CancelItemResult>("CancelHotel", "v1", new
+                var bookHotelResult = await Context.ScheduleTask<BookItemResult>("BookHotel", "v1");
+                compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelHotel", "v1", new
                 {
                     BookingId = bookHotelResult.BookingId
                 }));
 
-                var bookFlightResult = await context.ScheduleTask<BookItemResult>("BookFlight", "v1");
-                compensations.Add(() => context.ScheduleTask<CancelItemResult>("CancelFlight", "v1", new
+                var bookFlightResult = await Context.ScheduleTask<BookItemResult>("BookFlight", "v1");
+                compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelFlight", "v1", new
                 {
                     BookingId = bookFlightResult.BookingId
                 }));

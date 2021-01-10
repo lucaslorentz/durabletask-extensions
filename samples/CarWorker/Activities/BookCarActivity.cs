@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace CarWorker.Activities
 {
     [Activity(Name = "BookCar", Version = "v1")]
-    public class BookCarActivity : DistributedTaskActivity<BookCarInput, BookCarResult>
+    public class BookCarActivity : ActivityBase<BookCarInput, BookCarResult>
     {
         private readonly ILogger<BookCarActivity> _logger;
 
