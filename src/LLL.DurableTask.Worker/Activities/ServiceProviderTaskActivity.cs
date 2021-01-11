@@ -16,9 +16,8 @@ namespace LLL.DurableTask.Worker.Activities
 
         public void Initialize(IServiceProvider serviceProvider)
         {
-            var instance = Factory(serviceProvider);
-
-            Instance = instance;
+            if (Instance == null)
+                Instance = Factory(serviceProvider);
         }
 
         public override string Run(TaskContext context, string input)

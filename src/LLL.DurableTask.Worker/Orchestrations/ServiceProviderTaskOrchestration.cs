@@ -16,9 +16,8 @@ namespace LLL.DurableTask.Worker.Orchestrations
 
         public void Initialize(IServiceProvider serviceProvider)
         {
-            var instance = Factory(serviceProvider);
-
-            Instance = instance;
+            if (Instance == null)
+                Instance = Factory(serviceProvider);
         }
 
         public override Task<string> Execute(OrchestrationContext context, string input)
