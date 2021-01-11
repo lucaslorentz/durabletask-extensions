@@ -153,7 +153,14 @@ export class ApiClient {
       `/v1/orchestrations/${encodeURIComponent(
         instanceId
       )}/raiseevent/${eventName}`,
-      eventData
+      // Manually stringify json because of:
+      // https://github.com/axios/axios/issues/2613
+      JSON.stringify(eventData),
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
   }
 }
