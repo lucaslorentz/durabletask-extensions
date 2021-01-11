@@ -13,25 +13,26 @@ namespace LLL.DurableTask.Worker
     {
         public DataConverter DataConverter { get; }
         public OrchestrationContext Context { get; private set; }
-        public OrchestrationEventReceiver EventReceiver { get; }
+        public OrchestrationEventReceiver EventReceiver { get; private set; }
         public OrchestrationGuidGenerator GuidGenerator { get; }
 
         public OrchestrationBase()
         {
             DataConverter = new TypelessJsonDataConverter();
-            EventReceiver = new OrchestrationEventReceiver();
         }
 
         public override async Task<string> Execute(OrchestrationContext context, string input)
         {
+            context.MessageDataConverter = new TypelessJsonDataConverter();
+            context.ErrorDataConverter = new TypelessJsonDataConverter();
+            Context = context;
+            EventReceiver = new OrchestrationEventReceiver(context);
+
             var parameter = DataConverter.Deserialize<TInput>(input);
 
             string serializedResult;
             try
             {
-                context.MessageDataConverter = new TypelessJsonDataConverter();
-                context.ErrorDataConverter = new TypelessJsonDataConverter();
-                Context = context;
                 var result = await RunTask(parameter);
                 serializedResult = DataConverter.Serialize(result);
             }

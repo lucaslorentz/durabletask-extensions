@@ -16,7 +16,7 @@ namespace LLL.DurableTask.Worker.Orchestrations
     {
         private readonly MethodInfo _methodInfo;
         private readonly DataConverter _dataConverter;
-        private readonly OrchestrationEventReceiver _eventReceiver;
+        private OrchestrationEventReceiver _eventReceiver;
 
         public MethodTaskOrchestration(
             object instance,
@@ -25,7 +25,6 @@ namespace LLL.DurableTask.Worker.Orchestrations
             Instance = instance;
             _methodInfo = methodInfo;
             _dataConverter = new TypelessJsonDataConverter();
-            _eventReceiver = new OrchestrationEventReceiver();
         }
 
         public object Instance { get; }
@@ -35,7 +34,7 @@ namespace LLL.DurableTask.Worker.Orchestrations
             var parameters = PrepareParameters(input, new Dictionary<Type, Func<object>>
             {
                 [typeof(OrchestrationContext)] = () => context,
-                [typeof(OrchestrationEventReceiver)] = () => _eventReceiver,
+                [typeof(OrchestrationEventReceiver)] = () => _eventReceiver = new OrchestrationEventReceiver(context),
                 [typeof(OrchestrationGuidGenerator)] = () => new OrchestrationGuidGenerator(context.OrchestrationInstance.ExecutionId)
             });
 
@@ -60,7 +59,7 @@ namespace LLL.DurableTask.Worker.Orchestrations
 
         public override void RaiseEvent(OrchestrationContext context, string name, string input)
         {
-            _eventReceiver.RaiseEvent(name, input);
+            _eventReceiver?.RaiseEvent(name, input);
         }
 
         private object[] PrepareParameters(

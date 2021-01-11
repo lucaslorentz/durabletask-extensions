@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using DurableTask.Core.Serializing;
 using LLL.DurableTask.Core.Serializing;
 
@@ -10,53 +10,83 @@ namespace LLL.DurableTask.Worker.Utils
     public class OrchestrationEventReceiver
     {
         private readonly DataConverter _dataConverter;
-        private readonly ConcurrentDictionary<string, Action<string>> _callbacks;
+        private readonly OrchestrationContext _orchestrationContext;
 
-        public OrchestrationEventReceiver()
-            : this(new TypelessJsonDataConverter())
+        public event Action<string, string> Event;
+
+        public OrchestrationEventReceiver(OrchestrationContext orchestrationContext)
+            : this(orchestrationContext, new TypelessJsonDataConverter())
         {
         }
 
-        public OrchestrationEventReceiver(DataConverter dataConverter)
+        public OrchestrationEventReceiver(
+            OrchestrationContext orchestrationContext,
+            DataConverter dataConverter)
         {
             _dataConverter = dataConverter;
-            _callbacks = new ConcurrentDictionary<string, Action<string>>();
-        }
-
-        public async Task<T> WaitForEventAsync<T>(string eventType, CancellationToken cancellationToken = default)
-        {
-            var taskCompletionSource = new TaskCompletionSource<string>();
-
-            _callbacks.AddOrUpdate(eventType,
-                _ => Callback,
-                (_, existingCallback) => existingCallback + Callback);
-
-            using (var registration = cancellationToken.Register(Cancel))
-            {
-                var input = await taskCompletionSource.Task;
-                return _dataConverter.Deserialize<T>(input);
-            }
-
-            void Callback(string input)
-            {
-                taskCompletionSource.TrySetResult(input);
-            }
-            void Cancel()
-            {
-                _callbacks.AddOrUpdate(eventType,
-                    _ => null,
-                    (_, existingCallback) => existingCallback - Callback);
-
-                taskCompletionSource.TrySetCanceled(cancellationToken);
-            }
+            _orchestrationContext = orchestrationContext;
         }
 
         public void RaiseEvent(string eventType, string input)
         {
-            if (_callbacks.TryRemove(eventType, out var callback))
+            Event?.Invoke(eventType, input);
+        }
+
+        public async Task<T> WaitForEventAsync<T>(
+            string eventType,
+            TimeSpan timeout,
+            T defaultValue,
+            CancellationToken cancellationToken = default)
+        {
+            using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
-                callback(input);
+                var timerTask = _orchestrationContext.CreateTimer<object>(_orchestrationContext.CurrentUtcDateTime.Add(timeout), null, cts.Token);
+                var eventTask = WaitForEventAsync<T>(eventType, cts.Token);
+                var winningTask = await Task.WhenAny(timerTask, eventTask);
+                cts.Cancel();
+                return timerTask == winningTask
+                    ? defaultValue
+                    : await eventTask;
             }
+        }
+
+        public async Task<T> WaitForEventAsync<T>(string eventType, CancellationToken cancellationToken = default)
+        {
+            var taskCompletionSource = new TaskCompletionSource<T>();
+
+            using (cancellationToken.Register(() => taskCompletionSource.TrySetCanceled(cancellationToken)))
+            {
+                using (AddListener<T>(eventType, taskCompletionSource.SetResult, taskCompletionSource.SetException))
+                {
+                    return await taskCompletionSource.Task;
+                }
+            }
+        }
+
+        public OrchestrationEventListener AddListener<T>(
+            string eventType,
+            Action<T> handler,
+            Action<Exception> exceptionHandler = null)
+        {
+            return new OrchestrationEventListener(this, (type, input) =>
+            {
+                if (type == eventType)
+                {
+                    try
+                    {
+                        handler(_dataConverter.Deserialize<T>(input));
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptionHandler?.Invoke(ex);
+                    }
+                }
+            });
+        }
+
+        public OrchestrationEventListener AddListener(Action<string, string> handler)
+        {
+            return new OrchestrationEventListener(this, handler);
         }
     }
 }
