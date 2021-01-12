@@ -59,7 +59,24 @@ export function AuthProvider(props: Props) {
     return new UserManager(settings);
   }, [configuration]);
 
-  const [loaded, setLoaded] = useState(!userManager);
+  const [shouldRender, setShouldRender] = useState(!userManager);
+
+  // Listen to user changes
+  useLayoutEffect(() => {
+    if (!userManager) return;
+
+    const unsetUser = () => setUser(undefined);
+
+    userManager.events.addUserLoaded(setUser);
+    userManager.events.addUserUnloaded(unsetUser);
+    userManager.events.addAccessTokenExpired(unsetUser);
+
+    return () => {
+      userManager.events.removeUserLoaded(setUser);
+      userManager.events.removeUserUnloaded(unsetUser);
+      userManager.events.removeAccessTokenExpired(unsetUser);
+    };
+  }, [userManager]);
 
   // Handle callbacks and load user
   useLayoutEffect(() => {
@@ -70,31 +87,33 @@ export function AuthProvider(props: Props) {
         window.location.search?.indexOf("session_state") > -1 ||
         window.location.search?.indexOf("error_description") > -1
       ) {
-        const user = await userManager.signinRedirectCallback();
-        history.replace(user.state);
-        setUser(user);
+        if (window.self !== window.top) {
+          await userManager.signinSilentCallback();
+        } else {
+          const user = await userManager.signinRedirectCallback();
+          if (user.state) {
+            history.replace(user.state);
+          }
+          setUser(user);
+          setShouldRender(true);
+        }
       } else {
         let user = await userManager.getUser();
-        if (user?.expired) {
+        if (user == null || user.expired) {
+          try {
+            user = await userManager.signinSilent();
+          } catch (error) {
+            await userManager.removeUser();
+            user = null;
+          }
+        }
+        if (user != null && user.expired) {
           await userManager.removeUser();
           user = null;
         }
         setUser(user ?? undefined);
+        setShouldRender(true);
       }
-
-      setLoaded(true);
-
-      const unsetUser = () => setUser(undefined);
-
-      userManager.events.addUserLoaded(setUser);
-      userManager.events.addUserUnloaded(unsetUser);
-      userManager.events.addAccessTokenExpired(unsetUser);
-
-      return () => {
-        userManager.events.removeUserLoaded(setUser);
-        userManager.events.removeUserUnloaded(unsetUser);
-        userManager.events.removeAccessTokenExpired(unsetUser);
-      };
     })();
   }, [userManager, history]);
 
@@ -122,7 +141,7 @@ export function AuthProvider(props: Props) {
     };
   }, [userManager, user, history]);
 
-  if (!loaded) return null;
+  if (!shouldRender) return null;
 
   return <authContext.Provider value={auth}>{children}</authContext.Provider>;
 }
