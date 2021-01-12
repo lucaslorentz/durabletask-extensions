@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -66,18 +65,31 @@ namespace LLL.DurableTask.Worker.Orchestrations
             string input,
             Dictionary<Type, Func<object>> factories)
         {
-            return _methodInfo
-                .GetParameters()
-                .Select(p =>
+            var parameters = new List<object>();
+
+            foreach (var p in _methodInfo.GetParameters())
+            {
+                object value;
+
+                if (factories.TryGetValue(p.ParameterType, out var factory))
                 {
-                    if (factories.TryGetValue(p.ParameterType, out var factory))
-                        return factory();
+                    value = factory();
+                }
+                else if (input != null)
+                {
+                    value = _dataConverter.Deserialize(input, p.ParameterType);
+                }
+                else if (p.HasDefaultValue)
+                {
+                    value = p.DefaultValue;
+                }
+                else
+                    throw new Exception($"Orchestration input was not provided.");
 
-                    if (input == null)
-                        return null;
+                parameters.Add(value);
+            }
 
-                    return _dataConverter.Deserialize(input, p.ParameterType);
-                }).ToArray();
+            return parameters.ToArray();
         }
 
         private async Task<string> SerializeResult(object result)
