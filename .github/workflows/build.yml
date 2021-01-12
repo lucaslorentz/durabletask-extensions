@@ -1,4 +1,4 @@
-name: .NET Core
+name: CI
 on:
   push:
 env:
@@ -35,8 +35,38 @@ jobs:
         run: dotnet build -c Release --no-restore
       - name: Docker Compose Up
         run: docker-compose up -d
+      - name: Install Minicover
+        run: dotnet tool install -g minicover
+      - name: Instrument
+        run: |
+          minicover instrument \
+            --assemblies "test/**.dll" \
+            --exclude-sources "**/obj/**.cs" \
+            --exclude-sources "**/Migrations/**"
       - name: Test
-        run: dotnet test -c Release
+        run: dotnet test -c Release --no-build
+      - name: Report coverage
+        run: |
+          minicover report \
+            --threshold 70
+
+          last_commit_message=$(git log -1 --pretty=format:"%s")
+          last_commit_author_name=$(git log -1 --pretty=format:"%an")
+          last_commit_author_email=$(git log -1 --pretty=format:"%ae")
+
+          minicover coverallsreport \
+            --service-name "github" \
+            --repo-token "$GITHUB_TOKEN" \
+            --service-job-id "$GITHUB_RUN_ID" \
+            --commit "$GITHUB_SHA" \
+            --commit-message "$last_commit_message" \
+            --commit-author-name "$last_commit_author_name" \
+            --commit-author-email "$last_commit_author_email" \
+            --branch "$GITHUB_REF"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Uninstrument
+        run: minicover uninstrument
       - name: Pack
         run: |
           export Version=0.0.1-ci-$GITHUB_RUN_ID

@@ -1,8 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace LLL.DurableTask.EFCore.SqlServer
 {
+    [ExcludeFromCodeCoverage]
     public class OrchestrationDesignTimeDbContextFactory : IDesignTimeDbContextFactory<OrchestrationDbContext>
     {
         public OrchestrationDbContext CreateDbContext(string[] args)
