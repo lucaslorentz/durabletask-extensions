@@ -13,7 +13,7 @@ namespace LLL.DurableTask.Worker
         public DataConverter DataConverter { get; }
         public OrchestrationContext Context { get; private set; }
         public OrchestrationEventReceiver EventReceiver { get; private set; }
-        public OrchestrationGuidGenerator GuidGenerator { get; }
+        public OrchestrationGuidGenerator GuidGenerator { get; private set; }
 
         public OrchestrationBase()
         {
@@ -26,6 +26,7 @@ namespace LLL.DurableTask.Worker
             context.ErrorDataConverter = new TypelessJsonDataConverter();
             Context = context;
             EventReceiver = new OrchestrationEventReceiver(context);
+            GuidGenerator = new OrchestrationGuidGenerator(context.OrchestrationInstance.ExecutionId);
 
             var parameter = DataConverter.Deserialize<TInput>(input);
 
