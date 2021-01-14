@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using LLL.DurableTask.Core;
+using LLL.DurableTask.EFCore.Extensions;
 using LLL.DurableTask.EFCore.Mappers;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
@@ -58,8 +59,16 @@ namespace LLL.DurableTask.EFCore
                 var execution = _executionMapper.CreateExecution(runtimeState);
                 await dbContext.Executions.AddAsync(execution);
 
-                var queueName = QueueMapper.ToQueueName(runtimeState.Name, runtimeState.Version);
-                var orchestrationWorkItem = _orchestrationMessageMapper.CreateOrchestrationMessage(creationMessage, 0, queueName, null);
+                var knownQueues = new Dictionary<string, string>
+                {
+                    [instance.InstanceId] = QueueMapper.ToQueueName(runtimeState.Name, runtimeState.Version)
+                };
+                var orchestrationWorkItem = await _orchestrationMessageMapper.CreateOrchestrationMessageAsync(
+                    creationMessage,
+                    0,
+                    dbContext,
+                    knownQueues
+                );
                 await dbContext.OrchestrationMessages.AddAsync(orchestrationWorkItem);
 
                 await dbContext.SaveChangesAsync();
@@ -132,22 +141,9 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
-                var instancesIds = messages.Select(m => m.OrchestrationInstance.InstanceId).ToArray();
-
-                var queueByInstanceId = await dbContext.Instances
-                    .Where(i => instancesIds.Contains(i.InstanceId))
-                    .ToDictionaryAsync(i => i.InstanceId, i => i.LastQueueName);
-
-                var queuesNotFound = queueByInstanceId.Keys.Except(instancesIds).ToArray();
-                if (queuesNotFound.Length > 0)
-                    throw new Exception($"Queue not found for instances {string.Join(",", instancesIds)}");
-
-                var orchestrationMessage = messages
-                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessage(
-                        m, i,
-                        queueByInstanceId[m.OrchestrationInstance.InstanceId],
-                        null))
-                    .ToArray();
+                var orchestrationMessage = await messages
+                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessageAsync(m, i, dbContext))
+                    .WhenAllSerial();
 
                 await dbContext.OrchestrationMessages.AddRangeAsync(orchestrationMessage);
 
@@ -424,9 +420,12 @@ namespace LLL.DurableTask.EFCore
                     OrchestrationInstance = orchestrationInstance,
                     Event = new GenericEvent(-1, reason)
                 };
-
-                var queueName = QueueMapper.ToQueueName(lastExecution.Name, lastExecution.Version);
-                var orchestrationMessage = _orchestrationMessageMapper.CreateOrchestrationMessage(taskMessage, 0, queueName, null);
+                
+                var knownQueues = new Dictionary<string, string>
+                {
+                    [lastExecution.InstanceId] = QueueMapper.ToQueueName(lastExecution.Name, lastExecution.Version)
+                };
+                var orchestrationMessage = await _orchestrationMessageMapper.CreateOrchestrationMessageAsync(taskMessage, 0, dbContext, knownQueues);
 
                 await dbContext.OrchestrationMessages.AddAsync(orchestrationMessage);
             }

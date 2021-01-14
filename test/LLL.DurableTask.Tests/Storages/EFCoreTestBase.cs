@@ -3,8 +3,11 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
 using LLL.DurableTask.EFCore;
+using LLL.DurableTask.Tests.Storage.Orchestrations;
 using LLL.DurableTask.Tests.Utils;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -12,8 +15,11 @@ namespace LLL.DurableTask.Tests.Storages
 {
     public abstract class EFCoreTestBase : StorageTestBase
     {
+        private readonly ITestOutputHelper _output;
+
         protected EFCoreTestBase(ITestOutputHelper output) : base(output)
         {
+            _output = output;
         }
 
         [SkippableFact]
@@ -108,6 +114,50 @@ namespace LLL.DurableTask.Tests.Storages
             instance9.Should().NotBeNull();
             instance9.InstanceId.Should().Be("i9");
             instanceNull.Should().BeNull();
+        }
+
+        [Trait("Category", "Integration")]
+        [SkippableFact]
+        public async Task EventBetweenWorkers_ShouldBeReceived()
+        {
+            using var secondHost = await Host.CreateDefaultBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddFilter(l => l >= LogLevel.Warning).AddXUnit(_output);
+                })
+                .ConfigureServices(services =>
+                {
+                    ConfigureStorage(services);
+
+                    services.AddDurableTaskClient();
+
+                    services.AddDurableTaskWorker(builder =>
+                    {
+                        builder.AddOrchestration<SendEventOrchestration>(SendEventOrchestration.Name, SendEventOrchestration.Version);
+                    });
+                }).StartAsync();
+
+            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+
+            var eventData = Guid.NewGuid();
+
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(WaitForEventOrchestration.Name, WaitForEventOrchestration.Version, null);
+
+            await taskHubClient.CreateOrchestrationInstanceAsync(SendEventOrchestration.Name, SendEventOrchestration.Version, new SendEventOrchestration.Input
+            {
+                TargetInstanceId = instance.InstanceId,
+                EventName = "SetResult",
+                EventInput = eventData
+            });
+
+            var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
+
+            state.Should().NotBeNull();
+            state.Output.Should().Be($"\"{eventData}\"");
+            state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
+
+            await secondHost.StopAsync();
+            await secondHost.WaitForShutdownAsync();
         }
     }
 }

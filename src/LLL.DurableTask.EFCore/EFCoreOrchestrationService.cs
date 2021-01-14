@@ -7,6 +7,7 @@ using DurableTask.Core;
 using DurableTask.Core.History;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
+using LLL.DurableTask.EFCore.Extensions;
 using LLL.DurableTask.EFCore.Mappers;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
@@ -348,22 +349,27 @@ namespace LLL.DurableTask.EFCore
                 }
 
                 var orchestrationQueueName = QueueMapper.ToQueueName(orchestrationState.Name, orchestrationState.Version);
-                var parentOrchestrationQueueName = orchestrationState.ParentInstance != null
-                    ? QueueMapper.ToQueueName(orchestrationState.ParentInstance.Name, orchestrationState.ParentInstance.Version)
-                    : null;
+
+                var knownQueues = new Dictionary<string, string>
+                {
+                    [orchestrationState.OrchestrationInstance.InstanceId] = orchestrationQueueName
+                };
+
+                if (orchestrationState.ParentInstance != null)
+                    knownQueues[orchestrationState.ParentInstance.OrchestrationInstance.InstanceId] = QueueMapper.ToQueueName(orchestrationState.ParentInstance.Name, orchestrationState.ParentInstance.Version);
 
                 // Write messages
                 var activityMessages = outboundMessages
                     .Select(m => _activityMessageMapper.CreateActivityMessage(m, orchestrationQueueName))
                     .ToArray();
-                var orchestatorMessages = orchestratorMessages
-                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessage(m, i, orchestrationQueueName, parentOrchestrationQueueName))
-                    .ToArray();
-                var timerOrchestrationMessages = timerMessages
-                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessage(m, i, orchestrationQueueName, parentOrchestrationQueueName))
-                    .ToArray();
+                var orchestatorMessages = await orchestratorMessages
+                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessageAsync(m, i, dbContext, knownQueues))
+                    .WhenAllSerial();
+                var timerOrchestrationMessages = await timerMessages
+                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessageAsync(m, i, dbContext, knownQueues))
+                    .WhenAllSerial();
                 var continuedAsNewOrchestrationMessage = continuedAsNewMessage != null
-                    ? _orchestrationMessageMapper.CreateOrchestrationMessage(continuedAsNewMessage, 0, orchestrationQueueName, parentOrchestrationQueueName)
+                    ? await _orchestrationMessageMapper.CreateOrchestrationMessageAsync(continuedAsNewMessage, 0, dbContext, knownQueues)
                     : null;
 
                 await dbContext.ActivityMessages.AddRangeAsync(activityMessages);
@@ -409,8 +415,13 @@ namespace LLL.DurableTask.EFCore
                 var dbWorkItem = await dbContext.ActivityMessages
                     .FirstAsync(w => w.Id == id && w.LockId == lockId);
 
-                var orchestrationMessage = _orchestrationMessageMapper
-                    .CreateOrchestrationMessage(responseMessage, 0, orchestrationQueue, null);
+                var knownQueues = new Dictionary<string, string>
+                {
+                    [workItem.TaskMessage.OrchestrationInstance.InstanceId] = orchestrationQueue
+                };
+
+                var orchestrationMessage = await _orchestrationMessageMapper
+                    .CreateOrchestrationMessageAsync(responseMessage, 0, dbContext, knownQueues);
 
                 dbContext.ActivityMessages.Remove(dbWorkItem);
 

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using LLL.DurableTask.EFCore.Entities;
@@ -15,19 +17,21 @@ namespace LLL.DurableTask.EFCore.Mappers
             _options = options.Value;
         }
 
-        public OrchestrationMessage CreateOrchestrationMessage(
+        public async Task<OrchestrationMessage> CreateOrchestrationMessageAsync(
             TaskMessage message,
             int sequence,
-            string orchestrationQueue,
-            string parentOrchestrationQueue)
+            OrchestrationDbContext context,
+            IDictionary<string, string> knownQueues = null)
         {
-            var queue = message.Event switch
+            if (knownQueues == null || !knownQueues.TryGetValue(message.OrchestrationInstance.InstanceId, out var queue))
             {
-                ExecutionStartedEvent executionStarted => QueueMapper.ToQueueName(executionStarted.Name, executionStarted.Version),
-                SubOrchestrationInstanceCompletedEvent => parentOrchestrationQueue,
-                SubOrchestrationInstanceFailedEvent => parentOrchestrationQueue,
-                _ => orchestrationQueue
-            };
+                var instance = await context.Instances.FindAsync(message.OrchestrationInstance.InstanceId);
+
+                if (instance == null)
+                    throw new Exception($"Instance {message.OrchestrationInstance.InstanceId} not found");
+
+                queue = instance.LastQueueName;
+            }
 
             return new OrchestrationMessage
             {

@@ -64,10 +64,13 @@ namespace LLL.DurableTask.EFCore
             CancellationToken cancellationToken = default)
         {
             var dbWorkItems = await dbContext.OrchestrationMessages
-                .Where(w => w.Instance.InstanceId == Instance.InstanceId && w.Instance.LockId == Instance.LockId)
-                .Where(w => w.AvailableAt <= DateTime.UtcNow)
+                .Where(w => w.AvailableAt <= DateTime.UtcNow
+                    && w.Queue == Instance.LastQueueName)
+                .Where(w => w.Instance.InstanceId == Instance.InstanceId
+                    && w.Instance.LockId == Instance.LockId)
                 .Where(w => !Messages.Contains(w))
-                .OrderBy(w => w.AvailableAt).ThenBy(w => w.SequenceNumber)
+                .OrderBy(w => w.AvailableAt)
+                .ThenBy(w => w.SequenceNumber)
                 .AsNoTracking()
                 .ToArrayAsync(cancellationToken);
 
