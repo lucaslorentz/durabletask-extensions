@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
@@ -16,11 +17,11 @@ namespace CarWorker.Activities
             _logger = logger;
         }
 
-        protected override CancelCarResult Execute(TaskContext context, CancelCarInput input)
+        public override Task<CancelCarResult> ExecuteAsync(CancelCarInput input)
         {
             _logger.LogInformation("Canceling car {bookingId}", input.BookingId);
 
-            return new CancelCarResult();
+            return Task.FromResult(new CancelCarResult());
         }
     }
 

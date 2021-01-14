@@ -25,9 +25,9 @@ namespace LLL.DurableTask.Worker.Activities
             return Instance.Run(context, input);
         }
 
-        public override Task<string> RunAsync(TaskContext context, string input)
+        public override async Task<string> RunAsync(TaskContext context, string input)
         {
-            return Instance.RunAsync(context, input);
+            return await Instance.RunAsync(context, input);
         }
     }
 }

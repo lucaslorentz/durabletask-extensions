@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LLL.DurableTask.Worker.Utils
+namespace LLL.DurableTask.Worker
 {
     public class OrchestrationEventListener : IDisposable
     {

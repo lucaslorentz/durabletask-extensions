@@ -8,9 +8,9 @@ namespace BpmnWorker.Activities
     [Activity(Name = "Empty")]
     public class EmptyActivity : ActivityBase<object, object>
     {
-        protected override object Execute(TaskContext context, object input)
+        public override Task<object> ExecuteAsync(object input)
         {
-            return base.Execute(context, null);
+            return Task.FromResult(default(object));
         }
     }
 }

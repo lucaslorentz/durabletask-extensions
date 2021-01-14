@@ -2,17 +2,18 @@ using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
+using LLL.DurableTask.Tests.Worker.TestHelpers;
 using LLL.DurableTask.Worker.Attributes;
 using LLL.DurableTask.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace LLL.DurableTask.Tests.Worker
+namespace LLL.DurableTask.Tests.Worker.ActivityMethod
 {
-    public class InjectionOrchestrationMethodTests : WorkerTestBase
+    public class ConstructorInjectionTests : WorkerTestBase
     {
-        public InjectionOrchestrationMethodTests(ITestOutputHelper output)
+        public ConstructorInjectionTests(ITestOutputHelper output)
             : base(output)
         {
         }
@@ -30,15 +31,19 @@ namespace LLL.DurableTask.Tests.Worker
         {
             base.ConigureWorker(builder);
 
-            builder.AddFromType(typeof(TestOrchestration));
+            builder.AddFromType(typeof(InvokeActivityOrchestration));
+            builder.AddFromType(typeof(Activities));
         }
 
         [Fact]
-        public async Task MethodOrchestrationConstructorDependencies_ShouldHaveDependenciesInjectedAsync()
+        public async Task ActivityMethod_ShouldInjectConstructorDependencies()
         {
             var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
 
-            var instance = await taskHubClient.CreateOrchestrationInstanceAsync("Test", "", null);
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync("InvokeActivity", "", null, new
+            {
+                Name = "Test"
+            });
 
             var result = await taskHubClient.WaitForOrchestrationAsync(instance, TimeSpan.FromSeconds(5));
 
@@ -49,13 +54,13 @@ namespace LLL.DurableTask.Tests.Worker
         public class ScopedClass { }
         public class TransientClass { }
 
-        public class TestOrchestration
+        public class Activities
         {
             private readonly SingletonClass _singleton;
             private readonly ScopedClass _scoped;
             private readonly TransientClass _transient;
 
-            public TestOrchestration(
+            public Activities(
                 SingletonClass singleton,
                 ScopedClass scoped,
                 TransientClass transient)
@@ -65,7 +70,7 @@ namespace LLL.DurableTask.Tests.Worker
                 _transient = transient;
             }
 
-            [Orchestration(Name = "Test")]
+            [Activity(Name = "Test")]
             public Task<bool> Run()
             {
                 return Task.FromResult(_singleton != null && _scoped != null && _transient != null);

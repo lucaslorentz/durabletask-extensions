@@ -12,7 +12,7 @@ namespace OrchestrationWorker.Orchestrations
     [Orchestration(Name = "BookParallel", Version = "v1")]
     public class BookParallelOrchestration : OrchestrationBase<BookParallelResult, BookParallelInput>
     {
-        public override async Task<BookParallelResult> RunTask(BookParallelInput input)
+        public override async Task<BookParallelResult> Execute(BookParallelInput input)
         {
             var compensations = new List<Func<Task>>();
 

@@ -1,5 +1,5 @@
 ﻿using System;
-using DurableTask.Core;
+using System.Threading.Tasks;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
 using Microsoft.Extensions.Logging;
@@ -16,16 +16,16 @@ namespace FlightWorker.Activities
             _logger = logger;
         }
 
-        protected override BookFlightResult Execute(TaskContext context, BookFlightInput input)
+        public override Task<BookFlightResult> ExecuteAsync(BookFlightInput input)
         {
             var bookingId = Guid.NewGuid();
 
             _logger.LogInformation("Booking Flight {bookingId}", bookingId);
 
-            return new BookFlightResult
+            return Task.FromResult(new BookFlightResult
             {
                 BookingId = bookingId
-            };
+            });
         }
     }
 

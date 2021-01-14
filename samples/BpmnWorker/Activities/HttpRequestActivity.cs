@@ -14,7 +14,7 @@ namespace BpmnWorker.Activities
     [Activity(Name = "HttpRequest")]
     public class HttpRequestActivity : ActivityBase<HttpRequestActivity.Input, HttpRequestActivity.Output>
     {
-        protected override async Task<Output> ExecuteAsync(TaskContext context, Input input)
+        public override async Task<Output> ExecuteAsync(Input input)
         {
             var httpRequest = new HttpRequestMessage
             {

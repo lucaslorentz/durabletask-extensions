@@ -43,7 +43,7 @@ namespace BpmnWorker.Orchestrations
             _logger = logger;
         }
 
-        public override async Task<object> RunTask(BPMNOrchestratorInput input)
+        public override async Task<object> Execute(BPMNOrchestratorInput input)
         {
             _model = await GetBpmnDefinition(input);
 

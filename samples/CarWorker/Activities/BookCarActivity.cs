@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
@@ -16,16 +17,16 @@ namespace CarWorker.Activities
             _logger = logger;
         }
 
-        protected override BookCarResult Execute(TaskContext context, BookCarInput input)
+        public override Task<BookCarResult> ExecuteAsync(BookCarInput input)
         {
             var bookingId = Guid.NewGuid();
 
             _logger.LogInformation("Booking car {bookingId}", bookingId);
 
-            return new BookCarResult
+            return Task.FromResult(new BookCarResult
             {
                 BookingId = bookingId
-            };
+            });
         }
     }
 

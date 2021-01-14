@@ -22,7 +22,7 @@ namespace BpmnWorker.Activities
             _logger = logger;
         }
 
-        protected override async Task<object> ExecuteAsync(TaskContext context, Input input)
+        public override async Task<object> ExecuteAsync(Input input)
         {
             _logger.LogWarning("Executing script {format}", input.ScriptFormat);
 

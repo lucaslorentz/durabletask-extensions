@@ -11,7 +11,7 @@ namespace OrchestrationWorker.Orchestrations
     [Orchestration(Name = "BookSequential", Version = "v1")]
     public class BookSequentialOrchestration : OrchestrationBase<BookSequentialResult, BookSequentialInput>
     {
-        public override async Task<BookSequentialResult> RunTask(BookSequentialInput input)
+        public override async Task<BookSequentialResult> Execute(BookSequentialInput input)
         {
             var compensations = new List<Func<Task>>();
 

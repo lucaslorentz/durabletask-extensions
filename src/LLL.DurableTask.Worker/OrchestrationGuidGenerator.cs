@@ -1,6 +1,7 @@
 ﻿using System;
+using LLL.DurableTask.Worker.Utils;
 
-namespace LLL.DurableTask.Worker.Utils
+namespace LLL.DurableTask.Worker
 {
     public class OrchestrationGuidGenerator
     {

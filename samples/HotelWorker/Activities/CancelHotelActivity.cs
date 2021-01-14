@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
@@ -16,11 +17,11 @@ namespace HotelWorker.Activities
             _logger = logger;
         }
 
-        protected override CancelHotelResult Execute(TaskContext context, CancelHotelInput input)
+        public override Task<CancelHotelResult> ExecuteAsync(CancelHotelInput input)
         {
             _logger.LogInformation("Canceling Hotel {bookingId}", input.BookingId);
 
-            return new CancelHotelResult();
+            return Task.FromResult(new CancelHotelResult());
         }
     }
 

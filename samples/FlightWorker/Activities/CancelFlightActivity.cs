@@ -1,5 +1,5 @@
 ﻿using System;
-using DurableTask.Core;
+using System.Threading.Tasks;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
 using Microsoft.Extensions.Logging;
@@ -16,11 +16,11 @@ namespace FlightWorker.Activities
             _logger = logger;
         }
 
-        protected override CancelFlightResult Execute(TaskContext context, CancelFlightInput input)
+        public override Task<CancelFlightResult> ExecuteAsync(CancelFlightInput input)
         {
             _logger.LogInformation("Canceling Flight {bookingId}", input.BookingId);
 
-            return new CancelFlightResult();
+            return Task.FromResult(new CancelFlightResult());
         }
     }
 

@@ -2,18 +2,17 @@ using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
-using LLL.DurableTask.Tests.Worker;
 using LLL.DurableTask.Worker.Attributes;
 using LLL.DurableTask.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace LLL.DurableTask.Tests
+namespace LLL.DurableTask.Tests.Worker.OrchestrationMethod
 {
-    public class ReturnOrchestrationMethodTests : WorkerTestBase
+    public class SerializeResultTests : WorkerTestBase
     {
-        public ReturnOrchestrationMethodTests(ITestOutputHelper output) : base(output)
+        public SerializeResultTests(ITestOutputHelper output) : base(output)
         {
         }
 
@@ -21,7 +20,7 @@ namespace LLL.DurableTask.Tests
         {
             base.ConigureWorker(builder);
 
-            builder.AddFromType(typeof(TestOrchestration));
+            builder.AddFromType(typeof(Orchestrations));
         }
 
         [InlineData("AsyncReturnGenericTaskString", "\"Something\"")]
@@ -42,13 +41,12 @@ namespace LLL.DurableTask.Tests
             result.Output.Should().Be(expectedOutput);
         }
 
-        public class TestOrchestration
+        public class Orchestrations
         {
             [Orchestration(Name = "AsyncReturnGenericTaskString")]
             public async Task<string> AsyncReturnGenericTaskString(OrchestrationContext context)
             {
-                await context.CreateTimer<object>(context.CurrentUtcDateTime, null);
-                return "Something";
+                return await context.CreateTimer<string>(context.CurrentUtcDateTime, "Something");
             }
 
             [Orchestration(Name = "ReturnGenericTaskString")]

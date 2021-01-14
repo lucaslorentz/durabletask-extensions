@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
@@ -16,16 +17,16 @@ namespace HotelWorker.Activities
             _logger = logger;
         }
 
-        protected override BookHotelResult Execute(TaskContext context, BookHotelInput input)
+        public override Task<BookHotelResult> ExecuteAsync(BookHotelInput input)
         {
             var bookingId = Guid.NewGuid();
 
             _logger.LogInformation("Booking Hotel {bookingId}", bookingId);
 
-            return new BookHotelResult
+            return Task.FromResult(new BookHotelResult
             {
                 BookingId = bookingId
-            };
+            });
         }
     }
 

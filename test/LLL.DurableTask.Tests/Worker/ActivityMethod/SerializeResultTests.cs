@@ -2,18 +2,18 @@ using System;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
-using LLL.DurableTask.Tests.Worker;
+using LLL.DurableTask.Tests.Worker.TestHelpers;
 using LLL.DurableTask.Worker.Attributes;
 using LLL.DurableTask.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace LLL.DurableTask.Tests
+namespace LLL.DurableTask.Tests.Worker.ActivityMethod
 {
-    public class ReturnActivityMethodTests : WorkerTestBase
+    public class SerializeResultActivityMethodTests : WorkerTestBase
     {
-        public ReturnActivityMethodTests(ITestOutputHelper output) : base(output)
+        public SerializeResultActivityMethodTests(ITestOutputHelper output) : base(output)
         {
         }
 
@@ -21,7 +21,8 @@ namespace LLL.DurableTask.Tests
         {
             base.ConigureWorker(builder);
 
-            builder.AddFromType(typeof(TestOrchestration));
+            builder.AddFromType(typeof(InvokeActivityOrchestration));
+            builder.AddFromType(typeof(Activities));
         }
 
         [InlineData("AsyncReturnGenericTaskString", "\"Something\"")]
@@ -35,21 +36,18 @@ namespace LLL.DurableTask.Tests
         {
             var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
 
-            var instance = await taskHubClient.CreateOrchestrationInstanceAsync("InvokeActivity", "", null, activityName);
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync("InvokeActivity", "", null, new
+            {
+                Name = activityName
+            });
 
             var result = await taskHubClient.WaitForOrchestrationAsync(instance, TimeSpan.FromSeconds(5));
 
             result.Output.Should().Be(expectedOutput);
         }
 
-        public class TestOrchestration
+        public class Activities
         {
-            [Orchestration(Name = "InvokeActivity")]
-            public async Task<object> InvokeActivity(OrchestrationContext context, string activityName)
-            {
-                return await context.ScheduleTask<object>(activityName, "");
-            }
-
             [Activity(Name = "AsyncReturnGenericTaskString")]
             public async Task<string> AsyncReturnGenericTaskString()
             {

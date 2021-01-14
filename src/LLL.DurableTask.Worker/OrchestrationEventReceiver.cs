@@ -5,7 +5,7 @@ using DurableTask.Core;
 using DurableTask.Core.Serializing;
 using LLL.DurableTask.Core.Serializing;
 
-namespace LLL.DurableTask.Worker.Utils
+namespace LLL.DurableTask.Worker
 {
     public class OrchestrationEventReceiver
     {

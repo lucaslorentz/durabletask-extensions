@@ -4,7 +4,6 @@ using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.Serializing;
 using LLL.DurableTask.Core.Serializing;
-using LLL.DurableTask.Worker.Utils;
 using DUtils = DurableTask.Core.Common.Utils;
 
 namespace LLL.DurableTask.Worker
@@ -21,7 +20,7 @@ namespace LLL.DurableTask.Worker
             DataConverter = new TypelessJsonDataConverter();
         }
 
-        public override async Task<string> Execute(OrchestrationContext context, string input)
+        public sealed override async Task<string> Execute(OrchestrationContext context, string input)
         {
             context.MessageDataConverter = new TypelessJsonDataConverter();
             context.ErrorDataConverter = new TypelessJsonDataConverter();
@@ -33,7 +32,7 @@ namespace LLL.DurableTask.Worker
             string serializedResult;
             try
             {
-                var result = await RunTask(parameter);
+                var result = await Execute(parameter);
                 serializedResult = DataConverter.Serialize(result);
             }
             catch (Exception e) when (!DUtils.IsFatal(e) && !DUtils.IsExecutionAborting(e))
@@ -44,17 +43,17 @@ namespace LLL.DurableTask.Worker
             return serializedResult;
         }
 
-        public override string GetStatus()
+        public sealed override string GetStatus()
         {
             return DataConverter.Serialize(OnGetStatus());
         }
 
-        public override void RaiseEvent(OrchestrationContext context, string name, string input)
+        public sealed override void RaiseEvent(OrchestrationContext context, string name, string input)
         {
             EventReceiver.RaiseEvent(name, input);
         }
 
-        public abstract Task<TResult> RunTask(TInput input);
+        public abstract Task<TResult> Execute(TInput input);
 
         public virtual object OnGetStatus()
         {

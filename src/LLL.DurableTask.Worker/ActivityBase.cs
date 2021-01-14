@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.Core.Serializing;
 
@@ -7,19 +6,19 @@ namespace LLL.DurableTask.Worker
 {
     public abstract class ActivityBase<TInput, TResult> : AsyncTaskActivity<TInput, TResult>
     {
+        public TaskContext Context { get; private set; }
+
         public ActivityBase()
         {
             DataConverter = new TypelessJsonDataConverter();
         }
 
-        protected override Task<TResult> ExecuteAsync(TaskContext context, TInput input)
+        protected sealed override async Task<TResult> ExecuteAsync(TaskContext context, TInput input)
         {
-            return Task.FromResult(Execute(context, input));
+            Context = context;
+            return await ExecuteAsync(input);
         }
 
-        protected virtual TResult Execute(TaskContext context, TInput input)
-        {
-            throw new NotImplementedException();
-        }
+        public abstract Task<TResult> ExecuteAsync(TInput input);
     }
 }
