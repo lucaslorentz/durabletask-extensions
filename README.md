@@ -1,4 +1,4 @@
-# Durable Task Extensions [![Coverage Status](https://coveralls.io/repos/github/lucaslorentz/durabletask-extensions/badge.svg?branch=main)](https://coveralls.io/github/lucaslorentz/durabletask-extensions?branch=main)
+# Durable Task Extensions ![CI](https://github.com/lucaslorentz/durabletask-extensions/workflows/CI/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/lucaslorentz/durabletask-extensions/badge.svg?branch=main)](https://coveralls.io/github/lucaslorentz/durabletask-extensions?branch=main)
 
 **NOTE:** WORK IN PROGRESS, NOT PRODUCTION READY.
 
