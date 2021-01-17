@@ -61,6 +61,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api", "samples\Api\Api.cspr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LLL.DurableTask.EFCore.InMemory", "src\LLL.DurableTask.EFCore.InMemory\LLL.DurableTask.EFCore.InMemory.csproj", "{E71A4883-EFFA-4F35-9ECA-1CBB10DF9244}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmark", "benchmark", "{A9616B03-065A-496F-97D9-7534E12EDEFC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoragesBenchmark", "benchmark\StoragesBenchmark\StoragesBenchmark.csproj", "{DC026E79-6C39-4C99-8F97-13A0C141E9D2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -163,6 +167,10 @@ Global
 		{E71A4883-EFFA-4F35-9ECA-1CBB10DF9244}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E71A4883-EFFA-4F35-9ECA-1CBB10DF9244}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E71A4883-EFFA-4F35-9ECA-1CBB10DF9244}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC026E79-6C39-4C99-8F97-13A0C141E9D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC026E79-6C39-4C99-8F97-13A0C141E9D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC026E79-6C39-4C99-8F97-13A0C141E9D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC026E79-6C39-4C99-8F97-13A0C141E9D2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -192,6 +200,7 @@ Global
 		{E6B7F70C-2AFC-4228-AA86-0F6ABCD9FCD9} = {E0FCDB26-294E-4389-95DA-B6ADACFD4A5C}
 		{06883E5A-B19F-4EE1-837A-508754C00CB7} = {E0FCDB26-294E-4389-95DA-B6ADACFD4A5C}
 		{E71A4883-EFFA-4F35-9ECA-1CBB10DF9244} = {5B6D72A5-EA1B-4815-88D1-DAC262E987CA}
+		{DC026E79-6C39-4C99-8F97-13A0C141E9D2} = {A9616B03-065A-496F-97D9-7534E12EDEFC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D2608FDC-AB3C-4A29-9FD7-53C76E8D66FB}

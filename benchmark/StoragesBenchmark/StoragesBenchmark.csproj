@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'CarWorker' " />
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
+    <PackageReference Include="DurableTask.SqlServer.AzureFunctions" Version="0.4.0-alpha" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\LLL.DurableTask.Worker\LLL.DurableTask.Worker.csproj" />
+    <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.SqlServer\LLL.DurableTask.EFCore.SqlServer.csproj" />
+    <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.PostgreSQL\LLL.DurableTask.EFCore.PostgreSQL.csproj" />
+    <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.MySql\LLL.DurableTask.EFCore.MySql.csproj" />
+    <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.InMemory\LLL.DurableTask.EFCore.InMemory.csproj" />
+    <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore\LLL.DurableTask.EFCore.csproj" />
+    <ProjectReference Include="..\..\src\LLL.DurableTask.Client\LLL.DurableTask.Client.csproj" />
+    <ProjectReference Include="..\..\src\LLL.DurableTask.AzureStorage\LLL.DurableTask.AzureStorage.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+</Project>

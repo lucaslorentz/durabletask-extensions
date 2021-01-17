@@ -31,6 +31,8 @@ jobs:
           dotnet-version: 5.0.101
       - name: Restore
         run: dotnet restore
+        env:
+          GH_PACKAGES_PAT: ${{ secrets.GH_PACKAGES_PAT }}
       - name: Build
         run: dotnet build -c Release --no-restore
       - name: Docker Compose Up
