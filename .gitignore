@@ -285,3 +285,6 @@ __pycache__/
 
 # Private configuration
 *.private.json
+
+# BenchmarkDotNet
+BenchmarkDotNet.Artifacts
