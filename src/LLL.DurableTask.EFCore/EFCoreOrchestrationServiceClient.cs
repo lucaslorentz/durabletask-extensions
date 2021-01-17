@@ -41,7 +41,7 @@ namespace LLL.DurableTask.EFCore
                         return;
 
                     if (!IsFinalInstanceStatus(instance.LastExecution.Status))
-                        throw new Exception("Orchestration is already running");
+                        throw new Exception("Orchestration has an active execution");
                 }
 
                 var runtimeState = new OrchestrationRuntimeState(new[] { executionStartedEvent });

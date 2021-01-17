@@ -24,7 +24,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
             using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
             {
                 var instance = await dbContext.Instances.FromSqlRaw(@"
-                    SELECT TOP 1 Instances.* FROM OrchestrationMessages
+                    SELECT TOP 1 Instances.* FROM OrchestrationMessages WITH (UPDLOCK, READPAST)
                         INNER JOIN Instances WITH (UPDLOCK, READPAST, FORCESEEK)
                             ON OrchestrationMessages.InstanceId = Instances.InstanceId
                     WHERE
@@ -57,7 +57,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
                 var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
                 var instance = await dbContext.Instances.FromSqlRaw($@"
-                    SELECT TOP 1 Instances.* FROM OrchestrationMessages
+                    SELECT TOP 1 Instances.* FROM OrchestrationMessages WITH (UPDLOCK, READPAST)
                         INNER JOIN Instances WITH (UPDLOCK, READPAST, FORCESEEK)
                             ON OrchestrationMessages.InstanceId = Instances.InstanceId
                     WHERE
