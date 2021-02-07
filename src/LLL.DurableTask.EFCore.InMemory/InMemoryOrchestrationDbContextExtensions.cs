@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
@@ -9,61 +10,71 @@ namespace LLL.DurableTask.EFCore.InMemory
     public class InMemoryOrchestrationDbContextExtensions : OrchestrationDbContextExtensions
     {
         private readonly object _lock = new object();
+        private readonly SemaphoreSlim _instanceSemaphore = new SemaphoreSlim(0, 1);
 
         public override Task Migrate(OrchestrationDbContext dbContext)
         {
             return Task.CompletedTask;
         }
 
-        public override Task<Instance> TryLockNextInstanceAsync(
+        public override async Task WithinTransaction(OrchestrationDbContext dbContext, Func<Task> action)
+        {
+            await action();
+        }
+
+        public override async Task LockInstance(OrchestrationDbContext dbContext, string instanceId)
+        {
+        }
+
+        public override Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
             lock (_lock)
             {
-                var instance = (
-                    from message in dbContext.OrchestrationMessages
-                    where message.AvailableAt <= DateTime.UtcNow
-                    && message.Instance.LockedUntil <= DateTime.UtcNow
-                    orderby message.AvailableAt
-                    select message.Instance
+                var batch = (
+                    from b in dbContext.OrchestrationBatches
+                    where b.AvailableAt <= DateTime.UtcNow
+                    && b.LockedUntil <= DateTime.UtcNow
+                    orderby b.AvailableAt
+                    select b
                 ).FirstOrDefault();
 
-                if (instance == null)
-                    return Task.FromResult(default(Instance));
+                if (batch == null)
+                    return Task.FromResult(default(OrchestrationBatch));
 
-                instance.LockId = Guid.NewGuid().ToString();
-                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                batch.LockId = Guid.NewGuid().ToString();
+                batch.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
                 dbContext.SaveChanges();
 
-                return Task.FromResult(instance);
+                return Task.FromResult(batch);
             }
         }
 
-        public override Task<Instance> TryLockNextInstanceAsync(
+        public override Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
             OrchestrationDbContext dbContext,
             string[] queues,
             TimeSpan lockTimeout)
         {
             lock (_lock)
             {
-                var instance = (
-                    from message in dbContext.OrchestrationMessages
-                    where message.AvailableAt <= DateTime.UtcNow
-                    && queues.Contains(message.Queue)
-                    && message.Instance.LockedUntil <= DateTime.UtcNow
-                    orderby message.AvailableAt
-                    select message.Instance
+                var batch = (
+                    from b in dbContext.OrchestrationBatches
+                    where b.AvailableAt <= DateTime.UtcNow
+                    && queues.Contains(b.Queue)
+                    && b.LockedUntil <= DateTime.UtcNow
+                    orderby b.AvailableAt
+                    select b
                 ).FirstOrDefault();
 
-                if (instance == null)
-                    return Task.FromResult(default(Instance));
+                if (batch == null)
+                    return Task.FromResult(default(OrchestrationBatch));
 
-                instance.LockId = Guid.NewGuid().ToString();
-                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                batch.LockId = Guid.NewGuid().ToString();
+                batch.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
                 dbContext.SaveChanges();
 
-                return Task.FromResult(instance);
+                return Task.FromResult(batch);
             }
         }
 
@@ -76,7 +87,6 @@ namespace LLL.DurableTask.EFCore.InMemory
                 var activityMessage = (
                     from message in dbContext.ActivityMessages
                     where message.LockedUntil <= DateTime.UtcNow
-                    && message.Instance.LockedUntil <= DateTime.UtcNow
                     orderby message.LockedUntil
                     select message
                 ).FirstOrDefault();

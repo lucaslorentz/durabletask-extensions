@@ -17,35 +17,52 @@ namespace LLL.DurableTask.EFCore.SqlServer
             await dbContext.Database.MigrateAsync();
         }
 
-        public override async Task<Instance> TryLockNextInstanceAsync(
+        public override async Task WithinTransaction(OrchestrationDbContext dbContext, Func<Task> action)
+        {
+            using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
+            {
+                await action();
+
+                await transaction.CommitAsync();
+            }
+        }
+
+        public override async Task LockInstance(OrchestrationDbContext dbContext, string instanceId)
+        {
+            await dbContext.Instances.FromSqlRaw(@"
+                SELECT * FROM Instances
+                WHERE InstanceId = {0}
+                FOR UPDATE
+            ", instanceId).FirstOrDefaultAsync();
+        }
+
+        public override async Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
             using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
             {
-                var instance = await dbContext.Instances.FromSqlRaw(@"
-                    SELECT TOP 1 Instances.* FROM OrchestrationMessages WITH (UPDLOCK, READPAST)
-                        INNER JOIN Instances WITH (UPDLOCK, READPAST, FORCESEEK)
-                            ON OrchestrationMessages.InstanceId = Instances.InstanceId
+                var batch = await dbContext.OrchestrationBatches.FromSqlRaw(@"
+                    SELECT TOP 1 * FROM OrchestrationBatches WITH (UPDLOCK, READPAST)
                     WHERE
-                        OrchestrationMessages.AvailableAt <= {0}
-                        AND Instances.LockedUntil <= {0}
-                    ORDER BY OrchestrationMessages.AvailableAt
+                        AvailableAt <= {0}
+                        AND LockedUntil <= {0}
+                    ORDER BY AvailableAt
                 ", DateTime.UtcNow).FirstOrDefaultAsync();
 
-                if (instance == null)
+                if (batch == null)
                     return null;
 
-                instance.LockId = Guid.NewGuid().ToString();
-                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                batch.LockId = Guid.NewGuid().ToString();
+                batch.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return instance;
+                return batch;
             }
         }
 
-        public override async Task<Instance> TryLockNextInstanceAsync(
+        public override async Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
             OrchestrationDbContext dbContext,
             string[] queues,
             TimeSpan lockTimeout)
@@ -56,26 +73,24 @@ namespace LLL.DurableTask.EFCore.SqlServer
                 var utcNowParam = $"{{{queues.Length}}}";
                 var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-                var instance = await dbContext.Instances.FromSqlRaw($@"
-                    SELECT TOP 1 Instances.* FROM OrchestrationMessages WITH (UPDLOCK, READPAST)
-                        INNER JOIN Instances WITH (UPDLOCK, READPAST, FORCESEEK)
-                            ON OrchestrationMessages.InstanceId = Instances.InstanceId
+                var batch = await dbContext.OrchestrationBatches.FromSqlRaw($@"
+                    SELECT TOP 1 * FROM OrchestrationBatches WITH (UPDLOCK, READPAST)
                     WHERE
-                        OrchestrationMessages.AvailableAt <= {utcNowParam}
-                        AND OrchestrationMessages.Queue IN ({queuesParams})
-                        AND Instances.LockedUntil <= {utcNowParam}
-                    ORDER BY OrchestrationMessages.AvailableAt
+                        AvailableAt <= {utcNowParam}
+                        AND Queue IN ({queuesParams})
+                        AND LockedUntil <= {utcNowParam}
+                    ORDER BY AvailableAt
                 ", parameters).FirstOrDefaultAsync();
 
-                if (instance == null)
+                if (batch == null)
                     return null;
 
-                instance.LockId = Guid.NewGuid().ToString();
-                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                batch.LockId = Guid.NewGuid().ToString();
+                batch.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return instance;
+                return batch;
             }
         }
 

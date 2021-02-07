@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using DurableTask.Core.Serializing;
 using LLL.DurableTask.EFCore.Entities;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +21,7 @@ namespace LLL.DurableTask.EFCore
             EFCoreOrchestrationOptions options,
             Func<OrchestrationDbContext> dbContextFactory,
             Instance instance,
+            OrchestrationBatch batch,
             Execution execution,
             OrchestrationRuntimeState runtimeState,
             CancellationToken stopCancellationToken)
@@ -29,12 +29,14 @@ namespace LLL.DurableTask.EFCore
             _options = options;
             _dbContextFactory = dbContextFactory;
             Instance = instance;
+            Batch = batch;
             Execution = execution;
             RuntimeState = runtimeState;
             _stopCancellationToken = stopCancellationToken;
         }
 
         public Instance Instance { get; }
+        public OrchestrationBatch Batch { get; set; }
         public Execution Execution { get; set; }
         public OrchestrationRuntimeState RuntimeState { get; set; }
         public List<OrchestrationMessage> Messages { get; } = new List<OrchestrationMessage>();
@@ -53,7 +55,7 @@ namespace LLL.DurableTask.EFCore
                     return messages;
                 }
             },
-            x => x.Count > 0,
+            x => x == null || x.Count > 0,
             _options.FetchNewMessagesPollingTimeout,
             _options.PollingInterval,
             _stopCancellationToken);
@@ -63,12 +65,14 @@ namespace LLL.DurableTask.EFCore
             OrchestrationDbContext dbContext,
             CancellationToken cancellationToken = default)
         {
+            if (Batch == null)
+                return null;
+
             var dbWorkItems = await dbContext.OrchestrationMessages
                 .Where(w => w.AvailableAt <= DateTime.UtcNow
-                    && w.Queue == Instance.LastQueueName)
-                .Where(w => w.Instance.InstanceId == Instance.InstanceId
-                    && w.Instance.LockId == Instance.LockId)
-                .Where(w => !Messages.Contains(w))
+                    && w.BatchId == Batch.Id
+                    && w.Batch.LockId == Batch.LockId
+                    && !Messages.Contains(w))
                 .OrderBy(w => w.AvailableAt)
                 .ThenBy(w => w.SequenceNumber)
                 .AsNoTracking()

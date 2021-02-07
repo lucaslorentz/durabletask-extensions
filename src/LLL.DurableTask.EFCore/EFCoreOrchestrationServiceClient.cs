@@ -63,13 +63,8 @@ namespace LLL.DurableTask.EFCore
                 {
                     [instance.InstanceId] = QueueMapper.ToQueueName(runtimeState.Name, runtimeState.Version)
                 };
-                var orchestrationWorkItem = await _orchestrationMessageMapper.CreateOrchestrationMessageAsync(
-                    creationMessage,
-                    0,
-                    dbContext,
-                    knownQueues
-                );
-                await dbContext.OrchestrationMessages.AddAsync(orchestrationWorkItem);
+
+                await SendTaskOrchestrationMessageBatchAsync(dbContext, new[] { creationMessage }, knownQueues);
 
                 await dbContext.SaveChangesAsync();
             }
@@ -141,11 +136,7 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
-                var orchestrationMessage = await messages
-                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessageAsync(m, i, dbContext))
-                    .WhenAllSerial();
-
-                await dbContext.OrchestrationMessages.AddRangeAsync(orchestrationMessage);
+                await SendTaskOrchestrationMessageBatchAsync(dbContext, messages);
 
                 await dbContext.SaveChangesAsync();
             }
@@ -420,14 +411,13 @@ namespace LLL.DurableTask.EFCore
                     OrchestrationInstance = orchestrationInstance,
                     Event = new GenericEvent(-1, reason)
                 };
-                
+
                 var knownQueues = new Dictionary<string, string>
                 {
                     [lastExecution.InstanceId] = QueueMapper.ToQueueName(lastExecution.Name, lastExecution.Version)
                 };
-                var orchestrationMessage = await _orchestrationMessageMapper.CreateOrchestrationMessageAsync(taskMessage, 0, dbContext, knownQueues);
 
-                await dbContext.OrchestrationMessages.AddAsync(orchestrationMessage);
+                await SendTaskOrchestrationMessageBatchAsync(dbContext, new[] { taskMessage }, knownQueues);
             }
         }
 

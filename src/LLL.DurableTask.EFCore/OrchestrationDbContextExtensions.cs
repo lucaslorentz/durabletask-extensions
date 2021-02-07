@@ -9,11 +9,17 @@ namespace LLL.DurableTask.EFCore
     {
         public abstract Task Migrate(OrchestrationDbContext dbContext);
 
-        public abstract Task<Instance> TryLockNextInstanceAsync(
+        public abstract Task WithinTransaction(OrchestrationDbContext dbContext, Func<Task> action);
+
+        public abstract Task LockInstance(
+            OrchestrationDbContext dbContext,
+            string instanceId);
+
+        public abstract Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout);
 
-        public abstract Task<Instance> TryLockNextInstanceAsync(
+        public abstract Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
             OrchestrationDbContext dbContext,
             string[] queues,
             TimeSpan lockTimeout);

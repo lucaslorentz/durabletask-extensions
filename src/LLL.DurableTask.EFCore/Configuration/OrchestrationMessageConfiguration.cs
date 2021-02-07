@@ -10,26 +10,21 @@ namespace LLL.DurableTask.EFCore.Configuration
         public void Configure(EntityTypeBuilder<OrchestrationMessage> builder)
         {
             builder.HasKey(x => x.Id);
-            builder.Property(x => x.Id).IsRequired();
+            builder.Property(x => x.Id).HasMaxLength(36).IsRequired();
 
-            builder.Property(x => x.InstanceId).HasMaxLength(500).IsRequired();
-            builder.HasOne(x => x.Instance)
+            builder.Property(x => x.BatchId).HasMaxLength(36).IsRequired();
+            builder.HasOne(x => x.Batch)
                 .WithMany()
-                .HasForeignKey(x => x.InstanceId)
+                .HasForeignKey(x => x.BatchId)
                 .IsRequired();
 
             builder.Property(x => x.ExecutionId).HasMaxLength(100);
-
-            builder.Property(x => x.Queue).HasMaxLength(500).IsRequired();
 
             builder.Property(x => x.AvailableAt).IsRequired().HasConversion(new UtcDateTimeConverter());
 
             builder.Property(x => x.SequenceNumber).IsRequired();
 
             builder.Property(x => x.Message).HasMaxLength(int.MaxValue);
-
-            builder.HasIndex(x => new { x.AvailableAt, x.Queue });
-            builder.HasIndex(x => new { x.AvailableAt });
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using System;
-using DurableTask.Core;
+﻿using DurableTask.Core;
 using DurableTask.Core.History;
 using LLL.DurableTask.EFCore.Entities;
 using Microsoft.Extensions.Options;
@@ -21,7 +20,6 @@ namespace LLL.DurableTask.EFCore.Mappers
             {
                 InstanceId = executionStartedEvent.OrchestrationInstance.InstanceId,
                 LastExecutionId = executionStartedEvent.OrchestrationInstance.ExecutionId,
-                LockedUntil = DateTime.UtcNow,
                 LastQueueName = QueueMapper.ToQueueName(executionStartedEvent.Name, executionStartedEvent.Version)
             };
             return instance;

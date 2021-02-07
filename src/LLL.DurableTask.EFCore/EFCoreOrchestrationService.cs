@@ -7,7 +7,6 @@ using DurableTask.Core;
 using DurableTask.Core.History;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
-using LLL.DurableTask.EFCore.Extensions;
 using LLL.DurableTask.EFCore.Mappers;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
@@ -126,17 +125,19 @@ namespace LLL.DurableTask.EFCore
             {
                 using (var dbContext = _dbContextFactory())
                 {
-                    var instance = await LockNextInstance(dbContext, orchestrations);
+                    var batch = await LockNextOrchestrationBatch(dbContext, orchestrations);
 
-                    if (instance == null)
+                    if (batch == null)
                         return null;
 
+                    var instance = await dbContext.Instances.FirstOrDefaultAsync(i => i.InstanceId == batch.InstanceId);
+
                     var execution = await dbContext.Executions
-                        .Where(e => e.InstanceId == instance.InstanceId && e.ExecutionId == instance.LastExecutionId)
+                        .Where(e => e.InstanceId == batch.InstanceId && e.ExecutionId == instance.LastExecutionId)
                         .FirstOrDefaultAsync();
 
                     var events = await dbContext.Events
-                        .Where(e => e.InstanceId == instance.InstanceId && e.ExecutionId == instance.LastExecutionId)
+                        .Where(e => e.InstanceId == batch.InstanceId && e.ExecutionId == instance.LastExecutionId)
                         .OrderBy(e => e.SequenceNumber)
                         .AsNoTracking()
                         .ToArrayAsync();
@@ -151,6 +152,7 @@ namespace LLL.DurableTask.EFCore
                         _options,
                         _dbContextFactory,
                         instance,
+                        batch,
                         execution,
                         runtimeState,
                         _stopCts.Token);
@@ -159,8 +161,8 @@ namespace LLL.DurableTask.EFCore
 
                     if (messages.Count == 0)
                     {
-                        instance.LockId = null;
-                        instance.LockedUntil = DateTime.UtcNow;
+                        batch.LockId = null;
+                        batch.LockedUntil = DateTime.UtcNow;
                         await dbContext.SaveChangesAsync();
                         return null;
                     }
@@ -169,8 +171,8 @@ namespace LLL.DurableTask.EFCore
 
                     return new TaskOrchestrationWorkItem
                     {
-                        InstanceId = instance.InstanceId,
-                        LockedUntilUtc = instance.LockedUntil,
+                        InstanceId = batch.InstanceId,
+                        LockedUntilUtc = batch.LockedUntil,
                         OrchestrationRuntimeState = runtimeState,
                         NewMessages = messages,
                         Session = session
@@ -224,11 +226,11 @@ namespace LLL.DurableTask.EFCore
             using (var dbContext = _dbContextFactory())
             {
                 var session = workItem.Session as EFCoreOrchestrationSession;
-                if (!session.Released)
+                if (!session.Released && session.Batch != null)
                 {
-                    dbContext.Instances.Attach(session.Instance);
-                    session.Instance.LockId = null;
-                    session.Instance.LockedUntil = DateTime.UtcNow;
+                    dbContext.OrchestrationBatches.Attach(session.Batch);
+                    session.Batch.LockId = null;
+                    session.Batch.LockedUntil = DateTime.UtcNow;
                     await dbContext.SaveChangesAsync();
                     session.Released = true;
                 }
@@ -242,11 +244,13 @@ namespace LLL.DurableTask.EFCore
                 var session = workItem.Session as EFCoreOrchestrationSession;
                 if (session.Released)
                     throw new InvalidOperationException("Session was already released");
+                if (session.Batch == null)
+                    throw new InvalidOperationException("Batch was completed");
 
-                dbContext.Instances.Attach(session.Instance);
-                session.Instance.LockId = null;
+                dbContext.OrchestrationBatches.Attach(session.Batch);
+                session.Batch.LockId = null;
                 // TODO: Exponential backoff
-                session.Instance.LockedUntil = DateTime.UtcNow.AddMinutes(1);
+                session.Batch.LockedUntil = DateTime.UtcNow.AddMinutes(1);
                 await dbContext.SaveChangesAsync();
                 session.Released = true;
             }
@@ -258,10 +262,12 @@ namespace LLL.DurableTask.EFCore
             {
                 var session = workItem.Session as EFCoreOrchestrationSession;
 
-                var lockedUntilUTC = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
+                if (session.Batch == null)
+                    throw new Exception("Batch was completed");
 
-                dbContext.Instances.Attach(session.Instance);
-                session.Instance.LockedUntil = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
+                var lockedUntilUTC = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
+                dbContext.OrchestrationBatches.Attach(session.Batch);
+                session.Batch.LockedUntil = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
                 await dbContext.SaveChangesAsync();
 
                 workItem.LockedUntilUtc = lockedUntilUTC;
@@ -337,69 +343,87 @@ namespace LLL.DurableTask.EFCore
             {
                 var session = workItem.Session as EFCoreOrchestrationSession;
 
-                // Create child orchestrations
-                foreach (var executionStartedEvent in orchestratorMessages.Select(m => m.Event).OfType<ExecutionStartedEvent>())
+                await _dbContextExtensions.WithinTransaction(dbContext, async () =>
                 {
-                    var childInstance = _instanceMapper.CreateInstance(executionStartedEvent);
-                    await dbContext.Instances.AddAsync(childInstance);
+                    dbContext.Instances.Attach(session.Instance);
+                    dbContext.OrchestrationBatches.Attach(session.Batch);
 
-                    var childRuntimeState = new OrchestrationRuntimeState(new[] { executionStartedEvent });
-                    var childExecution = _executionMapper.CreateExecution(childRuntimeState);
-                    await dbContext.Executions.AddAsync(childExecution);
-                }
+                    // Create child orchestrations
+                    foreach (var executionStartedEvent in orchestratorMessages.Select(m => m.Event).OfType<ExecutionStartedEvent>())
+                    {
+                        var childInstance = _instanceMapper.CreateInstance(executionStartedEvent);
+                        await dbContext.Instances.AddAsync(childInstance);
 
-                var orchestrationQueueName = QueueMapper.ToQueueName(orchestrationState.Name, orchestrationState.Version);
+                        var childRuntimeState = new OrchestrationRuntimeState(new[] { executionStartedEvent });
+                        var childExecution = _executionMapper.CreateExecution(childRuntimeState);
+                        await dbContext.Executions.AddAsync(childExecution);
+                    }
 
-                var knownQueues = new Dictionary<string, string>
-                {
-                    [orchestrationState.OrchestrationInstance.InstanceId] = orchestrationQueueName
-                };
+                    var orchestrationQueueName = QueueMapper.ToQueueName(orchestrationState.Name, orchestrationState.Version);
 
-                if (orchestrationState.ParentInstance != null)
-                    knownQueues[orchestrationState.ParentInstance.OrchestrationInstance.InstanceId] = QueueMapper.ToQueueName(orchestrationState.ParentInstance.Name, orchestrationState.ParentInstance.Version);
+                    var knownQueues = new Dictionary<string, string>
+                    {
+                        [orchestrationState.OrchestrationInstance.InstanceId] = orchestrationQueueName
+                    };
 
-                // Write messages
-                var activityMessages = outboundMessages
-                    .Select(m => _activityMessageMapper.CreateActivityMessage(m, orchestrationQueueName))
-                    .ToArray();
-                var orchestatorMessages = await orchestratorMessages
-                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessageAsync(m, i, dbContext, knownQueues))
-                    .WhenAllSerial();
-                var timerOrchestrationMessages = await timerMessages
-                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessageAsync(m, i, dbContext, knownQueues))
-                    .WhenAllSerial();
-                var continuedAsNewOrchestrationMessage = continuedAsNewMessage != null
-                    ? await _orchestrationMessageMapper.CreateOrchestrationMessageAsync(continuedAsNewMessage, 0, dbContext, knownQueues)
-                    : null;
+                    if (orchestrationState.ParentInstance != null)
+                        knownQueues[orchestrationState.ParentInstance.OrchestrationInstance.InstanceId] = QueueMapper.ToQueueName(orchestrationState.ParentInstance.Name, orchestrationState.ParentInstance.Version);
 
-                await dbContext.ActivityMessages.AddRangeAsync(activityMessages);
-                await dbContext.OrchestrationMessages.AddRangeAsync(orchestatorMessages);
-                await dbContext.OrchestrationMessages.AddRangeAsync(timerOrchestrationMessages);
+                    // Write messages
+                    var activityMessages = outboundMessages
+                        .Select(m => _activityMessageMapper.CreateActivityMessage(m, orchestrationQueueName))
+                        .ToArray();
 
-                if (continuedAsNewOrchestrationMessage != null)
-                    await dbContext.OrchestrationMessages.AddAsync(continuedAsNewOrchestrationMessage);
+                    await dbContext.ActivityMessages.AddRangeAsync(activityMessages);
 
-                // Remove executed messages
-                dbContext.AttachRange(session.Messages);
-                dbContext.OrchestrationMessages.RemoveRange(session.Messages);
+                    var allOrchestrationMessages = orchestratorMessages
+                        .Concat(timerMessages)
+                        .Concat(continuedAsNewMessage != null ? new[] { continuedAsNewMessage } : Enumerable.Empty<TaskMessage>())
+                        .ToArray();
 
-                // Update instance
-                var instance = session.Instance;
-                dbContext.Instances.Attach(instance);
-                _instanceMapper.UpdateInstance(instance, newOrchestrationRuntimeState);
+                    await SendTaskOrchestrationMessageBatchAsync(dbContext, allOrchestrationMessages, knownQueues);
 
-                // Update current execution
-                EnrichNewEventsInput(workItem.OrchestrationRuntimeState, outboundMessages, orchestratorMessages);
-                session.Execution = await SaveExecutionAsync(dbContext, workItem.OrchestrationRuntimeState, session.Execution);
+                    // Remove executed messages
+                    dbContext.AttachRange(session.Messages);
+                    dbContext.OrchestrationMessages.RemoveRange(session.Messages);
 
-                // Update new execution
-                if (newOrchestrationRuntimeState != workItem.OrchestrationRuntimeState)
-                {
-                    EnrichNewEventsInput(newOrchestrationRuntimeState, outboundMessages, orchestratorMessages);
-                    session.Execution = await SaveExecutionAsync(dbContext, newOrchestrationRuntimeState);
-                }
+                    // Update instance
+                    _instanceMapper.UpdateInstance(session.Instance, newOrchestrationRuntimeState);
 
-                await dbContext.SaveChangesAsync();
+                    // Update current execution
+                    EnrichNewEventsInput(workItem.OrchestrationRuntimeState, outboundMessages, orchestratorMessages);
+                    session.Execution = await SaveExecutionAsync(dbContext, workItem.OrchestrationRuntimeState, session.Execution);
+
+                    // Update new execution
+                    if (newOrchestrationRuntimeState != workItem.OrchestrationRuntimeState)
+                    {
+                        EnrichNewEventsInput(newOrchestrationRuntimeState, outboundMessages, orchestratorMessages);
+                        session.Execution = await SaveExecutionAsync(dbContext, newOrchestrationRuntimeState);
+                    }
+
+                    // Update batch
+                    await dbContext.SaveChangesAsync();
+
+                    await _dbContextExtensions.LockInstance(dbContext, session.Instance.InstanceId);
+
+                    var newMinAvailableAt = dbContext
+                        .OrchestrationMessages
+                        .Where(o => !session.Messages.Contains(o))
+                        .Where(o => o.BatchId == session.Batch.Id)
+                        .Min(o => (DateTime?)o.AvailableAt);
+
+                    if (newMinAvailableAt != null)
+                    {
+                        session.Batch.AvailableAt = newMinAvailableAt.Value;
+                    }
+                    else
+                    {
+                        dbContext.OrchestrationBatches.Remove(session.Batch);
+                        session.Batch = null;
+                    }
+
+                    await dbContext.SaveChangesAsync();
+                });
 
                 session.RuntimeState = newOrchestrationRuntimeState;
                 session.ClearMessages();
@@ -410,23 +434,80 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
-                var (id, lockId, orchestrationQueue) = ParseTaskActivityWorkItemId(workItem.Id);
-
-                var dbWorkItem = await dbContext.ActivityMessages
-                    .FirstAsync(w => w.Id == id && w.LockId == lockId);
-
-                var knownQueues = new Dictionary<string, string>
+                await _dbContextExtensions.WithinTransaction(dbContext, async () =>
                 {
-                    [workItem.TaskMessage.OrchestrationInstance.InstanceId] = orchestrationQueue
-                };
+                    var (id, lockId, orchestrationQueue) = ParseTaskActivityWorkItemId(workItem.Id);
 
-                var orchestrationMessage = await _orchestrationMessageMapper
-                    .CreateOrchestrationMessageAsync(responseMessage, 0, dbContext, knownQueues);
+                    var activityMessage = await dbContext.ActivityMessages
+                        .FirstAsync(w => w.Id == id && w.LockId == lockId);
 
-                dbContext.ActivityMessages.Remove(dbWorkItem);
+                    dbContext.ActivityMessages.Remove(activityMessage);
 
-                await dbContext.OrchestrationMessages.AddAsync(orchestrationMessage);
-                await dbContext.SaveChangesAsync();
+                    var knownQueues = new Dictionary<string, string>
+                    {
+                        [workItem.TaskMessage.OrchestrationInstance.InstanceId] = orchestrationQueue
+                    };
+
+                    await SendTaskOrchestrationMessageBatchAsync(dbContext, new[] { responseMessage }, knownQueues);
+
+                    await dbContext.SaveChangesAsync();
+                });
+            }
+        }
+
+        private async Task SendTaskOrchestrationMessageBatchAsync(
+            OrchestrationDbContext dbContext,
+            TaskMessage[] messages,
+            IDictionary<string, string> knownQueues = null)
+        {
+            var instancesGroups = messages
+                .GroupBy(m => m.OrchestrationInstance.InstanceId)
+                .ToArray();
+
+            foreach (var instanceGroup in instancesGroups)
+            {
+                if (knownQueues == null || !knownQueues.TryGetValue(instanceGroup.Key, out var queue))
+                {
+                    var instance = await dbContext.Instances.FindAsync(instanceGroup.Key);
+
+                    if (instance == null)
+                        throw new Exception($"Instance {instanceGroup.Key} not found");
+
+                    queue = instance.LastQueueName;
+                }
+
+                await _dbContextExtensions.LockInstance(dbContext, instanceGroup.Key);
+
+                var batch = await dbContext.OrchestrationBatches
+                    .FirstOrDefaultAsync(b => b.InstanceId == instanceGroup.Key
+                        && b.Queue == queue);
+
+                if (batch == null)
+                {
+                    batch = new OrchestrationBatch
+                    {
+                        Id = Guid.NewGuid(),
+                        InstanceId = instanceGroup.Key,
+                        Queue = queue,
+                        AvailableAt = DateTime.MaxValue,
+                        LockedUntil = DateTime.UtcNow
+                    };
+
+                    await dbContext.OrchestrationBatches.AddAsync(batch);
+                }
+
+                var orchestrationMessages = instanceGroup
+                    .Select((m, i) => _orchestrationMessageMapper.CreateOrchestrationMessageAsync(m, i, batch))
+                    .ToArray();
+
+                var minAvailableAt = orchestrationMessages.Min(m => m.AvailableAt);
+
+                if (minAvailableAt < batch.AvailableAt)
+                {
+                    batch.AvailableAt = minAvailableAt;
+                }
+
+                await dbContext.OrchestrationMessages.AddRangeAsync(orchestrationMessages);
             }
         }
 
@@ -466,16 +547,16 @@ namespace LLL.DurableTask.EFCore
             return execution;
         }
 
-        private async Task<Instance> LockNextInstance(OrchestrationDbContext dbContext, INameVersionInfo[] orchestrations)
+        private async Task<OrchestrationBatch> LockNextOrchestrationBatch(OrchestrationDbContext dbContext, INameVersionInfo[] orchestrations)
         {
             if (orchestrations == null)
-                return await _dbContextExtensions.TryLockNextInstanceAsync(dbContext, _options.OrchestrationLockTimeout);
+                return await _dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContext, _options.OrchestrationLockTimeout);
 
             var queues = orchestrations
                 .Select(QueueMapper.ToQueueName)
                 .ToArray();
 
-            var instance = await _dbContextExtensions.TryLockNextInstanceAsync(dbContext, queues, _options.OrchestrationLockTimeout);
+            var instance = await _dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContext, queues, _options.OrchestrationLockTimeout);
             if (instance != null)
                 return instance;
 
