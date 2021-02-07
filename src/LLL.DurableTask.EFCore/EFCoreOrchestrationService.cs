@@ -402,15 +402,23 @@ namespace LLL.DurableTask.EFCore
                     }
 
                     // Update batch
-                    await dbContext.SaveChangesAsync();
-
                     await _dbContextExtensions.LockInstance(dbContext, session.Instance.InstanceId);
 
-                    var newMinAvailableAt = dbContext
+                    var localNewMinAvailableAt = dbContext
+                        .OrchestrationMessages.Local
+                        .Where(o => !session.Messages.Contains(o))
+                        .Where(o => o.BatchId == session.Batch.Id)
+                        .Min(o => (DateTime?)o.AvailableAt);
+
+                    var databaseNewMinAvailableAt = dbContext
                         .OrchestrationMessages
                         .Where(o => !session.Messages.Contains(o))
                         .Where(o => o.BatchId == session.Batch.Id)
                         .Min(o => (DateTime?)o.AvailableAt);
+
+                    var newMinAvailableAt = localNewMinAvailableAt == null || databaseNewMinAvailableAt == null
+                        ? localNewMinAvailableAt ?? databaseNewMinAvailableAt
+                        : localNewMinAvailableAt < databaseNewMinAvailableAt ? localNewMinAvailableAt : databaseNewMinAvailableAt;
 
                     if (newMinAvailableAt != null)
                     {

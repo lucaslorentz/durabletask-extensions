@@ -29,11 +29,11 @@ namespace LLL.DurableTask.EFCore.SqlServer
 
         public override async Task LockInstance(OrchestrationDbContext dbContext, string instanceId)
         {
-            await dbContext.Instances.FromSqlRaw(@"
-                SELECT * FROM Instances
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                SELECT 1 FROM Instances
                 WHERE InstanceId = {0}
                 FOR UPDATE
-            ", instanceId).FirstOrDefaultAsync();
+            ", instanceId);
         }
 
         public override async Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
