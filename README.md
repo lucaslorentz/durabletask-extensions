@@ -396,10 +396,7 @@ You can enable OIDC integration by configuring OIDC options:
 | Display | null | Information sent to IDP during OIDC authorization |
 | LoadUserInfo | null | Flag to control if additional identity data is loaded from the user info endpoint in order to populate the user's profile. |
 
-The **redirect_url** and **post_logout_redirect_uri** values are computed automatically from the url used to access Durable Task Ui.  
-Examples:
-- **redirect_url:** https://your-domain/path/
-- **post_logout_redirect_uri:** https://your-domain/path/
+The **redirect_url** and **post_logout_redirect_uri** values are computed automatically from the url used to access Durable Task Ui. You should configure both redirect urls on your OIDC server with the same url you use to access Durable Task Ui.
 
 ## Compose components to build your own architecture
 
