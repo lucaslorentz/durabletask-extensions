@@ -1,13 +1,11 @@
-using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using FluentAssertions;
-using LLL.DurableTask.Core.Serializing;
-using LLL.DurableTask.EFCore;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -40,7 +38,7 @@ namespace LLL.DurableTask.Tests.Api
             var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
             var httpResponse = await httpClient.PostAsync($"/api/v1/orchestrations/{orchestrationInstance.InstanceId}/raiseevent/TestEvent", requestContent);
-            httpResponse.StatusCode.Should().Be(200);
+            httpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
             var content = await httpResponse.Content.ReadAsStringAsync();

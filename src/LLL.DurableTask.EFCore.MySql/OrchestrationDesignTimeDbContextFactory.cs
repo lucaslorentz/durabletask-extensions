@@ -10,7 +10,7 @@ namespace LLL.DurableTask.EFCore.MySql
         public OrchestrationDbContext CreateDbContext(string[] args)
         {
             var builder = new DbContextOptionsBuilder<OrchestrationDbContext>();
-            builder.UseMySql("server=localhost;database=durabletask;user=root;password=root", mysqlOptions =>
+            builder.UseMySql(ServerVersion.AutoDetect("server=localhost;database=durabletask;user=root;password=root"), mysqlOptions =>
             {
                 var assemblyName = typeof(OrchestrationDesignTimeDbContextFactory).Assembly.GetName().Name;
                 mysqlOptions.MigrationsAssembly(assemblyName);

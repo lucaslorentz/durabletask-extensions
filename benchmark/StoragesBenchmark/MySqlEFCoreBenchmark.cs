@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace StoragesBenchmark
@@ -10,7 +11,7 @@ namespace StoragesBenchmark
             var connectionString = _configuration.GetConnectionString("MySql");
 
             services.AddDurableTaskEFCoreStorage()
-                .UseMySql(connectionString);
+                .UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
         }
     }
 }

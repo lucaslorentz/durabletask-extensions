@@ -10,7 +10,6 @@ using System.Xml;
 using System.Xml.Serialization;
 using BpmnWorker.Activities;
 using BpmnWorker.Providers;
-using DurableTask.Core;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
 using Microsoft.Extensions.Logging;

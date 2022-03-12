@@ -122,7 +122,7 @@ Extension to EFCore storage with migrations and queries specific to MySql.
 
 ```C#
 services.AddDurableTaskEFCoreStorage()
-    .UseMySql("YOUR_CONNECTION_STRING");
+    .UseMySql(ServerVersion.AutoDetect("YOUR_CONNECTION_STRING"));
 ```
 
 #### LLL.DurableTask.EFCore.PostgreSQL [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.EFCore.PostgreSQL)](https://www.nuget.org/packages/LLL.DurableTask.EFCore.PostgreSQL/)

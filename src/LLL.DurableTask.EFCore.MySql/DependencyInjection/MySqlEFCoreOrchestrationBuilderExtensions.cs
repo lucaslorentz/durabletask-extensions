@@ -13,13 +13,14 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IEFCoreOrchestrationBuilder UseMySql(
             this IEFCoreOrchestrationBuilder builder,
             string connectionString,
+            ServerVersion serverVersion,
             Action<MySqlDbContextOptionsBuilder> mysqlOptionsAction = null)
         {
             builder.Services.AddSingleton<OrchestrationDbContextExtensions, MySqlOrchestrationDbContextExtensions>();
 
             return builder.ConfigureDbContext(options =>
             {
-                options.UseMySql(connectionString, mysqlOptions =>
+                options.UseMySql(connectionString, serverVersion, mysqlOptions =>
                 {
                     var assemblyName = typeof(MySqlEFCoreOrchestrationBuilderExtensions).Assembly.GetName().Name;
                     mysqlOptions.MigrationsAssembly(assemblyName);

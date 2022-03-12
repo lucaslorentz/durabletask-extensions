@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -19,7 +20,7 @@ namespace LLL.DurableTask.Tests.Storages
             Skip.If(string.IsNullOrWhiteSpace(connectionString), "MySql connection string not configured");
 
             services.AddDurableTaskEFCoreStorage()
-                .UseMySql(connectionString);
+                .UseMySql(connectionString, MySqlServerVersion.AutoDetect(connectionString));
         }
     }
 }

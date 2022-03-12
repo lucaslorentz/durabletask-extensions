@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 using FluentAssertions;
 using LLL.DurableTask.Api.Models;
@@ -23,7 +24,7 @@ namespace LLL.DurableTask.Tests.Api
             using var httpClient = _host.GetTestClient();
 
             var rootResponse = await httpClient.GetAsync("/api");
-            rootResponse.StatusCode.Should().Be(200);
+            rootResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             rootResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
             var response = JsonConvert.DeserializeObject<EntrypointResponse>(await rootResponse.Content.ReadAsStringAsync());

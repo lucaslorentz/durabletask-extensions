@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.5.0" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.10.0" />
   </ItemGroup>
 
   <ItemGroup>

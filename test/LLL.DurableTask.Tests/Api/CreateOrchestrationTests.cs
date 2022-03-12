@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace LLL.DurableTask.Tests.Api
             var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
             var httpResponse = await httpClient.PostAsync("/api/v1/orchestrations", requestContent);
-            httpResponse.StatusCode.Should().Be(400);
+            httpResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
             var response = await httpResponse.Content.ReadAsStringAsync();
@@ -61,7 +62,7 @@ namespace LLL.DurableTask.Tests.Api
             var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
             var httpResponse = await httpClient.PostAsync("/api/v1/orchestrations", requestContent);
-            httpResponse.StatusCode.Should().Be(201);
+            httpResponse.StatusCode.Should().Be(HttpStatusCode.Created);
             httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
             var orchestrationInstance = JsonConvert.DeserializeObject<OrchestrationInstance>(await httpResponse.Content.ReadAsStringAsync());

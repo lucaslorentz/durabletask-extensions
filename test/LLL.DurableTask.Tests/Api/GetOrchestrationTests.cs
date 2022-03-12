@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
@@ -38,7 +39,7 @@ namespace LLL.DurableTask.Tests.Api
             using var httpClient = _host.GetTestClient();
 
             var httpResponse = await httpClient.GetAsync($"/api/v1/orchestrations/{orchestrationInstance.InstanceId}");
-            httpResponse.StatusCode.Should().Be(200);
+            httpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
             var state = JsonConvert.DeserializeObject<OrchestrationState>(await httpResponse.Content.ReadAsStringAsync());
@@ -55,8 +56,8 @@ namespace LLL.DurableTask.Tests.Api
             state.Output.Should().BeNull();
             state.OrchestrationStatus.Should().Be(OrchestrationStatus.Running);
             state.Status.Should().BeNull();
-            state.CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, 5000);
-            state.LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, 5000);
+            state.CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+            state.LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
             state.CompletedTime.Year.Should().Be(9999);
         }
 
@@ -80,7 +81,7 @@ namespace LLL.DurableTask.Tests.Api
             using var httpClient = _host.GetTestClient();
 
             var httpResponse = await httpClient.GetAsync($"/api/v1/orchestrations/{orchestrationInstance.InstanceId}/{orchestrationInstance.ExecutionId}");
-            httpResponse.StatusCode.Should().Be(200);
+            httpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
             var state = JsonConvert.DeserializeObject<OrchestrationState>(await httpResponse.Content.ReadAsStringAsync());
@@ -97,8 +98,8 @@ namespace LLL.DurableTask.Tests.Api
             state.Output.Should().BeNull();
             state.OrchestrationStatus.Should().Be(OrchestrationStatus.Running);
             state.Status.Should().BeNull();
-            state.CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, 5000);
-            state.LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, 5000);
+            state.CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+            state.LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
             state.CompletedTime.Year.Should().Be(9999);
         }
     }

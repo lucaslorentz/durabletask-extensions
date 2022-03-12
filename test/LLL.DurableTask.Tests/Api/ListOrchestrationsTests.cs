@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
@@ -35,7 +36,7 @@ namespace LLL.DurableTask.Tests.Api
             using var httpClient = _host.GetTestClient();
 
             var firstPageHttpResponse = await httpClient.GetAsync("/api/v1/orchestrations?top=5");
-            firstPageHttpResponse.StatusCode.Should().Be(200);
+            firstPageHttpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             firstPageHttpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
             var firstPageResponse = JsonConvert.DeserializeObject<OrchestrationQueryResult>(await firstPageHttpResponse.Content.ReadAsStringAsync());
@@ -52,14 +53,14 @@ namespace LLL.DurableTask.Tests.Api
             firstPageResponse.Orchestrations[0].Output.Should().BeNull();
             firstPageResponse.Orchestrations[0].OrchestrationStatus.Should().Be(OrchestrationStatus.Running);
             firstPageResponse.Orchestrations[0].Status.Should().BeNull();
-            firstPageResponse.Orchestrations[0].CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, 5000);
-            firstPageResponse.Orchestrations[0].LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, 5000);
+            firstPageResponse.Orchestrations[0].CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+            firstPageResponse.Orchestrations[0].LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
             firstPageResponse.Orchestrations[0].CompletedTime.Year.Should().Be(9999);
 
             firstPageResponse.Orchestrations[4].Name.Should().Be("Name-3");
 
             var secondPageHttpResponse = await httpClient.GetAsync($"/api/v1/orchestrations?top=5&continuationToken={firstPageResponse.ContinuationToken}");
-            secondPageHttpResponse.StatusCode.Should().Be(200);
+            secondPageHttpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             secondPageHttpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
             var secondPageResponse = JsonConvert.DeserializeObject<OrchestrationQueryResult>(await secondPageHttpResponse.Content.ReadAsStringAsync());

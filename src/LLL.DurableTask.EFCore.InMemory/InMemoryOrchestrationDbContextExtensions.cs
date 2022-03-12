@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -10,7 +13,8 @@ namespace LLL.DurableTask.EFCore.InMemory
     public class InMemoryOrchestrationDbContextExtensions : OrchestrationDbContextExtensions
     {
         private readonly object _lock = new object();
-        private readonly SemaphoreSlim _instanceSemaphore = new SemaphoreSlim(0, 1);
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> _instancesSemaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
+        private readonly ConcurrentDictionary<OrchestrationDbContext, HashSet<string>> _lockedInstanes = new ConcurrentDictionary<OrchestrationDbContext, HashSet<string>>();
 
         public override Task Migrate(OrchestrationDbContext dbContext)
         {
@@ -24,6 +28,21 @@ namespace LLL.DurableTask.EFCore.InMemory
 
         public override async Task LockInstance(OrchestrationDbContext dbContext, string instanceId)
         {
+            var lockedInstances = _lockedInstanes.GetOrAdd(dbContext, (d) => new HashSet<string>());
+            if (!lockedInstances.Add(instanceId))
+                return;
+
+            var semaphore = _instancesSemaphores.GetOrAdd(instanceId, (_) => new SemaphoreSlim(1));
+            await semaphore.WaitAsync();
+
+            dbContext.SaveChangesFailed += (o, e) => Unlock();
+            dbContext.SavedChanges += (o, e) => Unlock();
+
+            void Unlock()
+            {
+                semaphore.Release();
+                lockedInstances.Remove(instanceId);
+            }
         }
 
         public override Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
