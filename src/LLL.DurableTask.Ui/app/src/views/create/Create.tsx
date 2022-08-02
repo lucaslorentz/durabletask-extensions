@@ -1,3 +1,4 @@
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Box,
   Breadcrumbs,
@@ -7,23 +8,27 @@ import {
   Link,
   Paper,
   Typography,
-} from "@material-ui/core";
-import DeleteIcon from "@material-ui/icons/Delete";
+} from "@mui/material";
 import { useSnackbar } from "notistack";
 import React from "react";
-import { Link as RouterLink, useHistory } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import { useApiClient } from "../../ApiClientProvider";
 import { TextField } from "../../form/TextField";
 import { useForm } from "../../form/useForm";
 import { CreateOrchestrationRequest } from "../../models/ApiModels";
+import { validateJson } from "../../utils/yup-utils";
 
 const schema = yup
   .object({
     name: yup.string().label("Name").default("").required(),
     version: yup.string().label("Version").default(""),
     instanceId: yup.string().label("Instance Id").default(""),
-    input: yup.string().label("Input").default("").json(),
+    input: yup
+      .string()
+      .label("Input")
+      .default("")
+      .test("JSON", "Must be a valid json", validateJson),
     tags: yup
       .array(
         yup
@@ -40,7 +45,7 @@ const schema = yup
 
 export function Create() {
   const form = useForm(schema);
-  const history = useHistory();
+  const navigate = useNavigate();
   const apiClient = useApiClient();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
@@ -52,7 +57,7 @@ export function Create() {
         instanceId: form.value.instanceId,
         input: form.value.input ? JSON.parse(form.value.input) : null,
         tags: form.value.tags.reduce((previous, current) => {
-          previous[current.key] = current.value;
+          previous[current.key!] = current.value!;
           return previous;
         }, {} as Record<string, string>),
       };
@@ -63,9 +68,7 @@ export function Create() {
         variant: "success",
       });
 
-      history.push(
-        `/orchestrations/${encodeURIComponent(instance.instanceId)}`
-      );
+      navigate(`/orchestrations/${encodeURIComponent(instance.instanceId)}`);
     } catch (error) {
       enqueueSnackbar(String(error), {
         variant: "error",
@@ -83,7 +86,7 @@ export function Create() {
     <div>
       <Box marginBottom={2}>
         <Breadcrumbs aria-label="breadcrumb">
-          <Link component={RouterLink} to="/orchestrations">
+          <Link component={RouterLink} to="/orchestrations" underline="hover">
             Orchestrations
           </Link>
           <Typography color="textPrimary">Create</Typography>
@@ -129,6 +132,7 @@ export function Create() {
                         <Box>
                           <IconButton
                             onClick={() => field.remove(tagField.value)}
+                            size="large"
                           >
                             <DeleteIcon />
                           </IconButton>
@@ -140,7 +144,13 @@ export function Create() {
               </>
             )}
             {form.render((form) => (
-              <Grid item xs={12} container spacing={1} justify="space-between">
+              <Grid
+                item
+                xs={12}
+                container
+                spacing={1}
+                justifyContent="space-between"
+              >
                 <Grid item>
                   <Button
                     variant="contained"

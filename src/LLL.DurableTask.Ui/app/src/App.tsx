@@ -1,24 +1,24 @@
+import { Person } from "@mui/icons-material";
 import {
   Box,
   Button,
   CircularProgress,
   Container,
   Grid,
-  makeStyles,
   Menu,
   MenuItem,
-} from "@material-ui/core";
-import AppBar from "@material-ui/core/AppBar";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import Link from "@material-ui/core/Link";
-import Toolbar from "@material-ui/core/Toolbar";
-import Typography from "@material-ui/core/Typography";
-import { Person } from "@material-ui/icons";
+} from "@mui/material";
+import AppBar from "@mui/material/AppBar";
+import CssBaseline from "@mui/material/CssBaseline";
+import Link from "@mui/material/Link";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import makeStyles from "@mui/styles/makeStyles";
 import React, { Suspense } from "react";
-import { Link as RouterLink, Route, Switch } from "react-router-dom";
+import { Link as RouterLink, Route, Routes } from "react-router-dom";
 import { useApiClient } from "./ApiClientProvider";
 import { useAuth } from "./AuthProvider";
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AuthorizedGuard } from "./components/AuthorizedGuard";
 import { useConfiguration } from "./ConfigurationProvider";
 import { Create } from "./views/create";
 import { Home } from "./views/home";
@@ -109,7 +109,6 @@ export function App() {
                     <Menu
                       id="menu-appbar"
                       anchorEl={userAnchorEl}
-                      getContentAnchorEl={null}
                       open={Boolean(userAnchorEl)}
                       keepMounted
                       anchorOrigin={{
@@ -138,48 +137,54 @@ export function App() {
       <Container maxWidth="xl">
         <Box marginTop={3}>
           <Suspense fallback={<CircularProgress />}>
-            <Switch>
-              <ProtectedRoute
-                requiredEndpoints={["OrchestrationsList"]}
+            <Routes>
+              <Route
                 path="/orchestrations"
-                exact
-              >
-                <Orchestrations />
-              </ProtectedRoute>
-              <ProtectedRoute
-                requiredEndpoints={[
-                  "OrchestrationsGet",
-                  "OrchestrationsGetExecution",
-                ]}
+                element={
+                  <AuthorizedGuard requiredEndpoints={["OrchestrationsList"]}>
+                    <Orchestrations />
+                  </AuthorizedGuard>
+                }
+              />
+              <Route
                 path="/orchestrations/:instanceId"
-                exact
-              >
-                <Orchestration />
-              </ProtectedRoute>
+                element={
+                  <AuthorizedGuard
+                    requiredEndpoints={[
+                      "OrchestrationsGet",
+                      "OrchestrationsGetExecution",
+                    ]}
+                  >
+                    <Orchestration />
+                  </AuthorizedGuard>
+                }
+              />
               {apiClient.hasFeature("StatePerExecution") && (
-                <ProtectedRoute
-                  requiredEndpoints={[
-                    "OrchestrationsGet",
-                    "OrchestrationsGetExecution",
-                  ]}
-                  path="/orchestrations/:instanceId/:executionId?"
-                  exact
-                >
-                  <Orchestration />
-                </ProtectedRoute>
+                <Route
+                  path="/orchestrations/:instanceId/:executionId"
+                  element={
+                    <AuthorizedGuard
+                      requiredEndpoints={[
+                        "OrchestrationsGet",
+                        "OrchestrationsGetExecution",
+                      ]}
+                    >
+                      <Orchestration />
+                    </AuthorizedGuard>
+                  }
+                />
               )}
-              <ProtectedRoute
-                requiredEndpoints={["OrchestrationsCreate"]}
+              <Route
                 path="/create"
-                exact
-              >
-                <Create />
-              </ProtectedRoute>
-              <Route path="/" exact>
-                <Home />
-              </Route>
-              <NotFound />
-            </Switch>
+                element={
+                  <AuthorizedGuard requiredEndpoints={["OrchestrationsCreate"]}>
+                    <Create />
+                  </AuthorizedGuard>
+                }
+              />
+              <Route path="/" element={<Home />} />
+              <Route element={<NotFound />} />
+            </Routes>
           </Suspense>
         </Box>
       </Container>

@@ -1,4 +1,4 @@
-import { Button, Grid } from "@material-ui/core";
+import { Button, Grid } from "@mui/material";
 import { useSnackbar } from "notistack";
 import React from "react";
 import * as yup from "yup";
@@ -60,7 +60,13 @@ export function Terminate(props: Props) {
           <TextField field={form.field("reason")} multiline rows={6} />
         </Grid>
         {form.render((form) => (
-          <Grid item xs={12} container spacing={1} justify="space-between">
+          <Grid
+            item
+            xs={12}
+            container
+            spacing={1}
+            justifyContent="space-between"
+          >
             <Grid item>
               <Button
                 variant="contained"

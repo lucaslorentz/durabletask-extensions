@@ -1,42 +1,54 @@
-import "./utils/yup-extensions";
-import React from "react";
-import ReactDOM from "react-dom";
-import { Router } from "react-router-dom";
-import { App } from "./App";
-import * as serviceWorker from "./serviceWorker";
-import { createBrowserHashHistory } from "./createBrowserHashHistory";
-import { ThemeProvider } from "@material-ui/core/styles";
-import { customTheme } from "./CustomTheme";
-import { ConfigurationProvider } from "./ConfigurationProvider";
-import { AuthProvider } from "./AuthProvider";
-import { ApiClientProvider } from "./ApiClientProvider";
+import {
+  StyledEngineProvider,
+  Theme,
+  ThemeProvider,
+} from "@mui/material/styles";
 import { ConfirmProvider } from "material-ui-confirm";
 import { SnackbarProvider } from "notistack";
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { unstable_HistoryRouter as HistoryRouter } from "react-router-dom";
+import { ApiClientProvider } from "./ApiClientProvider";
+import { App } from "./App";
+import { AuthProvider } from "./AuthProvider";
+import { ConfigurationProvider } from "./ConfigurationProvider";
+import { customTheme } from "./CustomTheme";
+import { history } from "./history";
+import * as serviceWorker from "./serviceWorker";
 
-ReactDOM.render(
+declare module "@mui/styles/defaultTheme" {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
+const container = document.getElementById("root");
+const root = createRoot(container!);
+
+root.render(
   // <React.StrictMode>
-  <Router history={createBrowserHashHistory({ clearSearch: true })}>
-    <ThemeProvider theme={customTheme}>
-      <SnackbarProvider
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "center",
-        }}
-      >
-        <ConfirmProvider>
-          <ConfigurationProvider>
-            <AuthProvider>
-              <ApiClientProvider>
-                <App />
-              </ApiClientProvider>
-            </AuthProvider>
-          </ConfigurationProvider>
-        </ConfirmProvider>
-      </SnackbarProvider>
-    </ThemeProvider>
-  </Router>,
+  <HistoryRouter history={history}>
+    <StyledEngineProvider injectFirst>
+      <ThemeProvider theme={customTheme}>
+        <SnackbarProvider
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "center",
+          }}
+        >
+          <ConfirmProvider>
+            <ConfigurationProvider>
+              <AuthProvider>
+                <ApiClientProvider>
+                  <App />
+                </ApiClientProvider>
+              </AuthProvider>
+            </ConfigurationProvider>
+          </ConfirmProvider>
+        </SnackbarProvider>
+      </ThemeProvider>
+    </StyledEngineProvider>
+  </HistoryRouter>
   // </React.StrictMode>
-  document.getElementById("root")
 );
 
 // If you want your app to work offline and load faster, you can change

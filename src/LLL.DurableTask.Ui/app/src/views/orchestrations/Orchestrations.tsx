@@ -12,10 +12,10 @@ import {
   InputLabel,
   LinearProgress,
   Link,
-  makeStyles,
   MenuItem,
   Paper,
   Select,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -25,12 +25,13 @@ import {
   TableRow,
   TextField,
   Typography,
-} from "@material-ui/core";
-import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
-import ChevronRightIcon from "@material-ui/icons/ChevronRight";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-import FirstPageIcon from "@material-ui/icons/FirstPage";
-import RefreshIcon from "@material-ui/icons/Refresh";
+} from "@mui/material";
+import makeStyles from "@mui/styles/makeStyles";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { default as React, useCallback, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useApiClient } from "../../ApiClientProvider";
@@ -197,7 +198,6 @@ export function Orchestrations() {
                 <TextField
                   fullWidth
                   label="InstanceId"
-                  variant="outlined"
                   size="small"
                   value={instanceId}
                   onChange={(e) => setInstanceId(e.target.value)}
@@ -209,7 +209,6 @@ export function Orchestrations() {
                 <TextField
                   fullWidth
                   label="Name"
-                  variant="outlined"
                   size="small"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -222,7 +221,6 @@ export function Orchestrations() {
                   <TextField
                     fullWidth
                     label="Created Time From"
-                    variant="outlined"
                     type="datetime-local"
                     size="small"
                     value={toLocalISO(createdTimeFrom)}
@@ -238,7 +236,6 @@ export function Orchestrations() {
                   <TextField
                     fullWidth
                     label="Created Time To"
-                    variant="outlined"
                     type="datetime-local"
                     size="small"
                     value={toLocalISO(createdTimeTo)}
@@ -252,7 +249,7 @@ export function Orchestrations() {
             )}
             {apiClient.hasFeature("SearchByStatus") && (
               <Grid item xs={3}>
-                <FormControl fullWidth variant="outlined" size="small">
+                <FormControl fullWidth size="small">
                   <InputLabel>Status</InputLabel>
                   <Select
                     multiple
@@ -260,7 +257,6 @@ export function Orchestrations() {
                     onChange={(e) => setStatuses(e.target.value as any)}
                     label="Status"
                     MenuProps={{
-                      getContentAnchorEl: null,
                       anchorOrigin: {
                         vertical: "bottom",
                         horizontal: "right",
@@ -312,6 +308,7 @@ export function Orchestrations() {
                     to={`/orchestrations/${encodeURIComponent(
                       orchestration.orchestrationInstance.instanceId
                     )}`}
+                    underline="hover"
                   >
                     {orchestration.orchestrationInstance.instanceId}
                   </Link>
@@ -325,6 +322,7 @@ export function Orchestrations() {
                       )}/${encodeURIComponent(
                         orchestration.orchestrationInstance.executionId
                       )}`}
+                      underline="hover"
                     >
                       {orchestration.orchestrationInstance.executionId}
                     </Link>
@@ -344,15 +342,15 @@ export function Orchestrations() {
                   <TableCell padding="none">
                     <div className={classes.chips}>
                       {orchestration.tags &&
-                        Object.entries(
-                          orchestration.tags
-                        ).map(([key, value]) => (
-                          <Chip
-                            key={key}
-                            size="small"
-                            label={`${key}: ${value}`}
-                          />
-                        ))}
+                        Object.entries(orchestration.tags).map(
+                          ([key, value]) => (
+                            <Chip
+                              key={key}
+                              size="small"
+                              label={`${key}: ${value}`}
+                            />
+                          )
+                        )}
                     </div>
                   </TableCell>
                 )}
@@ -377,20 +375,20 @@ export function Orchestrations() {
 
   function RenderFooter() {
     return (
-      <Box marginX={2} display="flex" alignItems="center">
+      <Stack marginX={2} direction="row" spacing={3} alignItems="center">
         <Box flex={1}>
           <Button startIcon={<RefreshIcon />} onClick={load}>
             Refresh
           </Button>
         </Box>
         <Box>
-          Rows per page{" "}
+          Rows per page:{" "}
           <Select
             value={pageSize}
             onChange={(e) => setPageSize(e.target.value as number)}
             SelectDisplayProps={{ style: { fontSize: 13 } }}
+            size="small"
             autoWidth
-            disableUnderline
           >
             <MenuItem value={5}>5</MenuItem>
             <MenuItem value={10}>10</MenuItem>
@@ -398,30 +396,37 @@ export function Orchestrations() {
             <MenuItem value={50}>50</MenuItem>
             <MenuItem value={100}>100</MenuItem>
           </Select>
+        </Box>
+        <Box>
           {continuationTokenStack.length * pageSize + 1}-
           {continuationTokenStack.length * pageSize +
             (result?.orchestrations.length ?? 0)}{" "}
           {apiClient.hasFeature("QueryCount") && `of ${result?.count}`}
         </Box>
-        <IconButton
-          disabled={continuationTokenStack.length === 0}
-          onClick={changePage.bind(null, "first")}
-        >
-          <FirstPageIcon />
-        </IconButton>
-        <IconButton
-          disabled={continuationTokenStack.length === 0}
-          onClick={changePage.bind(null, "previous")}
-        >
-          <ChevronLeftIcon />
-        </IconButton>
-        <IconButton
-          disabled={!result?.continuationToken}
-          onClick={changePage.bind(null, "next")}
-        >
-          <ChevronRightIcon />
-        </IconButton>
-      </Box>
+        <Box>
+          <IconButton
+            disabled={continuationTokenStack.length === 0}
+            onClick={changePage.bind(null, "first")}
+            size="large"
+          >
+            <FirstPageIcon />
+          </IconButton>
+          <IconButton
+            disabled={continuationTokenStack.length === 0}
+            onClick={changePage.bind(null, "previous")}
+            size="large"
+          >
+            <ChevronLeftIcon />
+          </IconButton>
+          <IconButton
+            disabled={!result?.continuationToken}
+            onClick={changePage.bind(null, "next")}
+            size="large"
+          >
+            <ChevronRightIcon />
+          </IconButton>
+        </Box>
+      </Stack>
     );
   }
 }

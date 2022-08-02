@@ -1,7 +1,7 @@
 import { User, UserManager } from "oidc-client";
 import React, { useContext, useLayoutEffect, useMemo, useState } from "react";
-import { useHistory } from "react-router-dom";
 import { useConfiguration } from "./ConfigurationProvider";
+import { history } from "./history";
 
 type Props = {
   children: React.ReactNode;
@@ -32,7 +32,6 @@ export function AuthProvider(props: Props) {
 
   const configuration = useConfiguration();
 
-  const history = useHistory();
   const [user, setUser] = useState<User | undefined>();
 
   const userManager = useMemo(() => {
@@ -115,7 +114,7 @@ export function AuthProvider(props: Props) {
         setShouldRender(true);
       }
     })();
-  }, [userManager, history]);
+  }, [userManager]);
 
   // Context value
   const auth = useMemo<Auth>(() => {
@@ -139,7 +138,7 @@ export function AuthProvider(props: Props) {
       },
       signOut: () => userManager.signoutRedirect(),
     };
-  }, [userManager, user, history]);
+  }, [userManager, user]);
 
   if (!shouldRender) return null;
 

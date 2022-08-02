@@ -7,7 +7,7 @@ import {
   TableContainer,
   TableHead,
   TableRow
-} from "@material-ui/core";
+} from "@mui/material";
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useWindowSize } from "react-use";
@@ -106,7 +106,7 @@ export function HistoryTable(props: Props) {
                       <Link
                         component={RouterLink}
                         to={`/orchestrations/${row.event.instanceId}`}
-                      >
+                        underline="hover">
                         {row.event.eventType}
                         {row.id && `: ${row.id}`}
                       </Link>

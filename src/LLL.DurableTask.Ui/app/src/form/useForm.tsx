@@ -1,9 +1,9 @@
 import { action, autorun, makeObservable, observable, runInAction } from "mobx";
 import { Observer } from "mobx-react-lite";
 import React, { useState } from "react";
-import { reach, Schema, ValidationError } from "yup";
+import { reach, SchemaOf, ValidationError } from "yup";
 
-export function useForm<T>(schema: Schema<T>): Form<T> {
+export function useForm<T>(schema: SchemaOf<T>): Form<T> {
   const [form] = useState(() => new Form<T>(schema));
 
   return form;
@@ -12,12 +12,12 @@ export function useForm<T>(schema: Schema<T>): Form<T> {
 export class Form<T> {
   private cache: Map<PropertyKey, Field<any>> = new Map();
 
-  public schema: Schema<T>;
+  public schema: SchemaOf<T>;
   public value: T;
   public errors: Record<string, string>;
   public pendingValidation = true;
 
-  constructor(schema: Schema<T>) {
+  constructor(schema: SchemaOf<T>) {
     this.schema = schema;
     this.value = this.createDefaultValue();
     this.errors = {};
@@ -57,10 +57,10 @@ export class Form<T> {
         if (e instanceof ValidationError) {
           const newErrors: Record<string, ValidationError[]> = {};
           for (let error of e.inner) {
-            if (!newErrors[error.path]) {
-              newErrors[error.path] = [];
+            if (!newErrors[error.path!]) {
+              newErrors[error.path!] = [];
             }
-            newErrors[error.path].push(error);
+            newErrors[error.path!].push(error);
           }
           for (let path in errors) {
             if (!(path in newErrors)) {
@@ -94,8 +94,8 @@ export class Form<T> {
     }
 
     field = new Field<T[P]>(
-      this,
-      this,
+      this as Form<any>,
+      this as Form<any>,
       String(prop),
       prop,
       this.schema && tryReach(this.schema, String(prop))
@@ -133,7 +133,7 @@ export class Field<T> {
         ? this.path
           ? `${this.path}.${prop}`
           : prop
-        : `${this.path}[${prop}]`;
+        : `${this.path}[${String(prop)}]`;
 
     field = new Field<T[P]>(
       this.form,
@@ -212,7 +212,7 @@ export class Field<T> {
   }
 
   get label() {
-    return this.schema?._label;
+    return this.schema?.spec?.label;
   }
 
   get required() {

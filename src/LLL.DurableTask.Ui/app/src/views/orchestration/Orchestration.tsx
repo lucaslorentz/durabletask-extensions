@@ -1,28 +1,24 @@
+import { ArrowDropDown, Sync } from "@mui/icons-material";
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Box,
   Breadcrumbs,
   Button,
   ButtonGroup,
-  Grid,
   LinearProgress,
   Link,
   Paper,
+  Stack,
   Tab,
   Tabs,
   Typography,
-} from "@material-ui/core";
-import Menu from "@material-ui/core/Menu";
-import MenuItem from "@material-ui/core/MenuItem";
-import { ArrowDropDown, Sync } from "@material-ui/icons";
-import DeleteIcon from "@material-ui/icons/Delete";
+} from "@mui/material";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import { useConfirm } from "material-ui-confirm";
 import { useSnackbar } from "notistack";
 import React, { useEffect, useReducer, useState } from "react";
-import {
-  Link as RouterLink,
-  useHistory,
-  useRouteMatch,
-} from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import { useApiClient } from "../../ApiClientProvider";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { useQueryState } from "../../hooks/useQueryState";
@@ -71,15 +67,14 @@ export function Orchestration() {
   const [refreshCount, triggerRefresh] = useReducer((x) => x + 1, 0);
   const [loadedCount, incrementLoadedCount] = useReducer((x) => x + 1, 0);
   const apiClient = useApiClient();
-  const history = useHistory();
+  const navigate = useNavigate();
   const confirm = useConfirm();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
-  const route = useRouteMatch<RouteParams>();
+  const params = useParams<RouteParams>() as RouteParams;
 
-  const instanceId =
-    route.params.instanceId && decodeURIComponent(route.params.instanceId);
+  const instanceId = params.instanceId && decodeURIComponent(params.instanceId);
   const executionId =
-    route.params.executionId && decodeURIComponent(route.params.executionId);
+    params.executionId && decodeURIComponent(params.executionId);
 
   useEffect(() => {
     setState(undefined);
@@ -134,7 +129,7 @@ export function Orchestration() {
         enqueueSnackbar("Instance purged", {
           variant: "success",
         });
-        history.push(`/orchestrations`);
+        navigate(`/orchestrations`);
       } catch (error) {
         enqueueSnackbar(String(error), {
           variant: "error",
@@ -153,13 +148,14 @@ export function Orchestration() {
     <div>
       <Box marginBottom={1}>
         <Breadcrumbs aria-label="breadcrumb">
-          <Link component={RouterLink} to="/orchestrations">
+          <Link component={RouterLink} to="/orchestrations" underline="hover">
             Orchestrations
           </Link>
           {executionId ? (
             <Link
               component={RouterLink}
               to={`/orchestrations/${encodeURIComponent(instanceId)}`}
+              underline="hover"
             >
               {instanceId}
             </Link>
@@ -171,8 +167,8 @@ export function Orchestration() {
           )}
         </Breadcrumbs>
       </Box>
-      <Grid container spacing={4} alignItems="center">
-        <Grid item xs>
+      <Stack direction="row" spacing={4} alignItems="center">
+        <Box flex={1}>
           <ButtonGroup color="primary" size="small">
             <Button onClick={() => triggerRefresh()} title="Refresh">
               <Sync />
@@ -185,7 +181,6 @@ export function Orchestration() {
           <Menu
             anchorEl={refreshAnchor}
             keepMounted
-            getContentAnchorEl={null}
             anchorOrigin={{
               vertical: "bottom",
               horizontal: "right",
@@ -210,9 +205,9 @@ export function Orchestration() {
               </MenuItem>
             ))}
           </Menu>
-        </Grid>
+        </Box>
         {apiClient.isAuthorized("OrchestrationsPurgeInstance") && state && (
-          <Grid item>
+          <Box>
             <Button
               variant="outlined"
               startIcon={<DeleteIcon />}
@@ -221,9 +216,9 @@ export function Orchestration() {
             >
               Purge
             </Button>
-          </Grid>
+          </Box>
         )}
-      </Grid>
+      </Stack>
       <Box height={4} marginTop={0.5} marginBottom={0.5}>
         {isLoading && <LinearProgress />}
       </Box>

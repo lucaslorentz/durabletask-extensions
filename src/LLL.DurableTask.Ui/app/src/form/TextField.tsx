@@ -1,5 +1,5 @@
-import { TextField as MuiTextField } from "@material-ui/core";
-import { TextFieldProps } from "@material-ui/core/TextField";
+import { TextField as MuiTextField } from "@mui/material";
+import { TextFieldProps } from "@mui/material/TextField";
 import { observer } from "mobx-react-lite";
 import React from "react";
 import { Field } from "./useForm";
@@ -9,7 +9,6 @@ export const TextField = observer(
     return (
       <MuiTextField
         fullWidth
-        variant="outlined"
         size="small"
         {...props}
         required={props.field.required}

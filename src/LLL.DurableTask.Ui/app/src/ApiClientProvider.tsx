@@ -27,7 +27,7 @@ export function ApiClientProvider(props: Props) {
       apiClient.setToken(auth.user?.access_token);
       await apiClient.initialize(configuration.apiBaseUrl);
       return apiClient;
-    } catch (error) {
+    } catch (error: any) {
       if (error?.response?.status === 401) {
         await auth.signIn?.();
       }

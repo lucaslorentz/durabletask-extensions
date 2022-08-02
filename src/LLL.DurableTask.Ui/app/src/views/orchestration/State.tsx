@@ -1,14 +1,5 @@
-import {
-  Box,
-  Chip,
-  Link,
-  makeStyles,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
-} from "@material-ui/core";
+import { Box, Chip, Link, Table, TableBody, TableCell, TableContainer, TableRow } from "@mui/material";
+import makeStyles from '@mui/styles/makeStyles';
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useApiClient } from "../../ApiClientProvider";
@@ -66,7 +57,7 @@ export function State(props: Props) {
                   )}/${encodeURIComponent(
                     state.orchestrationInstance.executionId
                   )}`}
-                >
+                  underline="hover">
                   {state.orchestrationInstance.executionId}
                 </Link>
               )}
@@ -108,7 +99,7 @@ export function State(props: Props) {
                   to={`/orchestrations/${encodeURIComponent(
                     state.parentInstance.orchestrationInstance.instanceId
                   )}`}
-                >
+                  underline="hover">
                   {state.parentInstance.orchestrationInstance.instanceId}
                 </Link>
               </TableCell>

@@ -1,6 +1,6 @@
 import { Location } from "history";
-import { useCallback, useEffect, useState, useRef } from "react";
-import { useHistory } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { history } from "../history";
 
 type StringOptions = {
   multiple?: false;
@@ -57,7 +57,6 @@ export function useQueryState<T>(
   initialValue: T,
   options?: Options<T>
 ): [T, (v: T) => void] {
-  const history = useHistory();
   const { multiple, parse, stringify } = options ?? {};
 
   const [stateValue, setStateValue] = useState<T>(() =>
@@ -67,7 +66,7 @@ export function useQueryState<T>(
   const lastValueJson = useRef<string>(JSON.stringify(stateValue));
 
   useEffect(() => {
-    return history.listen((location) => {
+    return history.listen(({ location }) => {
       const locationValue = getLocationValue(
         location,
         name,
@@ -80,7 +79,7 @@ export function useQueryState<T>(
       lastValueJson.current = locationValueJson;
       setStateValue(locationValue);
     });
-  }, [history, name, initialValue, multiple, parse]);
+  }, [name, initialValue, multiple, parse]);
 
   const setValue = useCallback(
     (newValue: any) => {
@@ -111,7 +110,7 @@ export function useQueryState<T>(
         search: "?" + searchParams.toString(),
       });
     },
-    [history, name, initialValue, multiple, stringify]
+    [name, initialValue, multiple, stringify]
   );
 
   return [stateValue, setValue];
