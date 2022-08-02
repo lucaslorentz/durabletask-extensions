@@ -30,9 +30,8 @@ namespace LLL.DurableTask.EFCore.SqlServer
         public override async Task LockInstance(OrchestrationDbContext dbContext, string instanceId)
         {
             await dbContext.Database.ExecuteSqlRawAsync(@"
-                SELECT 1 FROM Instances
+                SELECT 1 FROM Instances WITH (UPDLOCK, READPAST)
                 WHERE InstanceId = {0}
-                FOR UPDATE
             ", instanceId);
         }
 
