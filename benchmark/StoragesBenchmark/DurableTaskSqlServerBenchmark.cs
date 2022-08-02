@@ -6,18 +6,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace StoragesBenchmark
 {
-    public class CGillumSqlServerBenchmark : OrchestrationBenchmark
+    public class DurableTaskSqlServerBenchmark : OrchestrationBenchmark
     {
         protected override void ConfigureStorage(IServiceCollection services)
         {
             var connectionString = _configuration.GetConnectionString("SqlServer");
 
-            var options = new SqlProviderOptions
-            {
-                ConnectionString = connectionString
-            };
+            var settings = new SqlOrchestrationServiceSettings(connectionString);
 
-            var provider = new SqlOrchestrationService(options);
+            var provider = new SqlOrchestrationService(settings);
             provider.CreateIfNotExistsAsync().GetAwaiter().GetResult();
 
             services.AddSingleton<SqlOrchestrationService>(provider);
