@@ -18,7 +18,7 @@ namespace StoragesBenchmark
 
     public abstract class OrchestrationBenchmark
     {
-        [Params(1000)]
+        [Params(100)]
         public int NumberOfOrchestrations;
 
         [Params(5)]
