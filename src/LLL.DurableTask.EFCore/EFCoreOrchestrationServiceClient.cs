@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using LLL.DurableTask.Core;
-using LLL.DurableTask.EFCore.Extensions;
 using LLL.DurableTask.EFCore.Mappers;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
@@ -31,17 +31,21 @@ namespace LLL.DurableTask.EFCore
                 var instanceId = creationMessage.OrchestrationInstance.InstanceId;
                 var executionId = creationMessage.OrchestrationInstance.ExecutionId;
 
+                await _dbContextExtensions.LockInstance(dbContext, instanceId);
+
                 var instance = await dbContext.Instances
                     .Include(i => i.LastExecution)
                     .FirstOrDefaultAsync(i => i.InstanceId == instanceId);
 
                 if (instance != null)
                 {
+                    // Dedupe dedupeStatuses silently
                     if (dedupeStatuses != null && dedupeStatuses.Contains(instance.LastExecution.Status))
                         return;
 
+                    // Otherwise, dedupe to avoid multile runnning instances
                     if (!IsFinalInstanceStatus(instance.LastExecution.Status))
-                        throw new Exception("Orchestration has an active execution");
+                        throw new OrchestrationAlreadyExistsException("Orchestration already has a running execution");
                 }
 
                 var runtimeState = new OrchestrationRuntimeState(new[] { executionStartedEvent });
@@ -423,7 +427,7 @@ namespace LLL.DurableTask.EFCore
 
         private bool IsFinalInstanceStatus(OrchestrationStatus status)
         {
-            return !IsFinalExecutionStatus(status) &&
+            return IsFinalExecutionStatus(status) &&
                 status != OrchestrationStatus.ContinuedAsNew;
         }
 
