@@ -30,6 +30,9 @@ namespace LLL.DurableTask.Worker.Orchestrations
 
         public override async Task<string> Execute(OrchestrationContext context, string input)
         {
+            context.MessageDataConverter = new TypelessJsonDataConverter();
+            context.ErrorDataConverter = new TypelessJsonDataConverter();
+
             var parameters = PrepareParameters(input, new Dictionary<Type, Func<object>>
             {
                 [typeof(OrchestrationContext)] = () => context,
