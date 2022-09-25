@@ -30,8 +30,8 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
         public override async Task<Instance> LockInstanceForUpdate(OrchestrationDbContext dbContext, string instanceId)
         {
             return await dbContext.Instances.FromSqlRaw(@"
-                SELECT * FROM Instances
-                WHERE InstanceId = {0}
+                SELECT * FROM ""Instances""
+                WHERE ""Instances"".""InstanceId"" = {0}
                 FOR UPDATE
             ", instanceId).FirstOrDefaultAsync();
         }
