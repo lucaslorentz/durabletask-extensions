@@ -7,6 +7,7 @@ namespace LLL.DurableTask.EFCore.Entities
         public Guid Id { get; set; }
 
         public string InstanceId { get; set; }
+        // This relationship ensures messages are deleted when instance is deleted
         public Instance Instance { get; set; }
 
         public string Queue { get; set; }

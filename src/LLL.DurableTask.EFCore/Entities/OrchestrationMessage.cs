@@ -7,6 +7,7 @@ namespace LLL.DurableTask.EFCore.Entities
         public Guid Id { get; set; }
 
         public string InstanceId { get; set; }
+        // This relationship ensures messages are deleted when instance is deleted
         public Instance Instance { get; set; }
 
         public string ExecutionId { get; set; }
@@ -15,9 +16,7 @@ namespace LLL.DurableTask.EFCore.Entities
 
         public DateTime AvailableAt { get; set; }
 
-        /// <summary>
-        /// Used to order messages fired at the same moment
-        /// </summary>
+        // Used to order messages fired at the same moment
         public int SequenceNumber { get; set; }
 
         public string Message { get; set; }

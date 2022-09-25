@@ -6,6 +6,7 @@ namespace LLL.DurableTask.EFCore.Entities
     {
         public string InstanceId { get; set; }
         public string LastExecutionId { get; set; }
+        // This relationship ensures instance is deleted when last execution is deleted
         public Execution LastExecution { get; set; }
         public string LastQueue { get; set; }
         public DateTime LockedUntil { get; set; }
