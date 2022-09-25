@@ -32,7 +32,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
             return await dbContext.Instances.FromSqlRaw(@"
                 SELECT * FROM Instances WITH (UPDLOCK)
                 WHERE InstanceId = {0}
-            ", instanceId).FirstOrDefaultAsync();
+            ", instanceId).SingleOrDefaultAsync();
         }
 
         public override async Task<Instance> TryLockNextInstanceAsync(
@@ -48,7 +48,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
                         OrchestrationMessages.AvailableAt <= {0}
                         AND Instances.LockedUntil <= {0}
                     ORDER BY OrchestrationMessages.AvailableAt
-                ", DateTime.UtcNow).FirstOrDefaultAsync();
+                ", DateTime.UtcNow).SingleOrDefaultAsync();
 
                 if (batch == null)
                     return null;
@@ -81,7 +81,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
                         AND OrchestrationMessages.Queue IN ({queuesParams})
                         AND Instances.LockedUntil <= {utcNowParam}
                     ORDER BY OrchestrationMessages.AvailableAt
-                ", parameters).FirstOrDefaultAsync();
+                ", parameters).SingleOrDefaultAsync();
 
                 if (batch == null)
                     return null;
@@ -105,7 +105,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
                     SELECT TOP 1 * FROM ActivityMessages WITH (UPDLOCK, READPAST)
                     WHERE LockedUntil <= {0}
                     ORDER BY LockedUntil
-                ", DateTime.UtcNow).FirstOrDefaultAsync();
+                ", DateTime.UtcNow).SingleOrDefaultAsync();
 
                 if (instance == null)
                     return null;
@@ -136,7 +136,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
                     WHERE Queue IN ({queuesParams})
                         AND LockedUntil <= {utcNowParam}
                     ORDER BY LockedUntil
-                ", parameters).FirstOrDefaultAsync();
+                ", parameters).SingleOrDefaultAsync();
 
                 if (instance == null)
                     return null;

@@ -88,7 +88,7 @@ namespace LLL.DurableTask.EFCore
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var events = await dbContext.Events
-                    .Where(e => e.InstanceId == instanceId && e.ExecutionId == executionId)
+                    .Where(e => e.ExecutionId == executionId)
                     .OrderBy(e => e.SequenceNumber)
                     .ToArrayAsync();
 

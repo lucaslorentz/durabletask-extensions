@@ -33,7 +33,7 @@ namespace LLL.DurableTask.EFCore.MySql
                 SELECT * FROM Instances
                 WHERE InstanceId = {0}
                 FOR UPDATE
-            ", instanceId).FirstOrDefaultAsync();
+            ", instanceId).SingleOrDefaultAsync();
         }
 
         public override async Task<Instance> TryLockNextInstanceAsync(
@@ -51,7 +51,7 @@ namespace LLL.DurableTask.EFCore.MySql
                     ORDER BY OrchestrationMessages.AvailableAt
                     LIMIT 1
                     FOR UPDATE SKIP LOCKED
-                ", DateTime.UtcNow).FirstOrDefaultAsync();
+                ", DateTime.UtcNow).SingleOrDefaultAsync();
 
                 if (batch == null)
                     return null;
@@ -86,7 +86,7 @@ namespace LLL.DurableTask.EFCore.MySql
                     ORDER BY OrchestrationMessages.AvailableAt
                     LIMIT 1
                     FOR UPDATE SKIP LOCKED
-                ", parameters).FirstOrDefaultAsync();
+                ", parameters).SingleOrDefaultAsync();
 
                 if (batch == null)
                     return null;
@@ -112,7 +112,7 @@ namespace LLL.DurableTask.EFCore.MySql
                     ORDER BY LockedUntil
                     LIMIT 1
                     FOR UPDATE SKIP LOCKED
-                ", DateTime.UtcNow).FirstOrDefaultAsync();
+                ", DateTime.UtcNow).SingleOrDefaultAsync();
 
                 if (instance == null)
                     return null;
@@ -144,7 +144,7 @@ namespace LLL.DurableTask.EFCore.MySql
                     ORDER BY LockedUntil
                     LIMIT 1
                     FOR UPDATE SKIP LOCKED
-                ", parameters).FirstOrDefaultAsync();
+                ", parameters).SingleOrDefaultAsync();
 
                 if (instance == null)
                     return null;

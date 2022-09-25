@@ -130,12 +130,10 @@ namespace LLL.DurableTask.EFCore
                     if (instance == null)
                         return null;
 
-                    var execution = await dbContext.Executions
-                        .Where(e => e.InstanceId == instance.InstanceId && e.ExecutionId == instance.LastExecutionId)
-                        .FirstOrDefaultAsync();
+                    var execution = await dbContext.Executions.FindAsync(instance.LastExecutionId);
 
                     var events = await dbContext.Events
-                        .Where(e => e.InstanceId == instance.InstanceId && e.ExecutionId == instance.LastExecutionId)
+                        .Where(e => e.ExecutionId == instance.LastExecutionId)
                         .OrderBy(e => e.SequenceNumber)
                         .AsNoTracking()
                         .ToArrayAsync();
