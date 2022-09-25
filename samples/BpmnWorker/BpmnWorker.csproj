@@ -6,10 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ClearScript" Version="7.3.1" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.2.0" />
-    <PackageReference Include="Microsoft.ClearScript.osx-x64" Version="7.3.1" />
-    <PackageReference Include="Microsoft.ClearScript.osx-arm64" Version="7.3.1" />
+    <PackageReference Include="Microsoft.ClearScript" Version="7.3.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.3.0" />
+    <PackageReference Include="Microsoft.ClearScript.osx-x64" Version="7.3.2" />
+    <PackageReference Include="Microsoft.ClearScript.osx-arm64" Version="7.3.2" />
   </ItemGroup>
 
   <ItemGroup>
