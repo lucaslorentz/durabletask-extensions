@@ -14,12 +14,12 @@ namespace LLL.DurableTask.EFCore
     {
         private readonly EFCoreOrchestrationOptions _options;
 
-        private readonly Func<OrchestrationDbContext> _dbContextFactory;
+        private readonly IDbContextFactory<OrchestrationDbContext> _dbContextFactory;
         private readonly CancellationToken _stopCancellationToken;
 
         public EFCoreOrchestrationSession(
             EFCoreOrchestrationOptions options,
-            Func<OrchestrationDbContext> dbContextFactory,
+            IDbContextFactory<OrchestrationDbContext> dbContextFactory,
             Instance instance,
             Execution execution,
             OrchestrationRuntimeState runtimeState,
@@ -45,7 +45,7 @@ namespace LLL.DurableTask.EFCore
         {
             return await BackoffPollingHelper.PollAsync(async () =>
             {
-                using (var dbContext = _dbContextFactory())
+                using (var dbContext = _dbContextFactory.CreateDbContext())
                 {
                     var messages = await FetchNewMessagesAsync(dbContext);
                     await dbContext.SaveChangesAsync();

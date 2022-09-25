@@ -20,7 +20,7 @@ namespace LLL.DurableTask.EFCore
         IExtendedOrchestrationService
     {
         private readonly EFCoreOrchestrationOptions _options;
-        private readonly Func<OrchestrationDbContext> _dbContextFactory;
+        private readonly IDbContextFactory<OrchestrationDbContext> _dbContextFactory;
         private readonly OrchestrationDbContextExtensions _dbContextExtensions;
         private readonly OrchestrationMessageMapper _orchestrationMessageMapper;
         private readonly ActivityMessageMapper _activityMessageMapper;
@@ -32,7 +32,7 @@ namespace LLL.DurableTask.EFCore
 
         public EFCoreOrchestrationService(
             IOptions<EFCoreOrchestrationOptions> options,
-            Func<OrchestrationDbContext> dbContextFactory,
+            IDbContextFactory<OrchestrationDbContext> dbContextFactory,
             OrchestrationDbContextExtensions dbContextExtensions,
             OrchestrationMessageMapper orchestrationMessageMapper,
             ActivityMessageMapper activityMessageMapper,
@@ -63,7 +63,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task CreateAsync(bool recreateInstanceStore)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 if (recreateInstanceStore)
                     await dbContext.Database.EnsureDeletedAsync();
@@ -74,7 +74,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task CreateIfNotExistsAsync()
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 await _dbContextExtensions.Migrate(dbContext);
             }
@@ -87,7 +87,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task DeleteAsync(bool deleteInstanceStore)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 await dbContext.Database.EnsureDeletedAsync();
             }
@@ -123,7 +123,7 @@ namespace LLL.DurableTask.EFCore
 
             return await BackoffPollingHelper.PollAsync(async () =>
             {
-                using (var dbContext = _dbContextFactory())
+                using (var dbContext = _dbContextFactory.CreateDbContext())
                 {
                     var instance = await LockNextInstanceAsync(dbContext, orchestrations);
 
@@ -197,7 +197,7 @@ namespace LLL.DurableTask.EFCore
 
             return await BackoffPollingHelper.PollAsync(async () =>
             {
-                using (var dbContext = _dbContextFactory())
+                using (var dbContext = _dbContextFactory.CreateDbContext())
                 {
                     var activityMessage = await LockActivityMessage(dbContext, activities);
 
@@ -220,7 +220,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task ReleaseTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var session = workItem.Session as EFCoreOrchestrationSession;
                 if (!session.Released)
@@ -236,7 +236,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task AbandonTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var session = workItem.Session as EFCoreOrchestrationSession;
                 if (session.Released)
@@ -253,7 +253,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task RenewTaskOrchestrationWorkItemLockAsync(TaskOrchestrationWorkItem workItem)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var session = workItem.Session as EFCoreOrchestrationSession;
 
@@ -268,7 +268,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task AbandonTaskActivityWorkItemAsync(TaskActivityWorkItem workItem)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var (id, lockId, _) = ParseTaskActivityWorkItemId(workItem.Id);
 
@@ -285,7 +285,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task<TaskActivityWorkItem> RenewTaskActivityWorkItemLockAsync(TaskActivityWorkItem workItem)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var (id, lockId, _) = ParseTaskActivityWorkItemId(workItem.Id);
 
@@ -331,7 +331,7 @@ namespace LLL.DurableTask.EFCore
             TaskMessage continuedAsNewMessage,
             OrchestrationState orchestrationState)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var session = workItem.Session as EFCoreOrchestrationSession;
 
@@ -402,7 +402,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task CompleteTaskActivityWorkItemAsync(TaskActivityWorkItem workItem, TaskMessage responseMessage)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 await _dbContextExtensions.WithinTransaction(dbContext, async () =>
                 {

@@ -24,7 +24,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var executionStartedEvent = creationMessage.Event as ExecutionStartedEvent;
 
@@ -85,7 +85,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task<string> GetOrchestrationHistoryAsync(string instanceId, string executionId)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var events = await dbContext.Events
                     .Where(e => e.InstanceId == instanceId && e.ExecutionId == executionId)
@@ -107,7 +107,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task<OrchestrationState> GetOrchestrationStateAsync(string instanceId, string executionId)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var instance = await dbContext.Executions
                     .Where(e => e.InstanceId == instanceId && (executionId == null || e.ExecutionId == executionId))
@@ -123,7 +123,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task PurgeOrchestrationHistoryAsync(DateTime thresholdDateTimeUtc, OrchestrationStateTimeRangeFilterType timeRangeFilterType)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 await _dbContextExtensions.PurgeOrchestrationHistoryAsync(dbContext, thresholdDateTimeUtc, timeRangeFilterType);
             }
@@ -136,7 +136,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task SendTaskOrchestrationMessageBatchAsync(params TaskMessage[] messages)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 await SendTaskOrchestrationMessagesAsync(dbContext, messages);
 
@@ -190,7 +190,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task<OrchestrationQueryResult> GetOrchestrationsAsync(OrchestrationQuery query, CancellationToken cancellationToken = default)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var queryable = dbContext.Executions as IQueryable<Entities.Execution>;
 
@@ -257,7 +257,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task<PurgeInstanceHistoryResult> PurgeInstanceHistoryAsync(string instanceId)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var deletedRows = await _dbContextExtensions.PurgeInstanceHistoryAsync(dbContext, instanceId);
 
@@ -270,7 +270,7 @@ namespace LLL.DurableTask.EFCore
 
         public async Task RewindTaskOrchestrationAsync(string instanceId, string reason)
         {
-            using (var dbContext = _dbContextFactory())
+            using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 await RewindInstanceAsync(dbContext, instanceId, reason);
 

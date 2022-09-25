@@ -21,21 +21,10 @@ namespace Microsoft.Extensions.DependencyInjection
             if (configure != null)
                 services.Configure<EFCoreOrchestrationOptions>(configure);
 
-            services.AddSingleton<DbContextOptions<OrchestrationDbContext>>(_ =>
+            services.AddDbContextFactory<OrchestrationDbContext>(options =>
             {
-                var optionsBuilder = new DbContextOptionsBuilder<OrchestrationDbContext>();
                 foreach (var configuration in builder.DbContextConfigurations)
-                {
-                    configuration(optionsBuilder);
-                }
-                return optionsBuilder.Options;
-            });
-
-            // Switch to DbContextFactory after updating to EF Core 5
-            services.AddSingleton<Func<OrchestrationDbContext>>(p => () =>
-            {
-                var options = p.GetRequiredService<DbContextOptions<OrchestrationDbContext>>();
-                return new OrchestrationDbContext(options);
+                    configuration(options);
             });
 
             services.AddSingleton<EFCoreOrchestrationService>();

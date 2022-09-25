@@ -7,6 +7,7 @@ using LLL.DurableTask.EFCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -82,8 +83,8 @@ namespace LLL.DurableTask.Tests.Api
 
         protected TaskMessage[] GetOrchestrationMessages(string instanceId)
         {
-            var dbContextFactory = _host.Services.GetRequiredService<Func<OrchestrationDbContext>>();
-            using (var dbContext = dbContextFactory())
+            var dbContextFactory = _host.Services.GetRequiredService<IDbContextFactory<OrchestrationDbContext>>();
+            using (var dbContext = dbContextFactory.CreateDbContext())
             {
                 var dataConverter = new TypelessJsonDataConverter();
 

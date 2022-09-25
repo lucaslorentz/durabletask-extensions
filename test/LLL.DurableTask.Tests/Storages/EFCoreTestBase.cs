@@ -5,6 +5,7 @@ using FluentAssertions;
 using LLL.DurableTask.EFCore;
 using LLL.DurableTask.Tests.Storage.Orchestrations;
 using LLL.DurableTask.Tests.Utils;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -34,7 +35,7 @@ namespace LLL.DurableTask.Tests.Storages
             for (var i = 1; i <= 4; i++)
                 await taskHubClient.CreateOrchestrationInstanceAsync($"o{i}", "", $"i{i}", null);
 
-            var dbContextFactory = _host.Services.GetService<Func<OrchestrationDbContext>>();
+            var dbContextFactory = _host.Services.GetService<IDbContextFactory<OrchestrationDbContext>>();
             var dbContextExtensions = _host.Services.GetService<OrchestrationDbContextExtensions>();
 
             using var dbContextDispenser = new DbContextDispenser(dbContextFactory);
@@ -81,7 +82,7 @@ namespace LLL.DurableTask.Tests.Storages
             await taskHubClient.CreateOrchestrationInstanceAsync($"o2", "", $"i8", null);
             await taskHubClient.CreateOrchestrationInstanceAsync($"o3", "", $"i9", null);
 
-            var dbContextFactory = _host.Services.GetService<Func<OrchestrationDbContext>>();
+            var dbContextFactory = _host.Services.GetService<IDbContextFactory<OrchestrationDbContext>>();
             var dbContextExtensions = _host.Services.GetService<OrchestrationDbContextExtensions>();
 
             using var dbContextDispenser = new DbContextDispenser(dbContextFactory);
