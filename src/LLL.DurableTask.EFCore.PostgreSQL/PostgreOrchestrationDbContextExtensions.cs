@@ -42,7 +42,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
         {
             using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
             {
-                var batch = await dbContext.Instances.FromSqlRaw(@"
+                var instance = await dbContext.Instances.FromSqlRaw(@"
                     SELECT ""Instances"".* FROM ""OrchestrationMessages""
                         INNER JOIN ""Instances"" ON ""OrchestrationMessages"".""InstanceId"" = ""Instances"".""InstanceId""
                     WHERE
@@ -53,15 +53,15 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
                     FOR UPDATE SKIP LOCKED
                 ", DateTime.UtcNow).SingleOrDefaultAsync();
 
-                if (batch == null)
+                if (instance == null)
                     return null;
 
-                batch.LockId = Guid.NewGuid().ToString();
-                batch.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                instance.LockId = Guid.NewGuid().ToString();
+                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return batch;
+                return instance;
             }
         }
 
@@ -76,7 +76,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
                 var utcNowParam = $"{{{queues.Length}}}";
                 var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-                var batch = await dbContext.Instances.FromSqlRaw($@"
+                var instance = await dbContext.Instances.FromSqlRaw($@"
                     SELECT ""Instances"".* FROM ""OrchestrationMessages""
                         INNER JOIN ""Instances"" ON ""OrchestrationMessages"".""InstanceId"" = ""Instances"".""InstanceId""
                     WHERE
@@ -88,15 +88,15 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
                     FOR UPDATE SKIP LOCKED
                 ", parameters).SingleOrDefaultAsync();
 
-                if (batch == null)
+                if (instance == null)
                     return null;
 
-                batch.LockId = Guid.NewGuid().ToString();
-                batch.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                instance.LockId = Guid.NewGuid().ToString();
+                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return batch;
+                return instance;
             }
         }
 

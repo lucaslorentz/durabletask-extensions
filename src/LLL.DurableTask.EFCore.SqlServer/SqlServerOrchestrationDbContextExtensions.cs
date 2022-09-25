@@ -41,7 +41,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
         {
             using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
             {
-                var batch = await dbContext.Instances.FromSqlRaw(@"
+                var instance = await dbContext.Instances.FromSqlRaw(@"
                     SELECT TOP 1 Instances.* FROM OrchestrationMessages WITH (UPDLOCK, READPAST)
                         INNER JOIN Instances ON OrchestrationMessages.InstanceId = Instances.InstanceId
                     WHERE
@@ -50,15 +50,15 @@ namespace LLL.DurableTask.EFCore.SqlServer
                     ORDER BY OrchestrationMessages.AvailableAt
                 ", DateTime.UtcNow).SingleOrDefaultAsync();
 
-                if (batch == null)
+                if (instance == null)
                     return null;
 
-                batch.LockId = Guid.NewGuid().ToString();
-                batch.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                instance.LockId = Guid.NewGuid().ToString();
+                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return batch;
+                return instance;
             }
         }
 
@@ -73,7 +73,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
                 var utcNowParam = $"{{{queues.Length}}}";
                 var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-                var batch = await dbContext.Instances.FromSqlRaw($@"
+                var instance = await dbContext.Instances.FromSqlRaw($@"
                     SELECT TOP 1 Instances.* FROM OrchestrationMessages WITH (UPDLOCK, READPAST)
                         INNER JOIN Instances ON OrchestrationMessages.InstanceId = Instances.InstanceId
                     WHERE
@@ -83,15 +83,15 @@ namespace LLL.DurableTask.EFCore.SqlServer
                     ORDER BY OrchestrationMessages.AvailableAt
                 ", parameters).SingleOrDefaultAsync();
 
-                if (batch == null)
+                if (instance == null)
                     return null;
 
-                batch.LockId = Guid.NewGuid().ToString();
-                batch.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                instance.LockId = Guid.NewGuid().ToString();
+                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
                 await dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return batch;
+                return instance;
             }
         }
 
