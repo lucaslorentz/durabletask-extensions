@@ -4,12 +4,12 @@ namespace LLL.DurableTask.EFCore.Mappers
 {
     public static class QueueMapper
     {
-        public static string ToQueueName(INameVersionInfo nameVersion)
+        public static string ToQueue(INameVersionInfo nameVersion)
         {
-            return ToQueueName(nameVersion.Name, nameVersion.Version);
+            return ToQueue(nameVersion.Name, nameVersion.Version);
         }
 
-        public static string ToQueueName(string name, string version)
+        public static string ToQueue(string name, string version)
         {
             if (string.IsNullOrEmpty(version))
                 return name;

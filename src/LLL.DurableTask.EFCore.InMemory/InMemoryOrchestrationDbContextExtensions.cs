@@ -26,17 +26,24 @@ namespace LLL.DurableTask.EFCore.InMemory
             await action();
         }
 
-        public override async Task LockInstance(OrchestrationDbContext dbContext, string instanceId)
+        public override async Task<Instance> LockInstanceForUpdate(OrchestrationDbContext dbContext, string instanceId)
         {
+            var instance = dbContext.Instances.Find(instanceId);
+
+            if (instance == null)
+                return null;
+
             var lockedInstances = _lockedInstanes.GetOrAdd(dbContext, (d) => new HashSet<string>());
             if (!lockedInstances.Add(instanceId))
-                return;
+                return instance;
 
             var semaphore = _instancesSemaphores.GetOrAdd(instanceId, (_) => new SemaphoreSlim(1));
             await semaphore.WaitAsync();
 
             dbContext.SaveChangesFailed += (o, e) => Unlock();
             dbContext.SavedChanges += (o, e) => Unlock();
+
+            return instance;
 
             void Unlock()
             {
@@ -45,55 +52,55 @@ namespace LLL.DurableTask.EFCore.InMemory
             }
         }
 
-        public override Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
+        public override Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
             lock (_lock)
             {
-                var batch = (
-                    from b in dbContext.OrchestrationBatches
+                var instance = (
+                    from b in dbContext.OrchestrationMessages
                     where b.AvailableAt <= DateTime.UtcNow
-                    && b.LockedUntil <= DateTime.UtcNow
+                    && b.Instance.LockedUntil <= DateTime.UtcNow
                     orderby b.AvailableAt
-                    select b
+                    select b.Instance
                 ).FirstOrDefault();
 
-                if (batch == null)
-                    return Task.FromResult(default(OrchestrationBatch));
+                if (instance == null)
+                    return Task.FromResult(default(Instance));
 
-                batch.LockId = Guid.NewGuid().ToString();
-                batch.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                instance.LockId = Guid.NewGuid().ToString();
+                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
                 dbContext.SaveChanges();
 
-                return Task.FromResult(batch);
+                return Task.FromResult(instance);
             }
         }
 
-        public override Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
+        public override Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             string[] queues,
             TimeSpan lockTimeout)
         {
             lock (_lock)
             {
-                var batch = (
-                    from b in dbContext.OrchestrationBatches
+                var instance = (
+                    from b in dbContext.OrchestrationMessages
                     where b.AvailableAt <= DateTime.UtcNow
                     && queues.Contains(b.Queue)
-                    && b.LockedUntil <= DateTime.UtcNow
+                    && b.Instance.LockedUntil <= DateTime.UtcNow
                     orderby b.AvailableAt
-                    select b
+                    select b.Instance
                 ).FirstOrDefault();
 
-                if (batch == null)
-                    return Task.FromResult(default(OrchestrationBatch));
+                if (instance == null)
+                    return Task.FromResult(default(Instance));
 
-                batch.LockId = Guid.NewGuid().ToString();
-                batch.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+                instance.LockId = Guid.NewGuid().ToString();
+                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
                 dbContext.SaveChanges();
 
-                return Task.FromResult(batch);
+                return Task.FromResult(instance);
             }
         }
 

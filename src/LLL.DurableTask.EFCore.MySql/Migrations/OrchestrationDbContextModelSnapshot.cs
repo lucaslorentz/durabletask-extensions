@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+#nullable disable
+
 namespace LLL.DurableTask.EFCore.MySql.Migrations
 {
     [DbContext(typeof(OrchestrationDbContext))]
@@ -14,7 +16,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "3.1.10")
+                .HasAnnotation("ProductVersion", "6.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
@@ -28,30 +30,30 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<string>("LockId")
                         .IsConcurrencyToken()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<DateTime>("LockedUntil")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Message")
-                        .HasColumnType("longtext CHARACTER SET utf8mb4")
-                        .HasMaxLength(2147483647);
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Queue")
                         .IsRequired()
-                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<string>("ReplyQueue")
                         .IsRequired()
-                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.HasKey("Id");
 
@@ -72,18 +74,18 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("longtext CHARACTER SET utf8mb4")
-                        .HasMaxLength(2147483647);
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ExecutionId")
                         .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
@@ -101,8 +103,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
                     b.Property<string>("ExecutionId")
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<DateTime>("CompletedTime")
                         .HasColumnType("datetime(6)");
@@ -114,42 +116,42 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("CustomStatus")
-                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Input")
-                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<DateTime>("LastUpdatedTime")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<string>("Output")
-                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ParentInstance")
-                        .HasColumnType("varchar(2000) CHARACTER SET utf8mb4")
-                        .HasMaxLength(2000);
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
 
                     b.Property<long>("Size")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Version")
                         .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.HasKey("ExecutionId");
 
@@ -159,18 +161,26 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
                 {
                     b.Property<string>("InstanceId")
-                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<string>("LastExecutionId")
                         .IsRequired()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
-                    b.Property<string>("LastQueueName")
+                    b.Property<string>("LastQueue")
                         .IsRequired()
-                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
+
+                    b.Property<string>("LockId")
+                        .IsConcurrencyToken()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("LockedUntil")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("InstanceId");
 
@@ -179,72 +189,40 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                     b.ToTable("Instances");
                 });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationBatch", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)")
-                        .HasMaxLength(36);
-
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("InstanceId")
-                        .IsRequired()
-                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(250);
-
-                    b.Property<string>("LockId")
-                        .IsConcurrencyToken()
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
-
-                    b.Property<DateTime>("LockedUntil")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Queue")
-                        .IsRequired()
-                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(250);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InstanceId", "Queue")
-                        .IsUnique();
-
-                    b.HasIndex("AvailableAt", "LockedUntil", "Queue");
-
-                    b.ToTable("OrchestrationBatches");
-                });
-
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)")
-                        .HasMaxLength(36);
+                        .HasMaxLength(36)
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("AvailableAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("char(36)")
-                        .HasMaxLength(36);
-
                     b.Property<string>("ExecutionId")
-                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<string>("Message")
-                        .HasColumnType("longtext CHARACTER SET utf8mb4")
-                        .HasMaxLength(2147483647);
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Queue")
+                        .HasColumnType("varchar(255)");
 
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
+                    b.HasIndex("InstanceId");
+
+                    b.HasIndex("AvailableAt", "Queue", "InstanceId");
 
                     b.ToTable("OrchestrationMessages");
                 });
@@ -256,6 +234,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Instance");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
@@ -265,6 +245,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasForeignKey("ExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Execution");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
@@ -272,7 +254,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                     b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
                             b1.Property<string>("ExecutionId")
-                                .HasColumnType("varchar(100) CHARACTER SET utf8mb4");
+                                .HasColumnType("varchar(100)");
 
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
@@ -280,21 +262,23 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                             b1.Property<string>("Name")
                                 .IsRequired()
-                                .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
-                                .HasMaxLength(100);
+                                .HasMaxLength(100)
+                                .HasColumnType("varchar(100)");
 
                             b1.Property<string>("Value")
                                 .IsRequired()
-                                .HasColumnType("varchar(2000) CHARACTER SET utf8mb4")
-                                .HasMaxLength(2000);
+                                .HasMaxLength(2000)
+                                .HasColumnType("varchar(2000)");
 
                             b1.HasKey("ExecutionId", "Id");
 
-                            b1.ToTable("ExecutionTags");
+                            b1.ToTable("ExecutionTags", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ExecutionId");
                         });
+
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
@@ -304,24 +288,19 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                         .HasForeignKey("LastExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("LastExecution");
                 });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationBatch", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
                 {
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
-                {
-                    b.HasOne("LLL.DurableTask.EFCore.Entities.OrchestrationBatch", "Batch")
-                        .WithMany()
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Instance");
                 });
 #pragma warning restore 612, 618
         }

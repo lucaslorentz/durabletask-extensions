@@ -31,20 +31,18 @@ namespace LLL.DurableTask.EFCore
                 var instanceId = creationMessage.OrchestrationInstance.InstanceId;
                 var executionId = creationMessage.OrchestrationInstance.ExecutionId;
 
-                await _dbContextExtensions.LockInstance(dbContext, instanceId);
-
-                var instance = await dbContext.Instances
-                    .Include(i => i.LastExecution)
-                    .FirstOrDefaultAsync(i => i.InstanceId == instanceId);
+                var instance = await _dbContextExtensions.LockInstanceForUpdate(dbContext, instanceId);
 
                 if (instance != null)
                 {
+                    var lastExecution = await dbContext.Executions.FindAsync(instance.LastExecutionId);
+
                     // Dedupe dedupeStatuses silently
-                    if (dedupeStatuses != null && dedupeStatuses.Contains(instance.LastExecution.Status))
+                    if (dedupeStatuses != null && dedupeStatuses.Contains(lastExecution.Status))
                         return;
 
                     // Otherwise, dedupe to avoid multile runnning instances
-                    if (!IsFinalInstanceStatus(instance.LastExecution.Status))
+                    if (!IsFinalInstanceStatus(lastExecution.Status))
                         throw new OrchestrationAlreadyExistsException("Orchestration already has a running execution");
                 }
 
@@ -65,10 +63,10 @@ namespace LLL.DurableTask.EFCore
 
                 var knownQueues = new Dictionary<string, string>
                 {
-                    [instance.InstanceId] = QueueMapper.ToQueueName(runtimeState.Name, runtimeState.Version)
+                    [instance.InstanceId] = QueueMapper.ToQueue(runtimeState.Name, runtimeState.Version)
                 };
 
-                await SendTaskOrchestrationMessageBatchAsync(dbContext, new[] { creationMessage }, knownQueues);
+                await SendTaskOrchestrationMessagesAsync(dbContext, new[] { creationMessage }, knownQueues);
 
                 await dbContext.SaveChangesAsync();
             }
@@ -140,7 +138,7 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory())
             {
-                await SendTaskOrchestrationMessageBatchAsync(dbContext, messages);
+                await SendTaskOrchestrationMessagesAsync(dbContext, messages);
 
                 await dbContext.SaveChangesAsync();
             }
@@ -418,10 +416,10 @@ namespace LLL.DurableTask.EFCore
 
                 var knownQueues = new Dictionary<string, string>
                 {
-                    [lastExecution.InstanceId] = QueueMapper.ToQueueName(lastExecution.Name, lastExecution.Version)
+                    [lastExecution.InstanceId] = QueueMapper.ToQueue(lastExecution.Name, lastExecution.Version)
                 };
 
-                await SendTaskOrchestrationMessageBatchAsync(dbContext, new[] { taskMessage }, knownQueues);
+                await SendTaskOrchestrationMessagesAsync(dbContext, new[] { taskMessage }, knownQueues);
             }
         }
 

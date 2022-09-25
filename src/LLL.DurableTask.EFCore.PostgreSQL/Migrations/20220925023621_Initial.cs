@@ -1,8 +1,10 @@
 ﻿using System;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace LLL.DurableTask.EFCore.MySql.Migrations
+#nullable disable
+
+namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 {
     public partial class Initial : Migration
     {
@@ -12,20 +14,20 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 name: "Executions",
                 columns: table => new
                 {
-                    ExecutionId = table.Column<string>(maxLength: 100, nullable: false),
-                    InstanceId = table.Column<string>(maxLength: 250, nullable: false),
-                    Name = table.Column<string>(maxLength: 250, nullable: false),
-                    Version = table.Column<string>(maxLength: 100, nullable: false),
-                    CreatedTime = table.Column<DateTime>(nullable: false),
-                    CompletedTime = table.Column<DateTime>(nullable: false),
-                    LastUpdatedTime = table.Column<DateTime>(nullable: false),
-                    CompressedSize = table.Column<long>(nullable: false),
-                    Size = table.Column<long>(nullable: false),
-                    Status = table.Column<string>(nullable: false),
-                    CustomStatus = table.Column<string>(nullable: true),
-                    ParentInstance = table.Column<string>(maxLength: 2000, nullable: true),
-                    Input = table.Column<string>(nullable: true),
-                    Output = table.Column<string>(nullable: true)
+                    ExecutionId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    InstanceId = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    Name = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    Version = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    CreatedTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CompletedTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastUpdatedTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CompressedSize = table.Column<long>(type: "bigint", nullable: false),
+                    Size = table.Column<long>(type: "bigint", nullable: false),
+                    Status = table.Column<string>(type: "text", nullable: false),
+                    CustomStatus = table.Column<string>(type: "text", nullable: true),
+                    ParentInstance = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    Input = table.Column<string>(type: "text", nullable: true),
+                    Output = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -36,11 +38,11 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 name: "Events",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
-                    InstanceId = table.Column<string>(maxLength: 250, nullable: false),
-                    ExecutionId = table.Column<string>(maxLength: 100, nullable: false),
-                    SequenceNumber = table.Column<int>(nullable: false),
-                    Content = table.Column<string>(maxLength: 2147483647, nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    InstanceId = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    ExecutionId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    SequenceNumber = table.Column<int>(type: "integer", nullable: false),
+                    Content = table.Column<string>(type: "text", maxLength: 2147483647, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -57,11 +59,11 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 name: "ExecutionTags",
                 columns: table => new
                 {
-                    ExecutionId = table.Column<string>(nullable: false),
-                    Id = table.Column<int>(nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(maxLength: 100, nullable: false),
-                    Value = table.Column<string>(maxLength: 2000, nullable: false)
+                    ExecutionId = table.Column<string>(type: "character varying(100)", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Value = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -78,9 +80,11 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 name: "Instances",
                 columns: table => new
                 {
-                    InstanceId = table.Column<string>(maxLength: 250, nullable: false),
-                    LastExecutionId = table.Column<string>(maxLength: 100, nullable: false),
-                    LastQueueName = table.Column<string>(maxLength: 250, nullable: false)
+                    InstanceId = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    LastExecutionId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    LastQueue = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    LockedUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LockId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -97,14 +101,14 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 name: "ActivityMessages",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
-                    InstanceId = table.Column<string>(maxLength: 250, nullable: false),
-                    Queue = table.Column<string>(maxLength: 250, nullable: false),
-                    ReplyQueue = table.Column<string>(maxLength: 250, nullable: false),
-                    Message = table.Column<string>(maxLength: 2147483647, nullable: true),
-                    CreatedAt = table.Column<DateTime>(nullable: false),
-                    LockedUntil = table.Column<DateTime>(nullable: false),
-                    LockId = table.Column<string>(maxLength: 100, nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    InstanceId = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    Queue = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    ReplyQueue = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    Message = table.Column<string>(type: "text", maxLength: 2147483647, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LockedUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LockId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -118,46 +122,25 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OrchestrationBatches",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(maxLength: 36, nullable: false),
-                    InstanceId = table.Column<string>(maxLength: 250, nullable: false),
-                    Queue = table.Column<string>(maxLength: 250, nullable: false),
-                    AvailableAt = table.Column<DateTime>(nullable: false),
-                    LockedUntil = table.Column<DateTime>(nullable: false),
-                    LockId = table.Column<string>(maxLength: 100, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OrchestrationBatches", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_OrchestrationBatches_Instances_InstanceId",
-                        column: x => x.InstanceId,
-                        principalTable: "Instances",
-                        principalColumn: "InstanceId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "OrchestrationMessages",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(maxLength: 36, nullable: false),
-                    BatchId = table.Column<Guid>(maxLength: 36, nullable: false),
-                    ExecutionId = table.Column<string>(maxLength: 100, nullable: true),
-                    AvailableAt = table.Column<DateTime>(nullable: false),
-                    SequenceNumber = table.Column<int>(nullable: false),
-                    Message = table.Column<string>(maxLength: 2147483647, nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", maxLength: 36, nullable: false),
+                    InstanceId = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    ExecutionId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Queue = table.Column<string>(type: "text", nullable: true),
+                    AvailableAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SequenceNumber = table.Column<int>(type: "integer", nullable: false),
+                    Message = table.Column<string>(type: "text", maxLength: 2147483647, nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_OrchestrationMessages", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_OrchestrationMessages_OrchestrationBatches_BatchId",
-                        column: x => x.BatchId,
-                        principalTable: "OrchestrationBatches",
-                        principalColumn: "Id",
+                        name: "FK_OrchestrationMessages_Instances_InstanceId",
+                        column: x => x.InstanceId,
+                        principalTable: "Instances",
+                        principalColumn: "InstanceId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -193,20 +176,14 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                 column: "LastExecutionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrchestrationBatches_InstanceId_Queue",
-                table: "OrchestrationBatches",
-                columns: new[] { "InstanceId", "Queue" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OrchestrationBatches_AvailableAt_LockedUntil_Queue",
-                table: "OrchestrationBatches",
-                columns: new[] { "AvailableAt", "LockedUntil", "Queue" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OrchestrationMessages_BatchId",
+                name: "IX_OrchestrationMessages_AvailableAt_Queue_InstanceId",
                 table: "OrchestrationMessages",
-                column: "BatchId");
+                columns: new[] { "AvailableAt", "Queue", "InstanceId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrchestrationMessages_InstanceId",
+                table: "OrchestrationMessages",
+                column: "InstanceId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
@@ -222,9 +199,6 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
             migrationBuilder.DropTable(
                 name: "OrchestrationMessages");
-
-            migrationBuilder.DropTable(
-                name: "OrchestrationBatches");
 
             migrationBuilder.DropTable(
                 name: "Instances");

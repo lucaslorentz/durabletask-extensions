@@ -27,26 +27,27 @@ namespace LLL.DurableTask.EFCore.SqlServer
             }
         }
 
-        public override async Task LockInstance(OrchestrationDbContext dbContext, string instanceId)
+        public override async Task<Instance> LockInstanceForUpdate(OrchestrationDbContext dbContext, string instanceId)
         {
-            await dbContext.Database.ExecuteSqlRawAsync(@"
-                SELECT 1 FROM Instances WITH (UPDLOCK)
+            return await dbContext.Instances.FromSqlRaw(@"
+                SELECT * FROM Instances WITH (UPDLOCK)
                 WHERE InstanceId = {0}
-            ", instanceId);
+            ", instanceId).FirstOrDefaultAsync();
         }
 
-        public override async Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
+        public override async Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
             using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
             {
-                var batch = await dbContext.OrchestrationBatches.FromSqlRaw(@"
-                    SELECT TOP 1 * FROM OrchestrationBatches WITH (UPDLOCK, READPAST)
+                var batch = await dbContext.Instances.FromSqlRaw(@"
+                    SELECT TOP 1 Instances.* FROM OrchestrationMessages WITH (UPDLOCK, READPAST)
+                        INNER JOIN Instances ON OrchestrationMessages.InstanceId = Instances.InstanceId
                     WHERE
-                        AvailableAt <= {0}
-                        AND LockedUntil <= {0}
-                    ORDER BY AvailableAt
+                        OrchestrationMessages.AvailableAt <= {0}
+                        AND Instances.LockedUntil <= {0}
+                    ORDER BY OrchestrationMessages.AvailableAt
                 ", DateTime.UtcNow).FirstOrDefaultAsync();
 
                 if (batch == null)
@@ -61,7 +62,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
             }
         }
 
-        public override async Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
+        public override async Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             string[] queues,
             TimeSpan lockTimeout)
@@ -72,13 +73,14 @@ namespace LLL.DurableTask.EFCore.SqlServer
                 var utcNowParam = $"{{{queues.Length}}}";
                 var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-                var batch = await dbContext.OrchestrationBatches.FromSqlRaw($@"
-                    SELECT TOP 1 * FROM OrchestrationBatches WITH (UPDLOCK, READPAST)
+                var batch = await dbContext.Instances.FromSqlRaw($@"
+                    SELECT TOP 1 Instances.* FROM OrchestrationMessages WITH (UPDLOCK, READPAST)
+                        INNER JOIN Instances ON OrchestrationMessages.InstanceId = Instances.InstanceId
                     WHERE
-                        AvailableAt <= {utcNowParam}
-                        AND Queue IN ({queuesParams})
-                        AND LockedUntil <= {utcNowParam}
-                    ORDER BY AvailableAt
+                        OrchestrationMessages.AvailableAt <= {utcNowParam}
+                        AND OrchestrationMessages.Queue IN ({queuesParams})
+                        AND Instances.LockedUntil <= {utcNowParam}
+                    ORDER BY OrchestrationMessages.AvailableAt
                 ", parameters).FirstOrDefaultAsync();
 
                 if (batch == null)

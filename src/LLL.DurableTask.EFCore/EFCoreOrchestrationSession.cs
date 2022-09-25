@@ -21,7 +21,6 @@ namespace LLL.DurableTask.EFCore
             EFCoreOrchestrationOptions options,
             Func<OrchestrationDbContext> dbContextFactory,
             Instance instance,
-            OrchestrationBatch batch,
             Execution execution,
             OrchestrationRuntimeState runtimeState,
             CancellationToken stopCancellationToken)
@@ -29,14 +28,12 @@ namespace LLL.DurableTask.EFCore
             _options = options;
             _dbContextFactory = dbContextFactory;
             Instance = instance;
-            Batch = batch;
             Execution = execution;
             RuntimeState = runtimeState;
             _stopCancellationToken = stopCancellationToken;
         }
 
         public Instance Instance { get; }
-        public OrchestrationBatch Batch { get; set; }
         public Execution Execution { get; set; }
         public OrchestrationRuntimeState RuntimeState { get; set; }
         public List<OrchestrationMessage> Messages { get; } = new List<OrchestrationMessage>();
@@ -65,13 +62,10 @@ namespace LLL.DurableTask.EFCore
             OrchestrationDbContext dbContext,
             CancellationToken cancellationToken = default)
         {
-            if (Batch == null)
-                return null;
-
-            var dbWorkItems = await dbContext.OrchestrationMessages
+            var newDbMessages = await dbContext.OrchestrationMessages
                 .Where(w => w.AvailableAt <= DateTime.UtcNow
-                    && w.BatchId == Batch.Id
-                    && w.Batch.LockId == Batch.LockId
+                    && w.InstanceId == Instance.InstanceId
+                    && w.Instance.LockId == Instance.LockId // Ensure we still own the lock
                     && !Messages.Contains(w))
                 .OrderBy(w => w.AvailableAt)
                 .ThenBy(w => w.SequenceNumber)
@@ -82,7 +76,7 @@ namespace LLL.DurableTask.EFCore
                 || RuntimeState.OrchestrationStatus == OrchestrationStatus.Pending
                 || RuntimeState.OrchestrationStatus == OrchestrationStatus.Running;
 
-            var messagesToDiscard = dbWorkItems
+            var messagesToDiscard = newDbMessages
                 .Where(m => !isExecutable || (m.ExecutionId != null && m.ExecutionId != Instance.LastExecutionId))
                 .ToArray();
 
@@ -94,14 +88,14 @@ namespace LLL.DurableTask.EFCore
                     dbContext.OrchestrationMessages.Remove(message);
                 }
 
-                dbWorkItems = dbWorkItems
+                newDbMessages = newDbMessages
                     .Except(messagesToDiscard)
                     .ToArray();
             }
 
-            Messages.AddRange(dbWorkItems);
+            Messages.AddRange(newDbMessages);
 
-            var deserializedMessages = dbWorkItems
+            var deserializedMessages = newDbMessages
                 .Select(w => _options.DataConverter.Deserialize<TaskMessage>(w.Message))
                 .ToArray();
 

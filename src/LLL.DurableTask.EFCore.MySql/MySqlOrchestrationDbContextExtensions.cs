@@ -27,27 +27,28 @@ namespace LLL.DurableTask.EFCore.MySql
             }
         }
 
-        public override async Task LockInstance(OrchestrationDbContext dbContext, string instanceId)
+        public override async Task<Instance> LockInstanceForUpdate(OrchestrationDbContext dbContext, string instanceId)
         {
-            await dbContext.Database.ExecuteSqlRawAsync(@"
-                SELECT 1 FROM Instances
+            return await dbContext.Instances.FromSqlRaw(@"
+                SELECT * FROM Instances
                 WHERE InstanceId = {0}
                 FOR UPDATE
-            ", instanceId);
+            ", instanceId).FirstOrDefaultAsync();
         }
 
-        public override async Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
+        public override async Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
             using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
             {
-                var batch = await dbContext.OrchestrationBatches.FromSqlRaw(@"
-                    SELECT * FROM OrchestrationBatches
+                var batch = await dbContext.Instances.FromSqlRaw(@"
+                    SELECT Instances.* FROM OrchestrationMessages
+                        INNER JOIN Instances ON OrchestrationMessages.InstanceId = Instances.InstanceId
                     WHERE
-                        AvailableAt <= {0}
-                        AND LockedUntil <= {0}
-                    ORDER BY AvailableAt
+                        OrchestrationMessages.AvailableAt <= {0}
+                        AND Instances.LockedUntil <= {0}
+                    ORDER BY OrchestrationMessages.AvailableAt
                     LIMIT 1
                     FOR UPDATE SKIP LOCKED
                 ", DateTime.UtcNow).FirstOrDefaultAsync();
@@ -64,7 +65,7 @@ namespace LLL.DurableTask.EFCore.MySql
             }
         }
 
-        public override async Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
+        public override async Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             string[] queues,
             TimeSpan lockTimeout)
@@ -75,13 +76,14 @@ namespace LLL.DurableTask.EFCore.MySql
                 var utcNowParam = $"{{{queues.Length}}}";
                 var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-                var batch = await dbContext.OrchestrationBatches.FromSqlRaw($@"
-                    SELECT * FROM OrchestrationBatches
+                var batch = await dbContext.Instances.FromSqlRaw($@"
+                    SELECT Instances.* FROM OrchestrationMessages
+                        INNER JOIN Instances ON OrchestrationMessages.InstanceId = Instances.InstanceId
                     WHERE
-                        AvailableAt <= {utcNowParam}
-                        AND Queue IN ({queuesParams})
-                        AND LockedUntil <= {utcNowParam}
-                    ORDER BY AvailableAt
+                        OrchestrationMessages.AvailableAt <= {utcNowParam}
+                        AND OrchestrationMessages.Queue IN ({queuesParams})
+                        AND Instances.LockedUntil <= {utcNowParam}
+                    ORDER BY OrchestrationMessages.AvailableAt
                     LIMIT 1
                     FOR UPDATE SKIP LOCKED
                 ", parameters).FirstOrDefaultAsync();

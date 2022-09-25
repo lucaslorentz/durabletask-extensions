@@ -6,10 +6,12 @@ namespace LLL.DurableTask.EFCore.Entities
     {
         public Guid Id { get; set; }
 
-        public Guid BatchId { get; set; }
-        public OrchestrationBatch Batch { get; set; }
+        public string InstanceId { get; set; }
+        public Instance Instance { get; set; }
 
         public string ExecutionId { get; set; }
+
+        public string Queue { get; set; }
 
         public DateTime AvailableAt { get; set; }
 

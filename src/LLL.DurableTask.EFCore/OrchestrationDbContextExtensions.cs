@@ -11,15 +11,15 @@ namespace LLL.DurableTask.EFCore
 
         public abstract Task WithinTransaction(OrchestrationDbContext dbContext, Func<Task> action);
 
-        public abstract Task LockInstance(
+        public abstract Task<Instance> LockInstanceForUpdate(
             OrchestrationDbContext dbContext,
             string instanceId);
 
-        public abstract Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
+        public abstract Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout);
 
-        public abstract Task<OrchestrationBatch> TryLockNextOrchestrationBatchAsync(
+        public abstract Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             string[] queues,
             TimeSpan lockTimeout);

@@ -18,7 +18,10 @@ namespace LLL.DurableTask.EFCore.Configuration
                 .HasForeignKey(x => x.LastExecutionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Property(x => x.LastQueueName).HasMaxLength(250).IsRequired();
+            builder.Property(x => x.LastQueue).HasMaxLength(250).IsRequired();
+
+            builder.Property(x => x.LockedUntil).IsRequired().HasConversion(new UtcDateTimeConverter());
+            builder.Property(x => x.LockId).HasMaxLength(100).IsConcurrencyToken();
         }
     }
 }

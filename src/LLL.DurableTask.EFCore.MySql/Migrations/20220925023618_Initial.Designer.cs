@@ -5,57 +5,57 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
+#nullable disable
+
+namespace LLL.DurableTask.EFCore.MySql.Migrations
 {
     [DbContext(typeof(OrchestrationDbContext))]
-    [Migration("20210207092354_Initial")]
+    [Migration("20220925023618_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                .HasAnnotation("ProductVersion", "3.1.10")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+                .HasAnnotation("ProductVersion", "6.0.7")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("character varying(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<string>("LockId")
                         .IsConcurrencyToken()
-                        .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<DateTime>("LockedUntil")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Message")
-                        .HasColumnType("text")
-                        .HasMaxLength(2147483647);
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Queue")
                         .IsRequired()
-                        .HasColumnType("character varying(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<string>("ReplyQueue")
                         .IsRequired()
-                        .HasColumnType("character varying(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.HasKey("Id");
 
@@ -72,25 +72,25 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasMaxLength(2147483647);
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ExecutionId")
                         .IsRequired()
-                        .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("character varying(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<int>("SequenceNumber")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -105,55 +105,55 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
                     b.Property<string>("ExecutionId")
-                        .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<DateTime>("CompletedTime")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<long>("CompressedSize")
                         .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedTime")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("CustomStatus")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Input")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("character varying(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<DateTime>("LastUpdatedTime")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("character varying(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<string>("Output")
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ParentInstance")
-                        .HasColumnType("character varying(2000)")
-                        .HasMaxLength(2000);
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
 
                     b.Property<long>("Size")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Version")
                         .IsRequired()
-                        .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.HasKey("ExecutionId");
 
@@ -163,18 +163,26 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
                 {
                     b.Property<string>("InstanceId")
-                        .HasColumnType("character varying(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<string>("LastExecutionId")
                         .IsRequired()
-                        .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
-                    b.Property<string>("LastQueueName")
+                    b.Property<string>("LastQueue")
                         .IsRequired()
-                        .HasColumnType("character varying(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
+
+                    b.Property<string>("LockId")
+                        .IsConcurrencyToken()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("LockedUntil")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("InstanceId");
 
@@ -183,72 +191,40 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                     b.ToTable("Instances");
                 });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationBatch", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasMaxLength(36);
-
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("InstanceId")
-                        .IsRequired()
-                        .HasColumnType("character varying(250)")
-                        .HasMaxLength(250);
-
-                    b.Property<string>("LockId")
-                        .IsConcurrencyToken()
-                        .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
-
-                    b.Property<DateTime>("LockedUntil")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("Queue")
-                        .IsRequired()
-                        .HasColumnType("character varying(250)")
-                        .HasMaxLength(250);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InstanceId", "Queue")
-                        .IsUnique();
-
-                    b.HasIndex("AvailableAt", "LockedUntil", "Queue");
-
-                    b.ToTable("OrchestrationBatches");
-                });
-
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasMaxLength(36);
+                        .HasMaxLength(36)
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("uuid")
-                        .HasMaxLength(36);
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("ExecutionId")
-                        .HasColumnType("character varying(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
 
                     b.Property<string>("Message")
-                        .HasColumnType("text")
-                        .HasMaxLength(2147483647);
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Queue")
+                        .HasColumnType("varchar(255)");
 
                     b.Property<int>("SequenceNumber")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
+                    b.HasIndex("InstanceId");
+
+                    b.HasIndex("AvailableAt", "Queue", "InstanceId");
 
                     b.ToTable("OrchestrationMessages");
                 });
@@ -260,6 +236,8 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Instance");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
@@ -269,6 +247,8 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .HasForeignKey("ExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Execution");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
@@ -276,30 +256,31 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                     b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
                             b1.Property<string>("ExecutionId")
-                                .HasColumnType("character varying(100)");
+                                .HasColumnType("varchar(100)");
 
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("integer")
-                                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                                .HasColumnType("int");
 
                             b1.Property<string>("Name")
                                 .IsRequired()
-                                .HasColumnType("character varying(100)")
-                                .HasMaxLength(100);
+                                .HasMaxLength(100)
+                                .HasColumnType("varchar(100)");
 
                             b1.Property<string>("Value")
                                 .IsRequired()
-                                .HasColumnType("character varying(2000)")
-                                .HasMaxLength(2000);
+                                .HasMaxLength(2000)
+                                .HasColumnType("varchar(2000)");
 
                             b1.HasKey("ExecutionId", "Id");
 
-                            b1.ToTable("ExecutionTags");
+                            b1.ToTable("ExecutionTags", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ExecutionId");
                         });
+
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
@@ -309,24 +290,19 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                         .HasForeignKey("LastExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("LastExecution");
                 });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationBatch", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
                 {
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
-                {
-                    b.HasOne("LLL.DurableTask.EFCore.Entities.OrchestrationBatch", "Batch")
-                        .WithMany()
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Instance");
                 });
 #pragma warning restore 612, 618
         }

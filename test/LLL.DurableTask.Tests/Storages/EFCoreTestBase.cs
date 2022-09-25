@@ -41,11 +41,11 @@ namespace LLL.DurableTask.Tests.Storages
 
             var lockTimeout = TimeSpan.FromMinutes(1);
 
-            var instance1 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), lockTimeout);
-            var instance2 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), lockTimeout);
-            var instance3 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), lockTimeout);
-            var instance4 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), lockTimeout);
-            var instanceNull = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), lockTimeout);
+            var instance1 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
+            var instance2 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
+            var instance3 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
+            var instance4 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
+            var instanceNull = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
 
             instance1.Should().NotBeNull();
             instance1.InstanceId.Should().Be("i1");
@@ -56,6 +56,10 @@ namespace LLL.DurableTask.Tests.Storages
             instance4.Should().NotBeNull();
             instance4.InstanceId.Should().Be("i4");
             instanceNull.Should().BeNull();
+
+            await taskHubClient.PurgeOrchestrationInstanceHistoryAsync(
+                DateTime.UtcNow,
+                OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter);
         }
 
         [SkippableFact]
@@ -84,16 +88,16 @@ namespace LLL.DurableTask.Tests.Storages
 
             var lockTimeout = TimeSpan.FromMinutes(1);
 
-            var instance3 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), new[] { "o3" }, lockTimeout);
-            var instance2 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), new[] { "o2" }, lockTimeout);
-            var instance1 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), new[] { "o1" }, lockTimeout);
-            var instance4 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), new[] { "o1" }, lockTimeout);
-            var instance5 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), new[] { "o2" }, lockTimeout);
-            var instance6 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), new[] { "o3" }, lockTimeout);
-            var instance7 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
-            var instance8 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
-            var instance9 = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
-            var instanceNull = await dbContextExtensions.TryLockNextOrchestrationBatchAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
+            var instance3 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o3" }, lockTimeout);
+            var instance2 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o2" }, lockTimeout);
+            var instance1 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1" }, lockTimeout);
+            var instance4 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1" }, lockTimeout);
+            var instance5 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o2" }, lockTimeout);
+            var instance6 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o3" }, lockTimeout);
+            var instance7 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
+            var instance8 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
+            var instance9 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
+            var instanceNull = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
 
             instance1.Should().NotBeNull();
             instance1.InstanceId.Should().Be("i1");
@@ -114,6 +118,10 @@ namespace LLL.DurableTask.Tests.Storages
             instance9.Should().NotBeNull();
             instance9.InstanceId.Should().Be("i9");
             instanceNull.Should().BeNull();
+
+            await taskHubClient.PurgeOrchestrationInstanceHistoryAsync(
+                DateTime.UtcNow,
+                OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter);
         }
 
         [Trait("Category", "Integration")]

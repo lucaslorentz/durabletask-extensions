@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+#nullable disable
+
 namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 {
     [DbContext(typeof(OrchestrationDbContext))]
@@ -15,9 +17,10 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "3.1.10")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128)
-                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                .HasAnnotation("ProductVersion", "6.0.7")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
                 {
@@ -30,30 +33,30 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<string>("LockId")
                         .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("LockedUntil")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)")
-                        .HasMaxLength(2147483647);
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Queue")
                         .IsRequired()
-                        .HasColumnType("nvarchar(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<string>("ReplyQueue")
                         .IsRequired()
-                        .HasColumnType("nvarchar(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.HasKey("Id");
 
@@ -74,18 +77,18 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasMaxLength(2147483647);
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ExecutionId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
@@ -103,8 +106,8 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
                     b.Property<string>("ExecutionId")
-                        .HasColumnType("nvarchar(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CompletedTime")
                         .HasColumnType("datetime2");
@@ -123,23 +126,23 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.Property<string>("InstanceId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<DateTime>("LastUpdatedTime")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<string>("Output")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ParentInstance")
-                        .HasColumnType("nvarchar(2000)")
-                        .HasMaxLength(2000);
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<long>("Size")
                         .HasColumnType("bigint");
@@ -150,8 +153,8 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.Property<string>("Version")
                         .IsRequired()
-                        .HasColumnType("nvarchar(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("ExecutionId");
 
@@ -161,18 +164,26 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
                 {
                     b.Property<string>("InstanceId")
-                        .HasColumnType("nvarchar(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<string>("LastExecutionId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("LastQueueName")
+                    b.Property<string>("LastQueue")
                         .IsRequired()
-                        .HasColumnType("nvarchar(250)")
-                        .HasMaxLength(250);
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("LockId")
+                        .IsConcurrencyToken()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("LockedUntil")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("InstanceId");
 
@@ -181,72 +192,40 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.ToTable("Instances");
                 });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationBatch", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasMaxLength(36);
-
-                    b.Property<DateTime>("AvailableAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("InstanceId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(250)")
-                        .HasMaxLength(250);
-
-                    b.Property<string>("LockId")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(100)")
-                        .HasMaxLength(100);
-
-                    b.Property<DateTime>("LockedUntil")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Queue")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(250)")
-                        .HasMaxLength(250);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InstanceId", "Queue")
-                        .IsUnique();
-
-                    b.HasIndex("AvailableAt", "LockedUntil", "Queue");
-
-                    b.ToTable("OrchestrationBatches");
-                });
-
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasMaxLength(36);
+                        .HasMaxLength(36)
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("AvailableAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasMaxLength(36);
-
                     b.Property<string>("ExecutionId")
-                        .HasColumnType("nvarchar(100)")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)")
-                        .HasMaxLength(2147483647);
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Queue")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
+                    b.HasIndex("InstanceId");
+
+                    b.HasIndex("AvailableAt", "Queue", "InstanceId");
 
                     b.ToTable("OrchestrationMessages");
                 });
@@ -258,6 +237,8 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Instance");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
@@ -267,6 +248,8 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .HasForeignKey("ExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Execution");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
@@ -278,26 +261,29 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("int")
-                                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"), 1L, 1);
 
                             b1.Property<string>("Name")
                                 .IsRequired()
-                                .HasColumnType("nvarchar(100)")
-                                .HasMaxLength(100);
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)");
 
                             b1.Property<string>("Value")
                                 .IsRequired()
-                                .HasColumnType("nvarchar(2000)")
-                                .HasMaxLength(2000);
+                                .HasMaxLength(2000)
+                                .HasColumnType("nvarchar(2000)");
 
                             b1.HasKey("ExecutionId", "Id");
 
-                            b1.ToTable("ExecutionTags");
+                            b1.ToTable("ExecutionTags", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ExecutionId");
                         });
+
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
@@ -307,24 +293,19 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .HasForeignKey("LastExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("LastExecution");
                 });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationBatch", b =>
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
                 {
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Instance", "Instance")
                         .WithMany()
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
-                {
-                    b.HasOne("LLL.DurableTask.EFCore.Entities.OrchestrationBatch", "Batch")
-                        .WithMany()
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Instance");
                 });
 #pragma warning restore 612, 618
         }

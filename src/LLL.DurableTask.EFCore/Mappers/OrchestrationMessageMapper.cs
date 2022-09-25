@@ -18,17 +18,18 @@ namespace LLL.DurableTask.EFCore.Mappers
         public OrchestrationMessage CreateOrchestrationMessageAsync(
             TaskMessage message,
             int sequence,
-            OrchestrationBatch batch)
+            string queue)
         {
             return new OrchestrationMessage
             {
                 Id = Guid.NewGuid(),
-                Batch = batch,
+                InstanceId = message.OrchestrationInstance.InstanceId,
                 ExecutionId = message.OrchestrationInstance.ExecutionId,
                 SequenceNumber = sequence,
                 AvailableAt = message.Event is TimerFiredEvent timerFiredEvent
                     ? timerFiredEvent.FireAt.ToUniversalTime()
                     : DateTime.UtcNow,
+                Queue = queue,
                 Message = _options.DataConverter.Serialize(message),
             };
         }

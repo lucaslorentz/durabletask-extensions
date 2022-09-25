@@ -12,10 +12,10 @@ namespace LLL.DurableTask.EFCore.Configuration
             builder.HasKey(x => x.Id);
             builder.Property(x => x.Id).HasMaxLength(36).IsRequired();
 
-            builder.Property(x => x.BatchId).HasMaxLength(36).IsRequired();
-            builder.HasOne(x => x.Batch)
+            builder.Property(x => x.InstanceId).HasMaxLength(250).IsRequired();
+            builder.HasOne(x => x.Instance)
                 .WithMany()
-                .HasForeignKey(x => x.BatchId)
+                .HasForeignKey(x => x.InstanceId)
                 .IsRequired();
 
             builder.Property(x => x.ExecutionId).HasMaxLength(100);
@@ -25,6 +25,9 @@ namespace LLL.DurableTask.EFCore.Configuration
             builder.Property(x => x.SequenceNumber).IsRequired();
 
             builder.Property(x => x.Message).HasMaxLength(int.MaxValue);
+
+            // This allows locking next message instance via index scan, not locking extra rows
+            builder.HasIndex(x => new { x.AvailableAt, x.Queue, x.InstanceId });
         }
     }
 }
