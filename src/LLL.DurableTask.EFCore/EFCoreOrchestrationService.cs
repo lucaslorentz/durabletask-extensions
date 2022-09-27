@@ -13,6 +13,7 @@ using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NATS.Client;
 
 namespace LLL.DurableTask.EFCore
 {
@@ -30,6 +31,8 @@ namespace LLL.DurableTask.EFCore
         private readonly ILogger<EFCoreOrchestrationService> _logger;
 
         private CancellationTokenSource _stopCts = new CancellationTokenSource();
+        private IConnection _connection;
+        private IAsyncSubscription _subscription;
 
         public EFCoreOrchestrationService(
             IOptions<EFCoreOrchestrationOptions> options,
@@ -49,6 +52,12 @@ namespace LLL.DurableTask.EFCore
             _instanceMapper = instanceMapper;
             _executionMapper = executionMapper;
             _logger = logger;
+
+
+            var cf = new ConnectionFactory();
+            _connection = cf.CreateConnection();
+            _subscription = _connection.SubscribeAsync(">");
+            _subscription.Start();
         }
 
         public int TaskOrchestrationDispatcherCount => _options.TaskOrchestrationDispatcherCount;
@@ -152,7 +161,8 @@ namespace LLL.DurableTask.EFCore
                         instance,
                         execution,
                         runtimeState,
-                        _stopCts.Token);
+                        _stopCts.Token,
+                        _subscription);
 
                     var messages = await session.FetchNewMessagesAsync(dbContext);
 
@@ -179,7 +189,10 @@ namespace LLL.DurableTask.EFCore
             r => r != null,
             receiveTimeout,
             _options.PollingInterval,
-            stoppableCancellationToken);
+            stoppableCancellationToken,
+            BackoffPollingHelper.CreateNatsWaitUntilSignal(
+                _subscription,
+                orchestrations.Select(nv => $"orchestration.{QueueMapper.ToQueue(nv)}.*").ToHashSet()));
         }
 
         public async Task<TaskActivityWorkItem> LockNextTaskActivityWorkItem(TimeSpan receiveTimeout, CancellationToken cancellationToken)
@@ -215,7 +228,10 @@ namespace LLL.DurableTask.EFCore
             x => x != null,
             receiveTimeout,
             _options.PollingInterval,
-            stoppableCancellationToken);
+            stoppableCancellationToken,
+            BackoffPollingHelper.CreateNatsWaitUntilSignal(
+                _subscription,
+                activities.Select(nv => $"activitiy.{QueueMapper.ToQueue(nv)}").ToHashSet()));
         }
 
         public async Task ReleaseTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem)
@@ -398,16 +414,32 @@ namespace LLL.DurableTask.EFCore
                 session.RuntimeState = newOrchestrationRuntimeState;
                 session.ClearMessages();
             }
+
+            // Notify
+            foreach (var executionStartedEvent in orchestratorMessages.Select(m => m.Event).OfType<ExecutionStartedEvent>())
+            {
+                _connection.Publish($"orchestration.{QueueMapper.ToQueue(executionStartedEvent.Name, executionStartedEvent.Version)}.{executionStartedEvent.OrchestrationInstance.InstanceId}",
+                    Array.Empty<byte>());
+            }
+
+            foreach (var taskSheduledEvent in outboundMessages.Select(m => m.Event).OfType<TaskScheduledEvent>())
+            {
+                _connection.Publish($"activitiy.{QueueMapper.ToQueue(taskSheduledEvent.Name, taskSheduledEvent.Version)}", Array.Empty<byte>());
+            }
+
+            _connection.Publish($"history.{workItem.InstanceId}", Array.Empty<byte>());
+
+            _connection.Flush();
         }
 
         public async Task CompleteTaskActivityWorkItemAsync(TaskActivityWorkItem workItem, TaskMessage responseMessage)
         {
+            var (id, lockId, orchestrationQueue) = ParseTaskActivityWorkItemId(workItem.Id);
+
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 await _dbContextExtensions.WithinTransaction(dbContext, async () =>
                 {
-                    var (id, lockId, orchestrationQueue) = ParseTaskActivityWorkItemId(workItem.Id);
-
                     var activityMessage = await dbContext.ActivityMessages
                         .FirstAsync(w => w.Id == id && w.LockId == lockId);
 
@@ -423,6 +455,11 @@ namespace LLL.DurableTask.EFCore
                     await dbContext.SaveChangesAsync();
                 });
             }
+
+            // Notify
+            _connection.Publish($"orchestration.{orchestrationQueue}.{workItem.TaskMessage.OrchestrationInstance.InstanceId}", Array.Empty<byte>());
+
+            _connection.Flush();
         }
 
         private async Task SendTaskOrchestrationMessagesAsync(

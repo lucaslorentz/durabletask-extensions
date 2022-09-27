@@ -49,6 +49,13 @@ services:
       timeout: 5s
       retries: 5
 
+  nats:
+    image: nats
+    ports:
+      - 4222:4222
+      - 6222:6222
+      - 8222:8222
+
 volumes:
   mysql:
   sqlserver:

@@ -7,6 +7,7 @@ using DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
+using NATS.Client;
 
 namespace LLL.DurableTask.EFCore
 {
@@ -16,6 +17,7 @@ namespace LLL.DurableTask.EFCore
 
         private readonly IDbContextFactory<OrchestrationDbContext> _dbContextFactory;
         private readonly CancellationToken _stopCancellationToken;
+        private readonly IAsyncSubscription _subscription;
 
         public EFCoreOrchestrationSession(
             EFCoreOrchestrationOptions options,
@@ -23,7 +25,8 @@ namespace LLL.DurableTask.EFCore
             Instance instance,
             Execution execution,
             OrchestrationRuntimeState runtimeState,
-            CancellationToken stopCancellationToken)
+            CancellationToken stopCancellationToken,
+            IAsyncSubscription subscription)
         {
             _options = options;
             _dbContextFactory = dbContextFactory;
@@ -31,6 +34,7 @@ namespace LLL.DurableTask.EFCore
             Execution = execution;
             RuntimeState = runtimeState;
             _stopCancellationToken = stopCancellationToken;
+            _subscription = subscription;
         }
 
         public Instance Instance { get; }
@@ -55,7 +59,10 @@ namespace LLL.DurableTask.EFCore
             x => x == null || x.Count > 0,
             _options.FetchNewMessagesPollingTimeout,
             _options.PollingInterval,
-            _stopCancellationToken);
+            _stopCancellationToken,
+            BackoffPollingHelper.CreateNatsWaitUntilSignal(
+                _subscription,
+                new HashSet<string> { $"orchestration.{Instance.LastQueue}.{Instance.InstanceId}" }));
         }
 
         public async Task<IList<TaskMessage>> FetchNewMessagesAsync(

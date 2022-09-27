@@ -29,10 +29,10 @@ namespace LLL.DurableTask.EFCore
 
         public async Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses)
         {
+            var executionStartedEvent = creationMessage.Event as ExecutionStartedEvent;
+
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
-                var executionStartedEvent = creationMessage.Event as ExecutionStartedEvent;
-
                 var instanceId = creationMessage.OrchestrationInstance.InstanceId;
                 var executionId = creationMessage.OrchestrationInstance.ExecutionId;
 
@@ -75,6 +75,8 @@ namespace LLL.DurableTask.EFCore
 
                 await dbContext.SaveChangesAsync();
             }
+
+            _connection.Publish($"orchestration.{QueueMapper.ToQueue(executionStartedEvent.Name, executionStartedEvent.Version)}.{executionStartedEvent.OrchestrationInstance.InstanceId}", Array.Empty<byte>());
         }
 
         public Task ForceTerminateTaskOrchestrationAsync(string instanceId, string reason)
@@ -95,6 +97,7 @@ namespace LLL.DurableTask.EFCore
                 var events = await dbContext.Events
                     .Where(e => e.ExecutionId == executionId)
                     .OrderBy(e => e.SequenceNumber)
+                    .AsNoTracking()
                     .ToArrayAsync();
 
                 return $"[{string.Join(",", events.Select(e => e.Content))}]";
@@ -190,7 +193,10 @@ namespace LLL.DurableTask.EFCore
             s => IsFinalExecutionStatus(s.OrchestrationStatus),
             timeout,
             _options.PollingInterval,
-            stoppableCancellationToken);
+            stoppableCancellationToken,
+            BackoffPollingHelper.CreateNatsWaitUntilSignal(
+                _subscription,
+                new HashSet<string> { $"history.{instanceId}" }));
 
             if (!IsFinalExecutionStatus(state.OrchestrationStatus))
                 return null;
@@ -220,6 +226,7 @@ namespace LLL.DurableTask.EFCore
                     .OrderByDescending(x => x.CreatedTime)
                     .ThenByDescending(x => x.InstanceId)
                     .Take(query.PageSize + 1)
+                    .AsNoTracking()
                     .ToArrayAsync();
 
                 var pageInstances = instances

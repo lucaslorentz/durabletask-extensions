@@ -16,6 +16,6 @@ namespace LLL.DurableTask.EFCore
         public TimeSpan OrchestrationLockTimeout { get; set; } = TimeSpan.FromMinutes(1);
         public TimeSpan ActivtyLockTimeout { get; set; } = TimeSpan.FromMinutes(1);
         public TimeSpan FetchNewMessagesPollingTimeout { get; set; } = TimeSpan.FromSeconds(10);
-        public int DelayInSecondsAfterFailure { get; set; } = 5;
+        public int DelayInSecondsAfterFailure { get; set; } = 0;
     }
 }
