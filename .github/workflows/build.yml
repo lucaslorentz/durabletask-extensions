@@ -41,26 +41,26 @@ jobs:
             --exclude-sources "**/Migrations/**"
       - name: Test
         run: dotnet test -c Release --no-build
-      # - name: Report coverage
-      #   run: |
-      #     minicover report \
-      #       --threshold 70
+      - name: Report coverage
+        run: |
+          minicover report \
+            --threshold 70
 
-      #     last_commit_message=$(git log -1 --pretty=format:"%s")
-      #     last_commit_author_name=$(git log -1 --pretty=format:"%an")
-      #     last_commit_author_email=$(git log -1 --pretty=format:"%ae")
+          last_commit_message=$(git log -1 --pretty=format:"%s")
+          last_commit_author_name=$(git log -1 --pretty=format:"%an")
+          last_commit_author_email=$(git log -1 --pretty=format:"%ae")
 
-      #     minicover coverallsreport \
-      #       --service-name "github" \
-      #       --repo-token "$GITHUB_TOKEN" \
-      #       --service-job-id "$GITHUB_RUN_ID" \
-      #       --commit "$GITHUB_SHA" \
-      #       --commit-message "$last_commit_message" \
-      #       --commit-author-name "$last_commit_author_name" \
-      #       --commit-author-email "$last_commit_author_email" \
-      #       --branch "$GITHUB_REF"
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          minicover coverallsreport \
+            --service-name "github" \
+            --repo-token "$GITHUB_TOKEN" \
+            --service-job-id "$GITHUB_RUN_ID" \
+            --commit "$GITHUB_SHA" \
+            --commit-message "$last_commit_message" \
+            --commit-author-name "$last_commit_author_name" \
+            --commit-author-email "$last_commit_author_email" \
+            --branch "$GITHUB_REF"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Uninstrument
         run: minicover uninstrument
       - name: Pack
