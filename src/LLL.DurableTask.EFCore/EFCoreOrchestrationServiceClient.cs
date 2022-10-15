@@ -7,6 +7,7 @@ using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using LLL.DurableTask.Core;
+using LLL.DurableTask.EFCore.Extensions;
 using LLL.DurableTask.EFCore.Mappers;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
@@ -272,154 +273,112 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
-                await RewindInstanceAsync(dbContext, instanceId, reason);
+                await RewindInstanceAsync(dbContext, instanceId, reason, historyEvents =>
+                {
+                    // For completed executions
+                    var completedEvent = historyEvents.OfType<ExecutionCompletedEvent>().FirstOrDefault();
+                    if (completedEvent != null)
+                    {
+                        if (completedEvent.OrchestrationStatus == OrchestrationStatus.Failed)
+                        {
+                            // For failed executions, rewind to last failed task or suborchestration
+                            var lastFailedTask = historyEvents.LastOrDefault(h => h is TaskFailedEvent || h is SubOrchestrationInstanceFailedEvent);
+                            if (lastFailedTask != null)
+                                return lastFailedTask;
+                        }
+
+                        // Fallback to just reopenning orchestration, because error could have happened inside orchestrator function
+                        return completedEvent;
+                    }
+
+                    // For terminated executions, only rewing the termination
+                    var terminatedEvent = historyEvents.OfType<ExecutionTerminatedEvent>().FirstOrDefault();
+                    if (terminatedEvent != null)
+                        return terminatedEvent;
+
+                    return null;
+                });
 
                 await dbContext.SaveChangesAsync();
             }
         }
 
-        private async Task RewindInstanceAsync(OrchestrationDbContext dbContext, string instanceId, string reason)
+        private async Task RewindInstanceAsync(OrchestrationDbContext dbContext, string instanceId, string reason, Func<IList<HistoryEvent>, HistoryEvent> getRewindPoint)
         {
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // REWIND ALGORITHM:
-            // 1. Finds failed execution of specified orchestration instance to rewind
-            // 2. Finds failure entities to clear and over-writes them (as well as corresponding trigger events)
-            // 3. Identifies sub-orchestration failure(s) from parent instance and calls RewindHistoryAsync recursively on failed sub-orchestration child instance(s)
-            // 4. Resets orchestration status of rewound instance in instance store table to prepare it to be restarted
-            // 5. Restart that doesn't have failed suborchestrations with a generic event
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            var instance = await _dbContextExtensions.LockInstanceForUpdate(dbContext, instanceId);
 
-            var lastExecution = dbContext.Instances
-                                .Where(i => i.InstanceId == instanceId)
-                                .Select(i => i.LastExecution)
-                                .FirstOrDefault();
+            var execution = await dbContext.Executions.FindAsync(instance.LastExecutionId);
 
-            var events = await dbContext.Events
-                .Where(e => e.ExecutionId == lastExecution.ExecutionId)
+            var eventsEntities = await dbContext.Events
+                .Where(e => e.ExecutionId == execution.ExecutionId)
+                .OrderBy(e => e.SequenceNumber)
                 .ToArrayAsync();
 
-            var historyEvents = events
-                .ToDictionary(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content));
+            var historyEvents = eventsEntities.Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content))
+                .ToArray();
 
-            bool hasFailedSubOrchestrations = false;
-
-            foreach (var historyEvent in historyEvents.Keys)
+            var rewindStart = getRewindPoint(historyEvents);
+            if (rewindStart == null)
             {
-                if (historyEvent is TaskFailedEvent taskFailedEvent)
-                {
-                    var taskScheduledEvent = historyEvents.Keys.OfType<TaskScheduledEvent>()
-                        .FirstOrDefault(e => e.EventId == taskFailedEvent.TaskScheduledId);
-
-                    var rewoundTaskScheduledData = _options.RewindDataConverter.Serialize(new
-                    {
-                        taskScheduledEvent.EventType,
-                        taskScheduledEvent.Name,
-                        taskScheduledEvent.Version,
-                        taskScheduledEvent.Input
-                    });
-
-                    historyEvents[taskScheduledEvent].Content = _options.DataConverter.Serialize(
-                        new GenericEvent(taskScheduledEvent.EventId, $"Rewound: {rewoundTaskScheduledData}")
-                        {
-                            Timestamp = taskScheduledEvent.Timestamp
-                        }
-                    );
-
-                    var rewoundTaskFailedData = _options.RewindDataConverter.Serialize(new
-                    {
-                        taskFailedEvent.EventType,
-                        taskFailedEvent.Reason,
-                        taskFailedEvent.TaskScheduledId
-                    });
-
-                    historyEvents[taskFailedEvent].Content = _options.DataConverter.Serialize(
-                        new GenericEvent(taskFailedEvent.EventId, $"Rewound: {rewoundTaskFailedData}")
-                        {
-                            Timestamp = taskFailedEvent.Timestamp
-                        }
-                    );
-                }
-                else if (historyEvent is SubOrchestrationInstanceFailedEvent soFailedEvent)
-                {
-                    hasFailedSubOrchestrations = true;
-
-                    var soCreatedEvent = historyEvents.Keys.OfType<SubOrchestrationInstanceCreatedEvent>()
-                        .FirstOrDefault(e => e.EventId == soFailedEvent.TaskScheduledId);
-
-                    var rewoundSoCreatedData = _options.RewindDataConverter.Serialize(new
-                    {
-                        soCreatedEvent.EventType,
-                        soCreatedEvent.Name,
-                        soCreatedEvent.Version,
-                        soCreatedEvent.Input
-                    });
-
-                    historyEvents[soCreatedEvent].Content = _options.DataConverter.Serialize(
-                        new GenericEvent(soCreatedEvent.EventId, $"Rewound: {rewoundSoCreatedData}")
-                        {
-                            Timestamp = soCreatedEvent.Timestamp
-                        }
-                    );
-
-                    var rewoundSoFailedData = _options.RewindDataConverter.Serialize(new
-                    {
-                        soFailedEvent.EventType,
-                        soFailedEvent.Reason,
-                        soFailedEvent.TaskScheduledId
-                    });
-
-                    historyEvents[soFailedEvent].Content = _options.DataConverter.Serialize(
-                        new GenericEvent(soFailedEvent.EventId, $"Rewound: {rewoundSoFailedData}")
-                        {
-                            Timestamp = soFailedEvent.Timestamp
-                        }
-                    );
-
-                    // recursive call to clear out failure events on child instances
-                    await RewindInstanceAsync(dbContext, soCreatedEvent.InstanceId, reason);
-                }
-                else if (historyEvent is ExecutionCompletedEvent executionCompletedEvent
-                    && executionCompletedEvent.OrchestrationStatus == OrchestrationStatus.Failed)
-                {
-                    var rewoundExecutionCompletedData = _options.RewindDataConverter.Serialize(new
-                    {
-                        executionCompletedEvent.EventType,
-                        executionCompletedEvent.Result,
-                        executionCompletedEvent.OrchestrationStatus
-                    });
-
-                    historyEvents[executionCompletedEvent].Content = _options.DataConverter.Serialize(
-                        new GenericEvent(executionCompletedEvent.EventId, $"Rewound: {rewoundExecutionCompletedData}")
-                        {
-                            Timestamp = executionCompletedEvent.Timestamp
-                        }
-                    );
-                }
+                throw new Exception($"Rewind point not found for instanceId {instanceId}");
             }
 
-            // Reset execution status
-            lastExecution.Status = OrchestrationStatus.Running;
-            lastExecution.LastUpdatedTime = DateTime.UtcNow;
+            var rewindResult = historyEvents.Rewind(rewindStart, reason, _options.RewindDataConverter);
 
-            if (!hasFailedSubOrchestrations)
+            foreach (var (eventEntity, eventHistory) in eventsEntities.Zip(rewindResult.HistoryEvents))
             {
-                var orchestrationInstance = new OrchestrationInstance
-                {
-                    InstanceId = instanceId
-                };
+                eventEntity.Content = _options.DataConverter.Serialize(eventHistory);
+            }
 
-                var taskMessage = new TaskMessage
-                {
-                    OrchestrationInstance = orchestrationInstance,
-                    Event = new GenericEvent(-1, reason)
-                };
+            // Create child orchestrations
+            foreach (var executionStartedEvent in rewindResult.OrchestratorMessages.Select(m => m.Event).OfType<ExecutionStartedEvent>())
+            {
+                var childInstance = _instanceMapper.CreateInstance(executionStartedEvent);
+                await dbContext.Instances.AddAsync(childInstance);
 
-                var knownQueues = new Dictionary<string, string>
-                {
-                    [lastExecution.InstanceId] = QueueMapper.ToQueue(lastExecution.Name, lastExecution.Version)
-                };
+                var childRuntimeState = new OrchestrationRuntimeState(new[] { executionStartedEvent });
 
-                await SendTaskOrchestrationMessagesAsync(dbContext, new[] { taskMessage }, knownQueues);
+                var childExecution = _executionMapper.CreateExecution(childRuntimeState);
+                await dbContext.Executions.AddAsync(childExecution);
+            }
+
+            var orchestrationQueueName = QueueMapper.ToQueue(rewindResult.NewRuntimeState.Name, rewindResult.NewRuntimeState.Version);
+
+            var knownQueues = new Dictionary<string, string>
+            {
+                [rewindResult.NewRuntimeState.OrchestrationInstance.InstanceId] = orchestrationQueueName
+            };
+
+            if (rewindResult.NewRuntimeState.ParentInstance != null)
+                knownQueues[rewindResult.NewRuntimeState.ParentInstance.OrchestrationInstance.InstanceId] = QueueMapper.ToQueue(rewindResult.NewRuntimeState.ParentInstance.Name, rewindResult.NewRuntimeState.ParentInstance.Version);
+
+            // Write messages
+            var activityMessages = rewindResult.OutboundMessages
+                .Select(m => _activityMessageMapper.CreateActivityMessage(m, orchestrationQueueName))
+                .ToArray();
+
+            await dbContext.ActivityMessages.AddRangeAsync(activityMessages);
+
+            var allOrchestrationMessages = rewindResult.OrchestratorMessages
+                .Concat(rewindResult.TimerMessages)
+                .ToArray();
+
+            await SendTaskOrchestrationMessagesAsync(dbContext, allOrchestrationMessages, knownQueues);
+
+            // Update instance
+            _instanceMapper.UpdateInstance(instance, rewindResult.NewRuntimeState);
+
+            // Update current execution
+            execution = await SaveExecutionAsync(dbContext, rewindResult.NewRuntimeState, execution);
+
+            if (rewindResult.NewRuntimeState.ParentInstance != null)
+            {
+                await RewindInstanceAsync(dbContext, rewindResult.NewRuntimeState.ParentInstance.OrchestrationInstance.InstanceId, reason, historyEvents =>
+                {
+                    return historyEvents
+                        .OfType<SubOrchestrationInstanceCompletedEvent>()
+                        .FirstOrDefault(h => h.TaskScheduledId == rewindResult.NewRuntimeState.ParentInstance.TaskScheduleId);
+                });
             }
         }
 
