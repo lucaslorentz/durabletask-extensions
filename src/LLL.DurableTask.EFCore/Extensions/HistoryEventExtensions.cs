@@ -66,31 +66,7 @@ namespace LLL.DurableTask.EFCore.Extensions
                         }
                     case SubOrchestrationInstanceCreatedEvent subOrchestrationCreatedEvent:
                         {
-                            var subOrchestrationInstance = new OrchestrationInstance
-                            {
-                                InstanceId = Guid.NewGuid().ToString(),
-                                ExecutionId = Guid.NewGuid().ToString()
-                            };
-
-                            var executionStartedEvent = new ExecutionStartedEvent(-1, subOrchestrationCreatedEvent.Input)
-                            {
-                                OrchestrationInstance = subOrchestrationInstance,
-                                ParentInstance = new ParentInstance
-                                {
-                                    Name = runtimeState.Name,
-                                    Version = runtimeState.Version,
-                                    TaskScheduleId = subOrchestrationCreatedEvent.EventId,
-                                    OrchestrationInstance = runtimeState.OrchestrationInstance
-                                },
-                                Name = subOrchestrationCreatedEvent.Name,
-                                Version = subOrchestrationCreatedEvent.Version
-                            };
-
-                            result.OrchestratorMessages.Add(new TaskMessage
-                            {
-                                OrchestrationInstance = subOrchestrationInstance,
-                                Event = executionStartedEvent
-                            });
+                            result.SubOrchestrationsInstancesToRewind.Add(subOrchestrationCreatedEvent.InstanceId);
                             break;
                         }
                 }
@@ -130,6 +106,7 @@ namespace LLL.DurableTask.EFCore.Extensions
         public List<TaskMessage> OutboundMessages { get; } = new List<TaskMessage>();
         public List<TaskMessage> TimerMessages { get; } = new List<TaskMessage>();
         public List<TaskMessage> OrchestratorMessages { get; } = new List<TaskMessage>();
+        public List<string> SubOrchestrationsInstancesToRewind { get; } = new List<string>();
         public List<HistoryEvent> HistoryEvents { get; } = new List<HistoryEvent>();
         public OrchestrationRuntimeState NewRuntimeState { get; set; }
     }

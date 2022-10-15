@@ -273,37 +273,12 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
-                await RewindInstanceAsync(dbContext, instanceId, reason, historyEvents =>
-                {
-                    // For completed executions
-                    var completedEvent = historyEvents.OfType<ExecutionCompletedEvent>().FirstOrDefault();
-                    if (completedEvent != null)
-                    {
-                        if (completedEvent.OrchestrationStatus == OrchestrationStatus.Failed)
-                        {
-                            // For failed executions, rewind to last failed task or suborchestration
-                            var lastFailedTask = historyEvents.LastOrDefault(h => h is TaskFailedEvent || h is SubOrchestrationInstanceFailedEvent);
-                            if (lastFailedTask != null)
-                                return lastFailedTask;
-                        }
-
-                        // Fallback to just reopenning orchestration, because error could have happened inside orchestrator function
-                        return completedEvent;
-                    }
-
-                    // For terminated executions, only rewing the termination
-                    var terminatedEvent = historyEvents.OfType<ExecutionTerminatedEvent>().FirstOrDefault();
-                    if (terminatedEvent != null)
-                        return terminatedEvent;
-
-                    return null;
-                });
-
+                await RewindInstanceAsync(dbContext, instanceId, reason, true, FindLastErrorOrCompletionRewindPoint);
                 await dbContext.SaveChangesAsync();
             }
         }
 
-        private async Task RewindInstanceAsync(OrchestrationDbContext dbContext, string instanceId, string reason, Func<IList<HistoryEvent>, HistoryEvent> getRewindPoint)
+        private async Task RewindInstanceAsync(OrchestrationDbContext dbContext, string instanceId, string reason, bool rewindParents, Func<IList<HistoryEvent>, HistoryEvent> findRewindPoint)
         {
             var instance = await _dbContextExtensions.LockInstanceForUpdate(dbContext, instanceId);
 
@@ -317,7 +292,7 @@ namespace LLL.DurableTask.EFCore
             var historyEvents = eventsEntities.Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content))
                 .ToArray();
 
-            var rewindPoint = getRewindPoint(historyEvents);
+            var rewindPoint = findRewindPoint(historyEvents);
             if (rewindPoint == null)
             {
                 return;
@@ -325,25 +300,28 @@ namespace LLL.DurableTask.EFCore
 
             var rewindResult = historyEvents.Rewind(rewindPoint, reason, _options.RewindDataConverter);
 
+            // Update events entities
             foreach (var (eventEntity, eventHistory) in eventsEntities.Zip(rewindResult.HistoryEvents))
             {
                 eventEntity.Content = _options.DataConverter.Serialize(eventHistory);
             }
 
-            // Create child orchestrations
-            foreach (var executionStartedEvent in rewindResult.OrchestratorMessages.Select(m => m.Event).OfType<ExecutionStartedEvent>())
+            // Rewind suborchestrations
+            foreach (var instanceIdToRewind in rewindResult.SubOrchestrationsInstancesToRewind)
             {
-                var childInstance = _instanceMapper.CreateInstance(executionStartedEvent);
-                await dbContext.Instances.AddAsync(childInstance);
-
-                var childRuntimeState = new OrchestrationRuntimeState(new[] { executionStartedEvent });
-
-                var childExecution = _executionMapper.CreateExecution(childRuntimeState);
-                await dbContext.Executions.AddAsync(childExecution);
+                await RewindInstanceAsync(dbContext, instanceIdToRewind, reason, false, FindLastErrorOrCompletionRewindPoint);
             }
 
             var orchestrationQueueName = QueueMapper.ToQueue(rewindResult.NewRuntimeState.Name, rewindResult.NewRuntimeState.Version);
 
+            // Write activity messages
+            var activityMessages = rewindResult.OutboundMessages
+                .Select(m => _activityMessageMapper.CreateActivityMessage(m, orchestrationQueueName))
+                .ToArray();
+
+            await dbContext.ActivityMessages.AddRangeAsync(activityMessages);
+
+            // Write orchestration messages
             var knownQueues = new Dictionary<string, string>
             {
                 [rewindResult.NewRuntimeState.OrchestrationInstance.InstanceId] = orchestrationQueueName
@@ -351,13 +329,6 @@ namespace LLL.DurableTask.EFCore
 
             if (rewindResult.NewRuntimeState.ParentInstance != null)
                 knownQueues[rewindResult.NewRuntimeState.ParentInstance.OrchestrationInstance.InstanceId] = QueueMapper.ToQueue(rewindResult.NewRuntimeState.ParentInstance.Name, rewindResult.NewRuntimeState.ParentInstance.Version);
-
-            // Write messages
-            var activityMessages = rewindResult.OutboundMessages
-                .Select(m => _activityMessageMapper.CreateActivityMessage(m, orchestrationQueueName))
-                .ToArray();
-
-            await dbContext.ActivityMessages.AddRangeAsync(activityMessages);
 
             var allOrchestrationMessages = rewindResult.OrchestratorMessages
                 .Concat(rewindResult.TimerMessages)
@@ -371,15 +342,41 @@ namespace LLL.DurableTask.EFCore
             // Update current execution
             execution = await SaveExecutionAsync(dbContext, rewindResult.NewRuntimeState, execution);
 
-            if (rewindResult.NewRuntimeState.ParentInstance != null)
+            // Rewind parents
+            if (rewindParents && rewindResult.NewRuntimeState.ParentInstance != null)
             {
-                await RewindInstanceAsync(dbContext, rewindResult.NewRuntimeState.ParentInstance.OrchestrationInstance.InstanceId, reason, historyEvents =>
+                await RewindInstanceAsync(dbContext, rewindResult.NewRuntimeState.ParentInstance.OrchestrationInstance.InstanceId, reason, true, historyEvents =>
                 {
                     return historyEvents
                         .OfType<SubOrchestrationInstanceCompletedEvent>()
                         .FirstOrDefault(h => h.TaskScheduledId == rewindResult.NewRuntimeState.ParentInstance.TaskScheduleId);
                 });
             }
+        }
+
+        private HistoryEvent FindLastErrorOrCompletionRewindPoint(IList<HistoryEvent> historyEvents)
+        {
+            var completedEvent = historyEvents.OfType<ExecutionCompletedEvent>().FirstOrDefault();
+            if (completedEvent != null)
+            {
+                if (completedEvent.OrchestrationStatus == OrchestrationStatus.Failed)
+                {
+                    // For failed executions, rewind to last failed task or suborchestration
+                    var lastFailedTask = historyEvents.LastOrDefault(h => h is TaskFailedEvent || h is SubOrchestrationInstanceFailedEvent);
+                    if (lastFailedTask != null)
+                        return lastFailedTask;
+                }
+
+                // Fallback to just reopenning orchestration, because error could have happened inside orchestrator function
+                return completedEvent;
+            }
+
+            // For terminated executions, only rewing the termination
+            var terminatedEvent = historyEvents.OfType<ExecutionTerminatedEvent>().FirstOrDefault();
+            if (terminatedEvent != null)
+                return terminatedEvent;
+
+            return null;
         }
 
         private bool IsFinalInstanceStatus(OrchestrationStatus status)
