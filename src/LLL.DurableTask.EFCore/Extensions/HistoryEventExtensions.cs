@@ -27,12 +27,12 @@ namespace LLL.DurableTask.EFCore.Extensions
             return null;
         }
 
-        public static RewindResult Rewind(this IList<HistoryEvent> historyEvents, HistoryEvent rewindStart, string reason, DataConverter dataConverter)
+        public static RewindResult Rewind(this IList<HistoryEvent> historyEvents, HistoryEvent rewindPoint, string reason, DataConverter dataConverter)
         {
             var runtimeState = new OrchestrationRuntimeState(historyEvents);
 
-            var eventsToKeep = historyEvents.TakeWhile(e => e != rewindStart).ToArray();
-            var eventsToRewind = historyEvents.SkipWhile(e => e != rewindStart).ToArray();
+            var eventsToKeep = historyEvents.TakeWhile(e => e != rewindPoint).ToArray();
+            var eventsToRewind = historyEvents.SkipWhile(e => e != rewindPoint).ToArray();
 
             var result = new RewindResult();
 

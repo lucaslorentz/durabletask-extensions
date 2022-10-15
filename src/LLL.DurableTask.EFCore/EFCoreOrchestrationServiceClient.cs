@@ -317,13 +317,13 @@ namespace LLL.DurableTask.EFCore
             var historyEvents = eventsEntities.Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content))
                 .ToArray();
 
-            var rewindStart = getRewindPoint(historyEvents);
-            if (rewindStart == null)
+            var rewindPoint = getRewindPoint(historyEvents);
+            if (rewindPoint == null)
             {
-                throw new Exception($"Rewind point not found for instanceId {instanceId}");
+                return;
             }
 
-            var rewindResult = historyEvents.Rewind(rewindStart, reason, _options.RewindDataConverter);
+            var rewindResult = historyEvents.Rewind(rewindPoint, reason, _options.RewindDataConverter);
 
             foreach (var (eventEntity, eventHistory) in eventsEntities.Zip(rewindResult.HistoryEvents))
             {
