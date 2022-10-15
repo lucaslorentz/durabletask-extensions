@@ -44,6 +44,7 @@ import {
   OrchestrationStatus,
 } from "../../models/ApiModels";
 import { formatDateTime, toLocalISO, toUtcISO } from "../../utils/date-utils";
+import { usePageSize } from "../../hooks/usePageSize";
 
 const useStyles = makeStyles((theme) => ({
   chips: {
@@ -82,9 +83,7 @@ export function Orchestrations() {
   const [continuationTokenStack, setContinuationTokenStack] = useLocationState<
     string[]
   >("continuationTokenStack", []);
-  const [pageSize, setPageSize] = useQueryState("pageSize", 5, {
-    parse: parseFloat,
-  });
+  const [pageSize, setPageSize] = usePageSize();
 
   const [error, setError] = useState<any>();
   const [result, setResult] = useState<OrchestrationsResponse | undefined>(

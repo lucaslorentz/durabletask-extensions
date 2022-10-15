@@ -22,6 +22,7 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import { useApiClient } from "../../ApiClientProvider";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { useQueryState } from "../../hooks/useQueryState";
+import { useRefreshInterval } from "../../hooks/useRefreshInterval";
 import { HistoryEvent, OrchestrationState } from "../../models/ApiModels";
 import { HistoryTable } from "./HistoryTable";
 import { RaiseEvent } from "./RaiseEvent";
@@ -58,11 +59,7 @@ export function Orchestration() {
   const [error, setError] = useState<any>();
   const [tab, setTab] = useQueryState<TabValue>("tab", "state");
   const [isLoading, setIsLoading] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useQueryState<
-    number | undefined
-  >("refreshInterval", undefined, {
-    parse: parseInt,
-  });
+  const [refreshInterval, setRefreshInterval] = useRefreshInterval();
   const [refreshAnchor, setRefreshAnchor] = useState<HTMLElement | undefined>();
   const [refreshCount, triggerRefresh] = useReducer((x) => x + 1, 0);
   const [loadedCount, incrementLoadedCount] = useReducer((x) => x + 1, 0);
