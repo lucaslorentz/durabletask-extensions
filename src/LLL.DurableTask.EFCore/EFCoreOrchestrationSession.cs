@@ -97,7 +97,7 @@ namespace LLL.DurableTask.EFCore
 
             var deserializedMessages = newDbMessages
                 .Select(w => _options.DataConverter.Deserialize<TaskMessage>(w.Message))
-                .ToArray();
+                .ToList();
 
             return deserializedMessages;
         }
