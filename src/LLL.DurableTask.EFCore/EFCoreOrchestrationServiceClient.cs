@@ -196,19 +196,22 @@ namespace LLL.DurableTask.EFCore
                 var queryable = dbContext.Executions as IQueryable<Entities.Execution>;
 
                 if (!string.IsNullOrEmpty(query.InstanceId))
-                    queryable = queryable.Where(i => i.InstanceId.StartsWith(query.InstanceId));
+                    queryable = queryable.Where(e => e.InstanceId.StartsWith(query.InstanceId));
 
                 if (!string.IsNullOrEmpty(query.Name))
-                    queryable = queryable.Where(i => i.Name.StartsWith(query.Name));
+                    queryable = queryable.Where(e => e.Name.StartsWith(query.Name));
 
                 if (query.CreatedTimeFrom != null)
-                    queryable = queryable.Where(i => i.CreatedTime >= query.CreatedTimeFrom);
+                    queryable = queryable.Where(e => e.CreatedTime >= query.CreatedTimeFrom);
 
                 if (query.CreatedTimeTo != null)
-                    queryable = queryable.Where(i => i.CreatedTime <= query.CreatedTimeTo);
+                    queryable = queryable.Where(e => e.CreatedTime <= query.CreatedTimeTo);
 
                 if (query.RuntimeStatus != null && query.RuntimeStatus.Any())
-                    queryable = queryable.Where(i => query.RuntimeStatus.Contains(i.Status));
+                    queryable = queryable.Where(e => query.RuntimeStatus.Contains(e.Status));
+
+                if (!query.IncludePastExecutions)
+                    queryable = queryable.Where(e => dbContext.Instances.Select(i => i.LastExecutionId).Contains(e.ExecutionId));
 
                 long index;
                 long count;

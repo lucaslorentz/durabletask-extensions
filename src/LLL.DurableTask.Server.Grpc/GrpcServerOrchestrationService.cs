@@ -157,7 +157,8 @@ namespace LLL.DurableTask.Server.Grpc.Server
                 Name = request.Name,
                 CreatedTimeFrom = request.CreatedTimeFrom?.ToDateTime(),
                 CreatedTimeTo = request.CreatedTimeTo?.ToDateTime(),
-                RuntimeStatus = request.RuntimeStatus.Select(s => (OrchestrationStatus)s).ToArray()
+                RuntimeStatus = request.RuntimeStatus.Select(s => (OrchestrationStatus)s).ToArray(),
+                IncludePastExecutions = request.IncludePastExecutions
             };
 
             var queryResult = await _extendedOrchestrationServiceClient.GetOrchestrationsAsync(query, context.CancellationToken);

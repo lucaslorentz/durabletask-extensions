@@ -13,5 +13,6 @@ namespace LLL.DurableTask.Core
         public DateTime? CreatedTimeFrom { get; set; }
         public DateTime? CreatedTimeTo { get; set; }
         public IEnumerable<OrchestrationStatus> RuntimeStatus { get; set; }
+        public bool IncludePastExecutions { get; set; }
     }
 }
