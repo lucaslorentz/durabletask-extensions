@@ -39,7 +39,7 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
 
             var result = await taskHubClient.WaitForOrchestrationAsync(instance, TimeSpan.FromSeconds(5));
 
-            result.Output.Should().Be("{\"eventA\":{\"fieldA\":\"A\"},\"eventB\":{\"fieldB\":\"B\"},\"eventC\":null}");
+            result.Output.Should().Be("{\"eventA\":{\"fieldA\":\"A\"},\"eventB\":{\"fieldB\":\"B\"}}");
         }
 
         [Fact]
