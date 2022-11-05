@@ -18,7 +18,8 @@ namespace LLL.DurableTask.Core.Serializing
                     new HistoryEventConverter(),
                     new StringEnumConverter()
                 },
-                DateTimeZoneHandling = DateTimeZoneHandling.Utc
+                DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+                NullValueHandling = NullValueHandling.Ignore
             })
         {
         }

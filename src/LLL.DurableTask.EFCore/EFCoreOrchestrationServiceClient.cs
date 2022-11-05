@@ -301,7 +301,7 @@ namespace LLL.DurableTask.EFCore
                 return;
             }
 
-            var rewindResult = historyEvents.Rewind(rewindPoint, reason, _options.RewindDataConverter);
+            var rewindResult = historyEvents.Rewind(rewindPoint, reason, _options.DataConverter);
 
             // Update events entities
             foreach (var (eventEntity, eventHistory) in eventsEntities.Zip(rewindResult.HistoryEvents))

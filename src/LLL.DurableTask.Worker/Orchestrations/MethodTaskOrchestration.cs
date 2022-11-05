@@ -6,7 +6,6 @@ using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.Serializing;
 using LLL.DurableTask.Core.Serializing;
-using LLL.DurableTask.Worker.Utils;
 using DUtils = DurableTask.Core.Common.Utils;
 
 namespace LLL.DurableTask.Worker.Orchestrations

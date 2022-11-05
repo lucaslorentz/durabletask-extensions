@@ -8,7 +8,6 @@ namespace LLL.DurableTask.EFCore
     public class EFCoreOrchestrationOptions
     {
         public DataConverter DataConverter { get; set; } = new TypelessJsonDataConverter();
-        public DataConverter RewindDataConverter { get; set; } = new TypelessJsonDataConverter();
         public int TaskOrchestrationDispatcherCount { get; set; } = 1;
         public int TaskActivityDispatcherCount { get; set; } = 1;
         public int MaxConcurrentTaskOrchestrationWorkItems { get; set; } = 20;
