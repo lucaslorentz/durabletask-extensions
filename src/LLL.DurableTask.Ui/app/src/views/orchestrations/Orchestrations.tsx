@@ -68,8 +68,8 @@ export function Orchestrations() {
     [],
     { multiple: true }
   );
-  let [includePastExecutions, setIncludePastExecutions] =
-    useQueryState<boolean>("includePastExecutions", false, {
+  let [includePreviousExecutions, setIncludePreviousExecutions] =
+    useQueryState<boolean>("includePreviousExecutions", false, {
       parse: JSON.parse,
       stringify: JSON.stringify,
     });
@@ -96,7 +96,7 @@ export function Orchestrations() {
         createdTimeFrom: createdTimeFrom,
         createdTimeTo: createdTimeTo,
         runtimeStatus: statuses,
-        includePastExecutions,
+        includePreviousExecutions,
         top: pageSize,
         continuationToken:
           continuationTokenStack.length > 0
@@ -117,7 +117,7 @@ export function Orchestrations() {
     createdTimeFrom,
     createdTimeTo,
     statuses,
-    includePastExecutions,
+    includePreviousExecutions,
     pageSize,
     continuationTokenStack,
     setResult,
@@ -182,8 +182,8 @@ export function Orchestrations() {
           setCreatedTimeTo={setCreatedTimeTo}
           statuses={statuses}
           setStatuses={setStatuses}
-          includePastExecutions={includePastExecutions}
-          setIncludePastExecutions={setIncludePastExecutions}
+          includePreviousExecutions={includePreviousExecutions}
+          setIncludePreviousExecutions={setIncludePreviousExecutions}
           apiClient={apiClient}
         />
       </Box>
@@ -232,8 +232,8 @@ function OrchestrationsSearch({
   setCreatedTimeTo,
   statuses,
   setStatuses,
-  includePastExecutions,
-  setIncludePastExecutions,
+  includePreviousExecutions,
+  setIncludePreviousExecutions,
   apiClient,
 }: {
   searchExpanded: boolean;
@@ -248,8 +248,8 @@ function OrchestrationsSearch({
   setCreatedTimeTo: Dispatch<string>;
   statuses: OrchestrationStatus[];
   setStatuses: Dispatch<OrchestrationStatus[]>;
-  includePastExecutions: boolean;
-  setIncludePastExecutions: Dispatch<boolean>;
+  includePreviousExecutions: boolean;
+  setIncludePreviousExecutions: Dispatch<boolean>;
   apiClient: ApiClient;
 }) {
   return (
@@ -352,13 +352,13 @@ function OrchestrationsSearch({
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={includePastExecutions}
+                      checked={includePreviousExecutions}
                       onChange={(e) =>
-                        setIncludePastExecutions(e.currentTarget.checked)
+                        setIncludePreviousExecutions(e.currentTarget.checked)
                       }
                     />
                   }
-                  label="Include past executions"
+                  label="Include previous executions"
                 />
               </FormGroup>
             </Grid>

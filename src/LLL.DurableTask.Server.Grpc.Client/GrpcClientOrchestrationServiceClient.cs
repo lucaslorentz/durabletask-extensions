@@ -156,7 +156,7 @@ namespace LLL.DurableTask.Server.Client
                 Name = query.Name,
                 CreatedTimeFrom = ToTimestamp(query.CreatedTimeFrom),
                 CreatedTimeTo = ToTimestamp(query.CreatedTimeTo),
-                IncludePastExecutions = query.IncludePastExecutions
+                IncludePreviousExecutions = query.IncludePreviousExecutions
             };
 
             if (query.RuntimeStatus != null)

@@ -70,8 +70,8 @@ export class ApiClient {
       request.runtimeStatus?.forEach((status) =>
         params.append("runtimeStatus", status)
       );
-      request.includePastExecutions &&
-        params.append("includePastExecutions", "true");
+      request.includePreviousExecutions &&
+        params.append("includePreviousExecutions", "true");
       request.top && params.append("top", request.top.toString());
       request.continuationToken &&
         params.append("continuationToken", request.continuationToken);

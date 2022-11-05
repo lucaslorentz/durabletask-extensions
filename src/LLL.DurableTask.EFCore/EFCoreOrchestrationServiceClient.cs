@@ -210,7 +210,7 @@ namespace LLL.DurableTask.EFCore
                 if (query.RuntimeStatus != null && query.RuntimeStatus.Any())
                     queryable = queryable.Where(e => query.RuntimeStatus.Contains(e.Status));
 
-                if (!query.IncludePastExecutions)
+                if (!query.IncludePreviousExecutions)
                     queryable = queryable.Where(e => dbContext.Instances.Select(i => i.LastExecutionId).Contains(e.ExecutionId));
 
                 long index;

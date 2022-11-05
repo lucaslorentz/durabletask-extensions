@@ -113,7 +113,7 @@ message GetOrchestrationsRequest {
     google.protobuf.Timestamp created_time_from = 5;
     google.protobuf.Timestamp created_time_to = 6;
     repeated int32 runtime_status = 7;
-    bool include_past_executions = 8;
+    bool include_previous_executions = 8;
 }
 
 message GetOrchestrationsResponse {

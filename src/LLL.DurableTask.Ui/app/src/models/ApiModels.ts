@@ -20,7 +20,7 @@ export interface OrchestrationsRequest {
   createdTimeFrom?: string;
   createdTimeTo?: string;
   runtimeStatus?: OrchestrationStatus[];
-  includePastExecutions?: boolean;
+  includePreviousExecutions?: boolean;
   top?: number;
   continuationToken?: string;
 }
