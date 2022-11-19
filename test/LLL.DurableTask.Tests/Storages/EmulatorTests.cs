@@ -8,6 +8,9 @@ namespace LLL.DurableTask.Tests.Storages
     {
         public EmulatorServerTests(ITestOutputHelper output) : base(output)
         {
+            SupportsMultipleExecutionStorage = false;
+            SupportsTags = false;
+            SupportsEventsAfterCompletion = false;
         }
 
         protected override void ConfigureStorage(IServiceCollection services)

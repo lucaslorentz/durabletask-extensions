@@ -16,6 +16,7 @@ namespace LLL.DurableTask.Tests.Storages
             SlowWaitTimeout *= 2;
             SupportsMultipleExecutionStorage = false;
             SupportsTags = false;
+            SupportsEventsAfterCompletion = false;
         }
 
         protected override void ConfigureStorage(IServiceCollection services)

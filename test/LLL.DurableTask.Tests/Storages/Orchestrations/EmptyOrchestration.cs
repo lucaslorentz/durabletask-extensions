@@ -12,5 +12,11 @@ namespace LLL.DurableTask.Tests.Storage.Orchestrations
         {
             return Task.FromResult(input);
         }
+
+        public override void OnEvent(OrchestrationContext context, string name, string input)
+        {
+            base.OnEvent(context, name, input);
+            context.ContinueAsNew(input);
+        }
     }
 }

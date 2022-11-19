@@ -285,29 +285,23 @@ namespace LLL.DurableTask.EFCore
         {
             var instance = await _dbContextExtensions.LockInstanceForUpdate(dbContext, instanceId);
 
-            var execution = await dbContext.Executions.FindAsync(instance.LastExecutionId);
+            var execution = await dbContext.Executions
+                .Where(e => e.ExecutionId == instance.LastExecutionId)
+                .Include(e => e.Events)
+                .SingleAsync();
 
-            var eventsEntities = await dbContext.Events
-                .Where(e => e.ExecutionId == execution.ExecutionId)
+            var deserializedEvents = execution.Events
                 .OrderBy(e => e.SequenceNumber)
-                .ToArrayAsync();
-
-            var historyEvents = eventsEntities.Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content))
+                .Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content))
                 .ToArray();
 
-            var rewindPoint = findRewindPoint(historyEvents);
+            var rewindPoint = findRewindPoint(deserializedEvents);
             if (rewindPoint == null)
             {
                 return;
             }
 
-            var rewindResult = historyEvents.Rewind(rewindPoint, reason, _options.DataConverter);
-
-            // Update events entities
-            foreach (var (eventEntity, eventHistory) in eventsEntities.Zip(rewindResult.HistoryEvents))
-            {
-                eventEntity.Content = _options.DataConverter.Serialize(eventHistory);
-            }
+            var rewindResult = deserializedEvents.Rewind(rewindPoint, reason, _options.DataConverter);
 
             // Rewind suborchestrations
             foreach (var instanceIdToRewind in rewindResult.SubOrchestrationsInstancesToRewind)

@@ -20,6 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 options.UseNpgsql(connectionString, npgsqlOptions =>
                 {
+                    npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                     var assemblyName = typeof(PostgreSqlEFCoreOrchestrationBuilderExtensions).Assembly.GetName().Name;
                     npgsqlOptions.MigrationsAssembly(assemblyName);
                     mysqlOptionsAction?.Invoke(npgsqlOptions);

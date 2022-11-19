@@ -22,6 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 options.UseMySql(connectionString, serverVersion, mysqlOptions =>
                 {
+                    mysqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                     var assemblyName = typeof(MySqlEFCoreOrchestrationBuilderExtensions).Assembly.GetName().Name;
                     mysqlOptions.MigrationsAssembly(assemblyName);
                     mysqlOptionsAction?.Invoke(mysqlOptions);
