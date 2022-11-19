@@ -66,7 +66,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.HasIndex("LockedUntil", "Queue");
 
-                    b.ToTable("ActivityMessages");
+                    b.ToTable("ActivityMessages", (string)null);
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
@@ -100,7 +100,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                     b.HasIndex("InstanceId", "ExecutionId", "SequenceNumber")
                         .IsUnique();
 
-                    b.ToTable("Events");
+                    b.ToTable("Events", (string)null);
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
@@ -158,7 +158,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.HasKey("ExecutionId");
 
-                    b.ToTable("Executions");
+                    b.ToTable("Executions", (string)null);
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
@@ -189,7 +189,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.HasIndex("LastExecutionId");
 
-                    b.ToTable("Instances");
+                    b.ToTable("Instances", (string)null);
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
@@ -227,7 +227,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.HasIndex("AvailableAt", "Queue", "InstanceId");
 
-                    b.ToTable("OrchestrationMessages");
+                    b.ToTable("OrchestrationMessages", (string)null);
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
@@ -254,7 +254,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
-                    b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
+                    b.OwnsMany("LLL.DurableTask.EFCore.Entities.Execution.Tags#LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
                             b1.Property<string>("ExecutionId")
                                 .HasColumnType("character varying(100)");

@@ -10,7 +10,7 @@ namespace LLL.DurableTask.EFCore.SqlServer
         public OrchestrationDbContext CreateDbContext(string[] args)
         {
             var builder = new DbContextOptionsBuilder<OrchestrationDbContext>();
-            builder.UseSqlServer("server=localhost;database=durabletask;user=sa;password=P1ssw0rd", sqlServerOptions =>
+            builder.UseSqlServer("server=localhost;database=durabletask;user=sa;password=P1ssw0rd;Encrypt=false", sqlServerOptions =>
             {
                 var assemblyName = typeof(OrchestrationDesignTimeDbContextFactory).Assembly.GetName().Name;
                 sqlServerOptions.MigrationsAssembly(assemblyName);

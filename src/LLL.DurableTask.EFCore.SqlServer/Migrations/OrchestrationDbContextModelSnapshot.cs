@@ -20,7 +20,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                 .HasAnnotation("ProductVersion", "6.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
                 {
@@ -66,7 +66,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasIndex("LockedUntil", "Queue");
 
-                    b.ToTable("ActivityMessages");
+                    b.ToTable("ActivityMessages", (string)null);
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
@@ -100,7 +100,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.HasIndex("InstanceId", "ExecutionId", "SequenceNumber")
                         .IsUnique();
 
-                    b.ToTable("Events");
+                    b.ToTable("Events", (string)null);
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
@@ -158,7 +158,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasKey("ExecutionId");
 
-                    b.ToTable("Executions");
+                    b.ToTable("Executions", (string)null);
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
@@ -189,7 +189,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasIndex("LastExecutionId");
 
-                    b.ToTable("Instances");
+                    b.ToTable("Instances", (string)null);
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
@@ -227,7 +227,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasIndex("AvailableAt", "Queue", "InstanceId");
 
-                    b.ToTable("OrchestrationMessages");
+                    b.ToTable("OrchestrationMessages", (string)null);
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
@@ -254,7 +254,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
-                    b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
+                    b.OwnsMany("LLL.DurableTask.EFCore.Entities.Execution.Tags#LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
                             b1.Property<string>("ExecutionId")
                                 .HasColumnType("nvarchar(100)");
@@ -263,7 +263,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("int");
 
-                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"), 1L, 1);
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
 
                             b1.Property<string>("Name")
                                 .IsRequired()
