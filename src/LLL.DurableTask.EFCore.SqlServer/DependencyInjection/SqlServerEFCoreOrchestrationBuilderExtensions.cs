@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 options.UseSqlServer(connectionString, sqlServerOptions =>
                 {
+                    sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                     var assemblyName = typeof(SqlServerEFCoreOrchestrationBuilderExtensions).Assembly.GetName().Name;
                     sqlServerOptions.MigrationsAssembly(assemblyName);
                     mysqlOptionsAction?.Invoke(sqlServerOptions);

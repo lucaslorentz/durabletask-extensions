@@ -72,12 +72,8 @@ namespace LLL.DurableTask.EFCore
                 .AsNoTracking()
                 .ToArrayAsync(cancellationToken);
 
-            var isExecutable = RuntimeState.ExecutionStartedEvent == null
-                || RuntimeState.OrchestrationStatus == OrchestrationStatus.Pending
-                || RuntimeState.OrchestrationStatus == OrchestrationStatus.Running;
-
             var messagesToDiscard = newDbMessages
-                .Where(m => !isExecutable || (m.ExecutionId != null && m.ExecutionId != Instance.LastExecutionId))
+                .Where(m => m.ExecutionId != null && m.ExecutionId != Instance.LastExecutionId)
                 .ToArray();
 
             if (messagesToDiscard.Length > 0)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using LLL.DurableTask.EFCore.Entities;
 using Microsoft.Extensions.Options;
 
@@ -58,6 +59,24 @@ namespace LLL.DurableTask.EFCore.Mappers
             }
             execution.Tags.RemoveWhere(t => !newTags.Contains(t));
             execution.Tags.UnionWith(newTags);
+        }
+
+        public Event CreateEvent(OrchestrationInstance orchestrationInstance, int sequenceNumber, HistoryEvent historyEvent)
+        {
+            var @event = new Event
+            {
+                Id = Guid.NewGuid(),
+                InstanceId = orchestrationInstance.InstanceId,
+                ExecutionId = orchestrationInstance.ExecutionId,
+                SequenceNumber = sequenceNumber
+            };
+            UpdateEvent(@event, historyEvent);
+            return @event;
+        }
+
+        public void UpdateEvent(Event @event, HistoryEvent historyEvent)
+        {
+            @event.Content = _options.DataConverter.Serialize(historyEvent);
         }
 
         public OrchestrationState MapToState(Execution execution)

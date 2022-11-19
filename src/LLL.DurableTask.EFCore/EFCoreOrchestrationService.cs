@@ -7,6 +7,7 @@ using DurableTask.Core;
 using DurableTask.Core.History;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
+using LLL.DurableTask.EFCore.Extensions;
 using LLL.DurableTask.EFCore.Mappers;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
@@ -130,19 +131,20 @@ namespace LLL.DurableTask.EFCore
                     if (instance == null)
                         return null;
 
-                    var execution = await dbContext.Executions.FindAsync(instance.LastExecutionId);
-
-                    var events = await dbContext.Events
+                    var execution = await dbContext.Executions
                         .Where(e => e.ExecutionId == instance.LastExecutionId)
-                        .OrderBy(e => e.SequenceNumber)
+                        .Include(e => e.Events)
                         .AsNoTracking()
-                        .ToArrayAsync();
+                        .SingleAsync();
 
-                    var deserializedEvents = events
+                    var deserializedEvents = execution.Events
+                        .OrderBy(e => e.SequenceNumber)
                         .Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content))
                         .ToArray();
 
-                    var runtimeState = new OrchestrationRuntimeState(deserializedEvents);
+                    var reopenedEvents = deserializedEvents.Reopen();
+
+                    var runtimeState = new OrchestrationRuntimeState(reopenedEvents);
 
                     var session = new EFCoreOrchestrationSession(
                         _options,
@@ -468,22 +470,35 @@ namespace LLL.DurableTask.EFCore
             {
                 execution = existingExecution;
                 dbContext.Executions.Attach(execution);
+                dbContext.Events.AttachRange(execution.Events);
                 _executionMapper.UpdateExecution(execution, runtimeState);
             }
 
-            var initialSequenceNumber = runtimeState.Events.Count - runtimeState.NewEvents.Count;
+            var orderedEvents = execution.Events.OrderBy(e => e.SequenceNumber).ToArray();
 
-            var newEvents = runtimeState.NewEvents
-                .Select((e, i) => new Event
-                {
-                    Id = Guid.NewGuid(),
-                    InstanceId = runtimeState.OrchestrationInstance.InstanceId,
-                    ExecutionId = runtimeState.OrchestrationInstance.ExecutionId,
-                    SequenceNumber = initialSequenceNumber + i,
-                    Content = _options.DataConverter.Serialize(e)
-                }).ToArray();
-
-            await dbContext.Events.AddRangeAsync(newEvents);
+            var sequenceNumber = 0;
+            while (sequenceNumber < runtimeState.Events.Count && sequenceNumber < orderedEvents.Length)
+            {
+                var historyEvent = runtimeState.Events[sequenceNumber];
+                var @event = orderedEvents[sequenceNumber];
+                _executionMapper.UpdateEvent(@event, historyEvent);
+                sequenceNumber++;
+            }
+            while (sequenceNumber < runtimeState.Events.Count)
+            {
+                var historyEvent = runtimeState.Events[sequenceNumber];
+                var @event = _executionMapper.CreateEvent(runtimeState.OrchestrationInstance, sequenceNumber, historyEvent);
+                execution.Events.Add(@event);
+                dbContext.Events.Add(@event);
+                sequenceNumber++;
+            }
+            while (sequenceNumber < runtimeState.Events.Count)
+            {
+                var @event = orderedEvents[sequenceNumber];
+                execution.Events.Remove(@event);
+                dbContext.Events.Remove(@event);
+                sequenceNumber++;
+            }
 
             return execution;
         }

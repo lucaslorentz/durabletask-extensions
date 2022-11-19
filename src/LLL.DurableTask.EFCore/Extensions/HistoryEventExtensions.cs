@@ -27,6 +27,13 @@ namespace LLL.DurableTask.EFCore.Extensions
             return null;
         }
 
+        public static IList<HistoryEvent> Reopen(this IList<HistoryEvent> historyEvents)
+        {
+            return historyEvents
+                .Where(e => !(e is ExecutionCompletedEvent))
+                .ToArray();
+        }
+
         public static RewindResult Rewind(this IList<HistoryEvent> historyEvents, HistoryEvent rewindPoint, string reason, DataConverter dataConverter)
         {
             var runtimeState = new OrchestrationRuntimeState(historyEvents);
@@ -80,12 +87,8 @@ namespace LLL.DurableTask.EFCore.Extensions
                 }
                 else
                 {
-                    var rewoundData = dataConverter.Serialize(eventToRewind);
-                    var genericEvent = new GenericEvent(eventToRewind.EventId, $"Rewound: {rewoundData}")
-                    {
-                        Timestamp = eventToRewind.Timestamp
-                    };
-                    result.HistoryEvents.Add(genericEvent);
+                    var rewoundEvent = eventToRewind.Rewind(dataConverter);
+                    result.HistoryEvents.Add(rewoundEvent);
                 }
             }
 
@@ -98,6 +101,16 @@ namespace LLL.DurableTask.EFCore.Extensions
             result.NewRuntimeState = new OrchestrationRuntimeState(result.HistoryEvents);
 
             return result;
+        }
+
+        public static HistoryEvent Rewind(this HistoryEvent eventToRewind, DataConverter dataConverter)
+        {
+            var rewoundData = dataConverter.Serialize(eventToRewind);
+            var genericEvent = new GenericEvent(eventToRewind.EventId, $"Rewound: {rewoundData}")
+            {
+                Timestamp = eventToRewind.Timestamp
+            };
+            return genericEvent;
         }
     }
 

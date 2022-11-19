@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
+using LLL.DurableTask.EFCore.Polling;
 using LLL.DurableTask.Tests.Storage.Activities;
 using LLL.DurableTask.Tests.Storage.Orchestrations;
 using LLL.DurableTask.Worker.Builder;
@@ -25,6 +27,7 @@ namespace LLL.DurableTask.Tests.Storages
         protected TimeSpan SlowWaitTimeout { get; set; } = TimeSpan.FromSeconds(30);
         protected bool SupportsMultipleExecutionStorage { get; set; } = true;
         protected bool SupportsTags { get; set; } = true;
+        protected bool SupportsEventsAfterCompletion { get; set; } = true;
 
         public StorageTestBase(ITestOutputHelper output)
         {
@@ -96,6 +99,36 @@ namespace LLL.DurableTask.Tests.Storages
             state.Should().NotBeNull();
             state.Output.Should().Be($"\"{input}\"");
             state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
+        }
+
+        [Trait("Category", "Integration")]
+        [SkippableFact]
+        public async Task EventsAfterCompletion_ShouldBeProcessed()
+        {
+            Skip.IfNot(SupportsEventsAfterCompletion, "Doesn't support events after completion");
+
+            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+
+            var input = Guid.NewGuid();
+
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(EmptyOrchestration.Name, EmptyOrchestration.Version, input);
+
+            var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
+
+            state.Should().NotBeNull();
+            state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
+
+            await taskHubClient.RaiseEventAsync(instance, "SetResult", Guid.NewGuid());
+
+            state = await BackoffPollingHelper.PollAsync(
+                async () => await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout),
+                x => x != null && x.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew,
+                FastWaitTimeout,
+                new PollingIntervalOptions(10, 1.2, 100),
+                CancellationToken.None);
+
+            state.Should().NotBeNull();
+            state.OrchestrationStatus.Should().Be(OrchestrationStatus.ContinuedAsNew);
         }
 
         [Trait("Category", "Integration")]
