@@ -27,10 +27,10 @@ namespace LLL.DurableTask.EFCore.Extensions
             return null;
         }
 
-        public static IList<HistoryEvent> Reopen(this IList<HistoryEvent> historyEvents)
+        public static IList<HistoryEvent> Reopen(this IList<HistoryEvent> historyEvents, DataConverter dataConverter)
         {
             return historyEvents
-                .Where(e => !(e is ExecutionCompletedEvent))
+                .Select(e => e is ExecutionCompletedEvent ? e.Rewind(dataConverter) : e)
                 .ToArray();
         }
 
