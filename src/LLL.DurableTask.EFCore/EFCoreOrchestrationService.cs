@@ -142,7 +142,7 @@ namespace LLL.DurableTask.EFCore
                         .Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content))
                         .ToArray();
 
-                    var reopenedEvents = deserializedEvents.Reopen();
+                    var reopenedEvents = deserializedEvents.Reopen(_options.DataConverter);
 
                     var runtimeState = new OrchestrationRuntimeState(reopenedEvents);
 
