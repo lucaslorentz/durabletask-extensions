@@ -157,31 +157,5 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
                 return instance;
             }
         }
-
-        public override async Task PurgeOrchestrationHistoryAsync(
-            OrchestrationDbContext dbContext,
-            DateTime thresholdDateTimeUtc,
-            OrchestrationStateTimeRangeFilterType timeRangeFilterType)
-        {
-            switch (timeRangeFilterType)
-            {
-                case OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter:
-                    await dbContext.Database.ExecuteSqlInterpolatedAsync($@"DELETE FROM ""Executions"" WHERE ""CreatedTime"" < {thresholdDateTimeUtc}");
-                    break;
-                case OrchestrationStateTimeRangeFilterType.OrchestrationLastUpdatedTimeFilter:
-                    await dbContext.Database.ExecuteSqlInterpolatedAsync($@"DELETE FROM ""Executions"" WHERE ""LastUpdatedTime"" < {thresholdDateTimeUtc}");
-                    break;
-                case OrchestrationStateTimeRangeFilterType.OrchestrationCompletedTimeFilter:
-                    await dbContext.Database.ExecuteSqlInterpolatedAsync($@"DELETE FROM ""Executions"" WHERE ""CompletedTime"" < {thresholdDateTimeUtc}");
-                    break;
-            }
-        }
-
-        public override async Task<int> PurgeInstanceHistoryAsync(
-            OrchestrationDbContext dbContext,
-            string instanceId)
-        {
-            return await dbContext.Database.ExecuteSqlInterpolatedAsync($@"DELETE FROM ""Executions"" WHERE ""InstanceId"" = {instanceId}");
-        }
     }
 }
