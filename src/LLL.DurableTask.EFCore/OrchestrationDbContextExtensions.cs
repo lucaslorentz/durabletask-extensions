@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace LLL.DurableTask.EFCore
 {
@@ -33,8 +35,38 @@ namespace LLL.DurableTask.EFCore
             string[] queues,
             TimeSpan lockTimeout);
 
-        public abstract Task PurgeOrchestrationHistoryAsync(OrchestrationDbContext dbContext, DateTime thresholdDateTimeUtc, OrchestrationStateTimeRangeFilterType timeRangeFilterType);
+        public async Task PurgeOrchestrationHistoryAsync(
+            OrchestrationDbContext dbContext,
+            DateTime thresholdDateTimeUtc,
+            OrchestrationStateTimeRangeFilterType timeRangeFilterType)
+        {
+            var query = timeRangeFilterType switch
+            {
+                OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter =>
+                    dbContext.Executions.Where(e => e.CreatedTime < thresholdDateTimeUtc),
+                OrchestrationStateTimeRangeFilterType.OrchestrationLastUpdatedTimeFilter =>
+                    dbContext.Executions.Where(e => e.LastUpdatedTime < thresholdDateTimeUtc),
+                OrchestrationStateTimeRangeFilterType.OrchestrationCompletedTimeFilter =>
+                    dbContext.Executions.Where(e => e.CompletedTime < thresholdDateTimeUtc),
+                _ => throw new NotImplementedException()
+            };
 
-        public abstract Task<int> PurgeInstanceHistoryAsync(OrchestrationDbContext dbContext, string instanceId);
+            await ExecuteDeleteAsync(dbContext, query);
+        }
+
+        public async Task<int> PurgeInstanceHistoryAsync(
+            OrchestrationDbContext dbContext,
+            string instanceId)
+        {
+            var query = dbContext.Executions.Where(e => e.InstanceId == instanceId);
+
+            return await ExecuteDeleteAsync(dbContext, query);
+        }
+
+        protected virtual Task<int> ExecuteDeleteAsync<T>(OrchestrationDbContext dbContext, IQueryable<T> query)
+            where T : class
+        {
+            return query.ExecuteDeleteAsync();
+        }
     }
 }

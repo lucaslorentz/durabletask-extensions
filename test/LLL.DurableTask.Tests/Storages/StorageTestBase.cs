@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
+using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Polling;
 using LLL.DurableTask.Tests.Storage.Activities;
 using LLL.DurableTask.Tests.Storage.Orchestrations;
@@ -92,7 +93,10 @@ namespace LLL.DurableTask.Tests.Storages
 
             var input = Guid.NewGuid();
 
-            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(EmptyOrchestration.Name, EmptyOrchestration.Version, input);
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                EmptyOrchestration.Name,
+                EmptyOrchestration.Version,
+                input);
 
             var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
 
@@ -111,7 +115,10 @@ namespace LLL.DurableTask.Tests.Storages
 
             var input = Guid.NewGuid();
 
-            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(EmptyOrchestration.Name, EmptyOrchestration.Version, input);
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                EmptyOrchestration.Name,
+                EmptyOrchestration.Version,
+                input);
 
             var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
 
@@ -139,7 +146,10 @@ namespace LLL.DurableTask.Tests.Storages
 
             var input = Guid.NewGuid();
 
-            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(TimerOrchestration.Name, TimerOrchestration.Version, input);
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                TimerOrchestration.Name,
+                TimerOrchestration.Version,
+                input);
 
             var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
 
@@ -179,7 +189,10 @@ namespace LLL.DurableTask.Tests.Storages
         {
             var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
 
-            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(ParentOrchestration.Name, ParentOrchestration.Version, 5);
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                ParentOrchestration.Name,
+                ParentOrchestration.Version,
+                5);
 
             var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
 
@@ -215,7 +228,10 @@ namespace LLL.DurableTask.Tests.Storages
 
             var eventData = Guid.NewGuid();
 
-            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(WaitForEventOrchestration.Name, WaitForEventOrchestration.Version, null);
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                WaitForEventOrchestration.Name,
+                WaitForEventOrchestration.Version,
+                null);
 
             await taskHubClient.RaiseEventAsync(instance, "SetResult", eventData);
 
@@ -236,26 +252,60 @@ namespace LLL.DurableTask.Tests.Storages
                 FibonacciRecursiveOrchestration.Name,
                 FibonacciRecursiveOrchestration.Version,
                 Guid.NewGuid().ToString(),
-                2,
-                new Dictionary<string, string>
-                {
-                    { "Tag1", "Value1" },
-                    { "Tag2", "Value2" }
-                });
+                2);
 
             var state = await taskHubClient.WaitForOrchestrationAsync(instance, SlowWaitTimeout);
 
             state.Should().NotBeNull();
             state.Output.Should().Be("1");
             state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
+        }
 
-            if (SupportsTags)
-            {
-                state.Tags.Should().BeEquivalentTo(new Dictionary<string, string> {
-                    { "Tag1", "Value1" },
-                    { "Tag2", "Value2" }
-                });
-            }
+        [Trait("Category", "Integration")]
+        [SkippableFact]
+        public async Task Tags_ShouldBeStoredAndRetrieved()
+        {
+            Skip.IfNot(SupportsTags, "Tags not supported");
+
+            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+
+            var tags = new Dictionary<string, string> {
+                { "Tag1", "Value1" },
+                { "Tag2", "Value2" }
+            };
+
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                EmptyOrchestration.Name,
+                EmptyOrchestration.Version,
+                Guid.NewGuid().ToString(),
+                string.Empty,
+                tags);
+
+            var state = await taskHubClient.GetOrchestrationStateAsync(instance);
+            state.Should().NotBeNull();
+            state.Tags.Should().BeEquivalentTo(tags);
+        }
+
+        [Trait("Category", "Integration")]
+        [SkippableFact]
+        public async Task PurgeInstanceState_ShouldPurge()
+        {
+            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+            var extendedClient = _host.Services.GetService<IExtendedOrchestrationServiceClient>();
+            Skip.If(extendedClient == null, "Purge instance not supported");
+
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                EmptyOrchestration.Name,
+                EmptyOrchestration.Version,
+                string.Empty);
+
+            var state = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
+            state.Should().NotBeNull();
+
+            await extendedClient.PurgeInstanceHistoryAsync(instance.InstanceId);
+
+            var stateAfterPurge = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
+            stateAfterPurge.Should().BeNull();
         }
     }
 }

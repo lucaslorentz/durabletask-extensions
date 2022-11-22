@@ -2,11 +2,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace LLL.DurableTask.EFCore.InMemory
 {
@@ -154,35 +153,13 @@ namespace LLL.DurableTask.EFCore.InMemory
             }
         }
 
-        public override Task PurgeOrchestrationHistoryAsync(
-            OrchestrationDbContext dbContext,
-            DateTime thresholdDateTimeUtc,
-            OrchestrationStateTimeRangeFilterType timeRangeFilterType)
+        protected override async Task<int> ExecuteDeleteAsync<T>(OrchestrationDbContext dbContext, IQueryable<T> query)
+            where T : class
         {
-            var executions = timeRangeFilterType switch
-            {
-                OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter =>
-                    dbContext.Executions.Where(e => e.CreatedTime < thresholdDateTimeUtc).ToArray(),
-                OrchestrationStateTimeRangeFilterType.OrchestrationLastUpdatedTimeFilter =>
-                    dbContext.Executions.Where(e => e.LastUpdatedTime < thresholdDateTimeUtc).ToArray(),
-                OrchestrationStateTimeRangeFilterType.OrchestrationCompletedTimeFilter =>
-                    dbContext.Executions.Where(e => e.CompletedTime < thresholdDateTimeUtc).ToArray(),
-                _ => throw new NotImplementedException()
-            };
-
-            dbContext.Executions.RemoveRange(executions);
-            dbContext.SaveChanges();
-            return Task.CompletedTask;
-        }
-
-        public override Task<int> PurgeInstanceHistoryAsync(
-            OrchestrationDbContext dbContext,
-            string instanceId)
-        {
-            var executions = dbContext.Executions.Where(e => e.InstanceId == instanceId).ToArray();
-            dbContext.Executions.RemoveRange(executions);
-            dbContext.SaveChanges();
-            return Task.FromResult(executions.Length);
+            var entities = await query.ToArrayAsync();
+            dbContext.Set<T>().RemoveRange(entities);
+            await dbContext.SaveChangesAsync();
+            return entities.Length;
         }
     }
 }
