@@ -30,7 +30,6 @@
     <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.PostgreSQL\LLL.DurableTask.EFCore.PostgreSQL.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.AzureStorage\LLL.DurableTask.AzureStorage.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.EFCore.SqlServer\LLL.DurableTask.EFCore.SqlServer.csproj" />
-    <ProjectReference Include="..\..\src\LLL.DurableTask.Emulator\LLL.DurableTask.Emulator.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.Client\LLL.DurableTask.Client.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.Server.Grpc.Client\LLL.DurableTask.Server.Grpc.Client.csproj" />
     <ProjectReference Include="..\..\src\LLL.DurableTask.Server.Grpc\LLL.DurableTask.Server.Grpc.csproj" />
