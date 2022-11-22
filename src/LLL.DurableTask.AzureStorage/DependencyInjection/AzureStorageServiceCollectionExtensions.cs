@@ -19,11 +19,15 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient(p => p.GetRequiredService<IOptions<AzureStorageOrchestrationServiceSettings>>().Value);
 
             services.AddSingleton<AzureStorageOrchestrationService>();
-            services.AddSingleton<AzureStorageExtendedOrchestrationServiceClient>();
+            services.AddSingleton<AzureStorageOrchestrationServiceSearchClient>();
+            services.AddSingleton<AzureStorageOrchestrationServiceRewindClient>();
 
             services.AddSingleton<IOrchestrationService>(p => p.GetService<AzureStorageOrchestrationService>());
             services.AddSingleton<IOrchestrationServiceClient>(p => p.GetService<AzureStorageOrchestrationService>());
-            services.AddSingleton<IExtendedOrchestrationServiceClient>(p => p.GetService<AzureStorageExtendedOrchestrationServiceClient>());
+            services.AddSingleton<IOrchestrationServicePurgeClient>(p => p.GetService<AzureStorageOrchestrationService>());
+            services.AddSingleton<IOrchestrationServiceFeaturesClient>(p => p.GetService<AzureStorageOrchestrationServiceFeaturesClient>());
+            services.AddSingleton<IOrchestrationServiceSearchClient>(p => p.GetService<AzureStorageOrchestrationServiceSearchClient>());
+            services.AddSingleton<IOrchestrationServiceRewindClient>(p => p.GetService<AzureStorageOrchestrationServiceRewindClient>());
 
             return services;
         }

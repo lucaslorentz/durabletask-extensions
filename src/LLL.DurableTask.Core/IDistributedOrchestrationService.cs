@@ -5,7 +5,7 @@ using DurableTask.Core;
 
 namespace LLL.DurableTask.Core
 {
-    public interface IExtendedOrchestrationService
+    public interface IDistributedOrchestrationService
     {
         Task<TaskOrchestrationWorkItem> LockNextTaskOrchestrationWorkItemAsync(
             TimeSpan receiveTimeout,

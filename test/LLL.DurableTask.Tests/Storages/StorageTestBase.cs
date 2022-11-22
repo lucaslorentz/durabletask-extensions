@@ -291,8 +291,8 @@ namespace LLL.DurableTask.Tests.Storages
         public async Task PurgeInstanceState_ShouldPurge()
         {
             var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
-            var extendedClient = _host.Services.GetService<IExtendedOrchestrationServiceClient>();
-            Skip.If(extendedClient == null, "Purge instance not supported");
+            var purgeClient = _host.Services.GetService<IOrchestrationServicePurgeClient>();
+            Skip.If(purgeClient == null, "Purge instance not supported");
 
             var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
                 EmptyOrchestration.Name,
@@ -302,7 +302,7 @@ namespace LLL.DurableTask.Tests.Storages
             var state = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
             state.Should().NotBeNull();
 
-            await extendedClient.PurgeInstanceHistoryAsync(instance.InstanceId);
+            await purgeClient.PurgeInstanceStateAsync(instance.InstanceId);
 
             var stateAfterPurge = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
             stateAfterPurge.Should().BeNull();

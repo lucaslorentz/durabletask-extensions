@@ -18,7 +18,7 @@ namespace LLL.DurableTask.EFCore
 {
     public partial class EFCoreOrchestrationService :
         IOrchestrationService,
-        IExtendedOrchestrationService
+        IDistributedOrchestrationService
     {
         private readonly EFCoreOrchestrationOptions _options;
         private readonly IDbContextFactory<OrchestrationDbContext> _dbContextFactory;

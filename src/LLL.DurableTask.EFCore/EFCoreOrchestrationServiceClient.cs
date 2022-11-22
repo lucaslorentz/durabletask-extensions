@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -16,7 +16,10 @@ namespace LLL.DurableTask.EFCore
 {
     public partial class EFCoreOrchestrationService :
         IOrchestrationServiceClient,
-        IExtendedOrchestrationServiceClient
+        IOrchestrationServiceFeaturesClient,
+        IOrchestrationServicePurgeClient,
+        IOrchestrationServiceSearchClient,
+        IOrchestrationServiceRewindClient
     {
         public Task CreateTaskOrchestrationAsync(TaskMessage creationMessage)
         {
@@ -127,6 +130,26 @@ namespace LLL.DurableTask.EFCore
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 await _dbContextExtensions.PurgeOrchestrationHistoryAsync(dbContext, thresholdDateTimeUtc, timeRangeFilterType);
+            }
+        }
+
+        public async Task<PurgeResult> PurgeInstanceStateAsync(string instanceId)
+        {
+            using (var dbContext = _dbContextFactory.CreateDbContext())
+            {
+                var deletedRows = await _dbContextExtensions.PurgeInstanceHistoryAsync(dbContext, instanceId);
+
+                return new PurgeResult(deletedRows);
+            }
+        }
+
+        public async Task<PurgeResult> PurgeInstanceStateAsync(PurgeInstanceFilter purgeInstanceFilter)
+        {
+            using (var dbContext = _dbContextFactory.CreateDbContext())
+            {
+                var deletedRows = await _dbContextExtensions.PurgeInstanceHistoryAsync(dbContext, purgeInstanceFilter);
+
+                return new PurgeResult(deletedRows);
             }
         }
 
@@ -255,19 +278,6 @@ namespace LLL.DurableTask.EFCore
                             InstanceId = instances.Last().InstanceId,
                         }.Serialize()
                         : null
-                };
-            }
-        }
-
-        public async Task<PurgeInstanceHistoryResult> PurgeInstanceHistoryAsync(string instanceId)
-        {
-            using (var dbContext = _dbContextFactory.CreateDbContext())
-            {
-                var deletedRows = await _dbContextExtensions.PurgeInstanceHistoryAsync(dbContext, instanceId);
-
-                return new PurgeInstanceHistoryResult
-                {
-                    InstancesDeleted = deletedRows > 0 ? 1 : 0
                 };
             }
         }

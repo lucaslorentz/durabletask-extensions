@@ -13,7 +13,7 @@ namespace LLL.DurableTask.Worker.Services
     public class WorkerOrchestrationService : IOrchestrationService
     {
         private readonly IOrchestrationService _innerOrchestrationService;
-        private readonly IExtendedOrchestrationService _innerExtenedOrchestrationService;
+        private readonly IDistributedOrchestrationService _innerDistributedOrchestrationService;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly INameVersionInfo[] _orchestrations;
         private readonly INameVersionInfo[] _activities;
@@ -31,7 +31,7 @@ namespace LLL.DurableTask.Worker.Services
 
         public WorkerOrchestrationService(
             IOrchestrationService innerOrchestrationService,
-            IExtendedOrchestrationService innerExtenedOrchestrationService,
+            IDistributedOrchestrationService innerDistributedOrchestrationService,
             IServiceScopeFactory serviceScopeFactory,
             IEnumerable<ObjectCreator<TaskOrchestration>> orchestrations,
             IEnumerable<ObjectCreator<TaskActivity>> activities,
@@ -39,7 +39,7 @@ namespace LLL.DurableTask.Worker.Services
             bool hasAllActivities)
         {
             _innerOrchestrationService = innerOrchestrationService;
-            _innerExtenedOrchestrationService = innerExtenedOrchestrationService;
+            _innerDistributedOrchestrationService = innerDistributedOrchestrationService;
             _serviceScopeFactory = serviceScopeFactory;
             _orchestrations = orchestrations.OfType<INameVersionInfo>().ToArray();
             _activities = activities.OfType<INameVersionInfo>().ToArray();
@@ -52,7 +52,7 @@ namespace LLL.DurableTask.Worker.Services
             var workItem = await (_hasAllOrchestrations
                 ? _innerOrchestrationService
                     .LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, cancellationToken)
-                : (_innerExtenedOrchestrationService ?? throw DistributedWorkersNotSupported())
+                : (_innerDistributedOrchestrationService ?? throw DistributedWorkersNotSupported())
                     .LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, _orchestrations, cancellationToken)
             );
 
@@ -146,7 +146,7 @@ namespace LLL.DurableTask.Worker.Services
             return await (_hasAllActivities
                 ? _innerOrchestrationService
                     .LockNextTaskActivityWorkItem(receiveTimeout, cancellationToken)
-                : (_innerExtenedOrchestrationService ?? throw DistributedWorkersNotSupported())
+                : (_innerDistributedOrchestrationService ?? throw DistributedWorkersNotSupported())
                     .LockNextTaskActivityWorkItem(receiveTimeout, _activities, cancellationToken)
             );
         }

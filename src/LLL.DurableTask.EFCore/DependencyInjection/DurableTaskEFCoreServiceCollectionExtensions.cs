@@ -28,10 +28,13 @@ namespace Microsoft.Extensions.DependencyInjection
             });
 
             services.AddSingleton<EFCoreOrchestrationService>();
-            services.AddSingleton<IExtendedOrchestrationService>(p => p.GetRequiredService<EFCoreOrchestrationService>());
+            services.AddSingleton<IDistributedOrchestrationService>(p => p.GetRequiredService<EFCoreOrchestrationService>());
             services.AddSingleton<IOrchestrationService>(p => p.GetRequiredService<EFCoreOrchestrationService>());
             services.AddSingleton<IOrchestrationServiceClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
-            services.AddSingleton<IExtendedOrchestrationServiceClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
+            services.AddSingleton<IOrchestrationServicePurgeClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
+            services.AddSingleton<IOrchestrationServiceFeaturesClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
+            services.AddSingleton<IOrchestrationServiceSearchClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
+            services.AddSingleton<IOrchestrationServiceRewindClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
 
             services.AddSingleton<OrchestrationMessageMapper>();
             services.AddSingleton<ActivityMessageMapper>();

@@ -76,7 +76,7 @@ namespace LLL.DurableTask.Worker.Builder
         internal TaskHubWorker Build(IServiceProvider provider)
         {
             var orchestrationService = provider.GetRequiredService<IOrchestrationService>();
-            var extendedOrchestrationService = provider.GetService<IExtendedOrchestrationService>();
+            var distributedOrchestrationService = provider.GetService<IDistributedOrchestrationService>();
             var serviceScopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
 
             var orchestrations = provider.GetServices<ObjectCreator<TaskOrchestration>>().ToArray();
@@ -84,7 +84,7 @@ namespace LLL.DurableTask.Worker.Builder
 
             var serviceProviderOrchestrationService = new WorkerOrchestrationService(
                 orchestrationService,
-                extendedOrchestrationService,
+                distributedOrchestrationService,
                 serviceScopeFactory,
                 orchestrations,
                 activities,

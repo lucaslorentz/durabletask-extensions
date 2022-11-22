@@ -22,29 +22,38 @@ namespace LLL.DurableTask.Server.Grpc.Server
         private readonly IOrchestrationService _orchestrationService;
         private readonly IOrchestrationServiceClient _orchestrationServiceClient;
         private readonly ILogger<GrpcServerOrchestrationService> _logger;
-        private readonly IExtendedOrchestrationService _extendedOrchestrationService;
-        private readonly IExtendedOrchestrationServiceClient _extendedOrchestrationServiceClient;
+        private readonly IDistributedOrchestrationService _distributedOrchestrationService;
+        private readonly IOrchestrationServicePurgeClient _orchestrationServicePurgeClient;
+        private readonly IOrchestrationServiceFeaturesClient _orchestrationServiceFeaturesClient;
+        private readonly IOrchestrationServiceSearchClient _orchestrationServiceSearchClient;
+        private readonly IOrchestrationServiceRewindClient _orchestrationServiceRewindClient;
 
         public GrpcServerOrchestrationService(
             IOptions<GrpcServerOrchestrationServiceOptions> options,
             IOrchestrationService orchestrationService,
             IOrchestrationServiceClient orchestrationServiceClient,
             ILogger<GrpcServerOrchestrationService> logger,
-            IExtendedOrchestrationService extendedOrchestrationService = null,
-            IExtendedOrchestrationServiceClient extendedOrchestrationServiceClient = null)
+            IDistributedOrchestrationService distributedOrchestrationService = null,
+            IOrchestrationServicePurgeClient orchestrationServicePurgeClient = null,
+            IOrchestrationServiceFeaturesClient orchestrationServiceFeaturesClient = null,
+            IOrchestrationServiceSearchClient orchestrationServiceSearchClient = null,
+            IOrchestrationServiceRewindClient orchestrationServiceRewindClient = null)
         {
             _options = options.Value;
             _orchestrationService = orchestrationService;
             _orchestrationServiceClient = orchestrationServiceClient;
             _logger = logger;
-            _extendedOrchestrationService = extendedOrchestrationService;
-            _extendedOrchestrationServiceClient = extendedOrchestrationServiceClient;
+            _distributedOrchestrationService = distributedOrchestrationService;
+            _orchestrationServicePurgeClient = orchestrationServicePurgeClient;
+            _orchestrationServiceFeaturesClient = orchestrationServiceFeaturesClient;
+            _orchestrationServiceSearchClient = orchestrationServiceSearchClient;
+            _orchestrationServiceRewindClient = orchestrationServiceRewindClient;
         }
 
         public override async Task<GetFeaturesResponse> GetFeatures(Empty request, ServerCallContext context)
         {
-            var features = _extendedOrchestrationServiceClient != null
-                ? await _extendedOrchestrationServiceClient.GetFeatures()
+            var features = _orchestrationServiceFeaturesClient != null
+                ? await _orchestrationServiceFeaturesClient.GetFeatures()
                 : new OrchestrationFeature[0];
 
             return new GetFeaturesResponse
@@ -74,7 +83,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
         public override async Task<Empty> RewindTaskOrchestration(RewindTaskOrchestrationRequest request, ServerCallContext context)
         {
-            await (_extendedOrchestrationServiceClient ?? throw NotSupported("Rewind"))
+            await (_orchestrationServiceRewindClient ?? throw NotSupported("Rewind"))
                 .RewindTaskOrchestrationAsync(request.InstanceId, request.Reason);
 
             return new Empty();
@@ -161,7 +170,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
                 IncludePreviousExecutions = request.IncludePreviousExecutions
             };
 
-            var queryResult = await _extendedOrchestrationServiceClient.GetOrchestrationsAsync(query, context.CancellationToken);
+            var queryResult = await _orchestrationServiceSearchClient.GetOrchestrationsAsync(query, context.CancellationToken);
 
             var response = new GetOrchestrationsResponse
             {
@@ -175,11 +184,28 @@ namespace LLL.DurableTask.Server.Grpc.Server
 
         public override async Task<PurgeInstanceHistoryResponse> PurgeInstanceHistory(PurgeInstanceHistoryRequest request, ServerCallContext context)
         {
-            var result = await _extendedOrchestrationServiceClient.PurgeInstanceHistoryAsync(request.InstanceId);
+            var client = _orchestrationServicePurgeClient ?? throw NotSupported("PurgeInstanceHistory");
+
+            PurgeResult result;
+
+            if (!string.IsNullOrEmpty(request.InstanceId))
+            {
+                result = await client.PurgeInstanceStateAsync(request.InstanceId);
+            }
+            else
+            {
+                var createdTimeFrom = request.CreatedTimeFrom?.ToDateTime() ?? DateTime.MinValue;
+                var createdTimeTo = request.CreatedTimeTo?.ToDateTime();
+                var runtimeStatus = request.RuntimeStatus.Select(s => (OrchestrationStatus)s).ToArray();
+
+                var filter = new PurgeInstanceFilter(createdTimeFrom, createdTimeTo, runtimeStatus);
+
+                result = await client.PurgeInstanceStateAsync(filter);
+            }
 
             return new PurgeInstanceHistoryResponse
             {
-                InstancesDeleted = result.InstancesDeleted
+                InstancesDeleted = result.DeletedInstanceCount
             };
         }
 
@@ -210,7 +236,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
                             workItem = await (lockRequest.AllOrchestrations
                                 ? _orchestrationService
                                     .LockNextTaskOrchestrationWorkItemAsync(lockRequest.ReceiveTimeout.ToTimeSpan(), context.CancellationToken)
-                                : (_extendedOrchestrationService ?? throw DistributedWorkersNotSupported())
+                                : (_distributedOrchestrationService ?? throw DistributedWorkersNotSupported())
                                     .LockNextTaskOrchestrationWorkItemAsync(lockRequest.ReceiveTimeout.ToTimeSpan(), orchestrations, context.CancellationToken)
                             );
 
@@ -371,7 +397,7 @@ namespace LLL.DurableTask.Server.Grpc.Server
                 var workItem = await (request.AllActivities
                     ? _orchestrationService
                         .LockNextTaskActivityWorkItem(request.ReceiveTimeout.ToTimeSpan(), context.CancellationToken)
-                    : (_extendedOrchestrationService ?? throw DistributedWorkersNotSupported())
+                    : (_distributedOrchestrationService ?? throw DistributedWorkersNotSupported())
                         .LockNextTaskActivityWorkItem(request.ReceiveTimeout.ToTimeSpan(), activities, context.CancellationToken));
 
                 var response = new LockNextTaskActivityWorkItemResponse

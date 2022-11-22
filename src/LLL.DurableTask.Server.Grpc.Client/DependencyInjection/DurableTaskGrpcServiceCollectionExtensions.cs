@@ -18,9 +18,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddSingleton<GrpcClientOrchestrationService>();
             services.AddSingleton<IOrchestrationService>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
-            services.AddSingleton<IExtendedOrchestrationService>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
+            services.AddSingleton<IDistributedOrchestrationService>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
             services.AddSingleton<IOrchestrationServiceClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
-            services.AddSingleton<IExtendedOrchestrationServiceClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
+            services.AddSingleton<IOrchestrationServicePurgeClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
+            services.AddSingleton<IOrchestrationServiceFeaturesClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
+            services.AddSingleton<IOrchestrationServiceSearchClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
+            services.AddSingleton<IOrchestrationServiceRewindClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
 
             return services.AddGrpcClient<OrchestrationServiceClient>((s, o) =>
             {
