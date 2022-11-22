@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace LLL.DurableTask.Api.Endpoints
@@ -28,11 +27,11 @@ namespace LLL.DurableTask.Api.Endpoints
 
             endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations", async context =>
             {
-                var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
+                var orchestrationServiceSearchClient = context.RequestServices.GetRequiredService<IOrchestrationServiceSearchClient>();
 
                 var query = context.ParseQuery<OrchestrationQuery>();
 
-                var result = await extendedOrchestrationServiceClient.GetOrchestrationsAsync(query);
+                var result = await orchestrationServiceSearchClient.GetOrchestrationsAsync(query);
 
                 await context.RespondJson(result);
             }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata
@@ -164,13 +163,13 @@ namespace LLL.DurableTask.Api.Endpoints
 
             endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/rewind", async context =>
             {
-                var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
+                var orchestrationServiceRewindClient = context.RequestServices.GetRequiredService<IOrchestrationServiceRewindClient>();
 
                 var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
 
                 var request = await context.ParseBody<RewindRequest>();
 
-                await extendedOrchestrationServiceClient.RewindTaskOrchestrationAsync(instanceId, request.Reason);
+                await orchestrationServiceRewindClient.RewindTaskOrchestrationAsync(instanceId, request.Reason);
 
                 await context.RespondJson(new { });
             }).RequireAuthorization(DurableTaskPolicy.Rewind).WithMetadata(new DurableTaskEndpointMetadata
@@ -202,11 +201,11 @@ namespace LLL.DurableTask.Api.Endpoints
 
             endpoints.Add(builder.MapDelete(prefix + "/v1/orchestrations/{instanceId}", async context =>
             {
-                var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
+                var orchestrationServicePurgeClient = context.RequestServices.GetRequiredService<IOrchestrationServicePurgeClient>();
 
                 var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
 
-                var result = await extendedOrchestrationServiceClient.PurgeInstanceHistoryAsync(instanceId);
+                var result = await orchestrationServicePurgeClient.PurgeInstanceStateAsync(instanceId);
 
                 await context.RespondJson(new { });
             }).RequireAuthorization(DurableTaskPolicy.Purge).WithMetadata(new DurableTaskEndpointMetadata

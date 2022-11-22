@@ -13,7 +13,10 @@ namespace LLL.DurableTask.Server.Client
 {
     public partial class GrpcClientOrchestrationService :
         IOrchestrationServiceClient,
-        IExtendedOrchestrationServiceClient
+        IOrchestrationServicePurgeClient,
+        IOrchestrationServiceFeaturesClient,
+        IOrchestrationServiceSearchClient,
+        IOrchestrationServiceRewindClient
     {
         public async Task<OrchestrationFeature[]> GetFeatures()
         {
@@ -22,7 +25,6 @@ namespace LLL.DurableTask.Server.Client
                 .Select(f => (OrchestrationFeature)f)
                 .ToArray();
         }
-
         public async Task CreateTaskOrchestrationAsync(TaskMessage creationMessage)
         {
             await CreateTaskOrchestrationAsync(creationMessage, new OrchestrationStatus[0]);
@@ -176,7 +178,7 @@ namespace LLL.DurableTask.Server.Client
             };
         }
 
-        public async Task<PurgeInstanceHistoryResult> PurgeInstanceHistoryAsync(string instanceId)
+        public async Task<PurgeResult> PurgeInstanceStateAsync(string instanceId)
         {
             var request = new PurgeInstanceHistoryRequest
             {
@@ -185,10 +187,23 @@ namespace LLL.DurableTask.Server.Client
 
             var result = await _client.PurgeInstanceHistoryAsync(request);
 
-            return new PurgeInstanceHistoryResult
+            return new PurgeResult(result.InstancesDeleted);
+        }
+
+        public async Task<PurgeResult> PurgeInstanceStateAsync(PurgeInstanceFilter filter)
+        {
+            var request = new PurgeInstanceHistoryRequest
             {
-                InstancesDeleted = result.InstancesDeleted
+                CreatedTimeFrom = ToTimestamp(filter.CreatedTimeFrom),
+                CreatedTimeTo = ToTimestamp(filter.CreatedTimeTo),
             };
+
+            if (filter.RuntimeStatus != null)
+                request.RuntimeStatus.AddRange(filter.RuntimeStatus.Select(s => (int)s));
+
+            var result = await _client.PurgeInstanceHistoryAsync(request);
+
+            return new PurgeResult(result.InstancesDeleted);
         }
     }
 }

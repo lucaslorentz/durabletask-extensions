@@ -63,6 +63,15 @@ namespace LLL.DurableTask.EFCore
             return await ExecuteDeleteAsync(dbContext, query);
         }
 
+        public async Task<int> PurgeInstanceHistoryAsync(OrchestrationDbContext dbContext, PurgeInstanceFilter filter)
+        {
+            var query = dbContext.Executions.Where(e => e.CreatedTime >= filter.CreatedTimeFrom
+                && (filter.CreatedTimeTo == null || e.CreatedTime <= filter.CreatedTimeTo)
+                && (filter.RuntimeStatus == null || filter.RuntimeStatus.Contains(e.Status)));
+
+            return await ExecuteDeleteAsync(dbContext, query);
+        }
+
         protected virtual Task<int> ExecuteDeleteAsync<T>(OrchestrationDbContext dbContext, IQueryable<T> query)
             where T : class
         {

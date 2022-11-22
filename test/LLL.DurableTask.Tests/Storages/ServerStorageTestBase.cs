@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using LLL.DurableTask.Tests.Storages;
 using LLL.DurableTask.Tests.Utils;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

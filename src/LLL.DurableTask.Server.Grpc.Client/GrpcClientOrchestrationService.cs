@@ -18,7 +18,7 @@ namespace LLL.DurableTask.Server.Client
 {
     public partial class GrpcClientOrchestrationService :
         IOrchestrationService,
-        IExtendedOrchestrationService
+        IDistributedOrchestrationService
     {
         private readonly GrpcClientOrchestrationServiceOptions _options;
         private readonly OrchestrationServiceClient _client;

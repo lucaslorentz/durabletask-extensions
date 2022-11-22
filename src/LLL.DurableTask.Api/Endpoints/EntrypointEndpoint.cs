@@ -26,9 +26,9 @@ namespace LLL.DurableTask.Api.Endpoints
                 var response = new EntrypointResponse();
 
                 var endpointDataSource = builder.ServiceProvider.GetRequiredService<EndpointDataSource>();
-                var extendedOrchestrationServiceClient = context.RequestServices.GetRequiredService<IExtendedOrchestrationServiceClient>();
+                var orchestrationServiceFeaturesClient = context.RequestServices.GetRequiredService<IOrchestrationServiceFeaturesClient>();
 
-                response.Features = await extendedOrchestrationServiceClient.GetFeatures();
+                response.Features = await orchestrationServiceFeaturesClient.GetFeatures();
 
                 foreach (var endpoint in endpointDataSource.Endpoints.OfType<RouteEndpoint>())
                 {

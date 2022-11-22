@@ -124,6 +124,9 @@ message GetOrchestrationsResponse {
 
 message PurgeInstanceHistoryRequest {
     string instance_id = 1;
+    google.protobuf.Timestamp created_time_from = 2;
+    google.protobuf.Timestamp created_time_to = 3;
+    repeated int32 runtime_status = 4;
 }
 
 message PurgeInstanceHistoryResponse {

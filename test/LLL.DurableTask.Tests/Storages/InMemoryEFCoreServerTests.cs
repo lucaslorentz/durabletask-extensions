@@ -1,19 +1,20 @@
 using System;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
 
 namespace LLL.DurableTask.Tests.Storages
 {
-    public class InMemoryEFCoreTests : EFCoreTestBase
+    public class InMemoryEFCoreServerTests : ServerStorageTestBase
     {
         private readonly string _databaseId;
 
-        public InMemoryEFCoreTests(ITestOutputHelper output) : base(output)
+        public InMemoryEFCoreServerTests(ITestOutputHelper output) : base(output)
         {
             _databaseId = Guid.NewGuid().ToString();
         }
 
-        protected override void ConfigureStorage(IServiceCollection services)
+        protected override void ConfigureServerStorage(IServiceCollection services)
         {
             services.AddDurableTaskEFCoreStorage()
                 .UseInMemoryDatabase(_databaseId);
