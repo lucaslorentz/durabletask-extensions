@@ -67,27 +67,6 @@ services.AddDurableTaskAzureStorage(options =>
 });
 ```
 
-### LLL.DurableTask.Emulator [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Emulator)](https://www.nuget.org/packages/LLL.DurableTask.Emulator/)
-
-Extends Durable Task Emulator storage with:
-
-- Dependency Injection
-
-#### Supported features
-
-- UI: no
-- Distributed workers: no
-- Storing activity input: no
-- Failures rewind: no
-- Tags: no
-- State per execution: no
-
-#### Configuration
-
-```C#
-services.AddDurableTaskEmulatorStorage();
-```
-
 ### LLL.DurableTask.EFCore [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.EFCore)](https://www.nuget.org/packages/LLL.DurableTask.EFCore/)
 
 Implements relational relational database storage using EFCore.
