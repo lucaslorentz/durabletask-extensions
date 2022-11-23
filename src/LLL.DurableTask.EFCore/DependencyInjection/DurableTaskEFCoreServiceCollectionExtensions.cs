@@ -1,10 +1,10 @@
 ﻿using System;
 using DurableTask.Core;
+using DurableTask.Core.Query;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore;
 using LLL.DurableTask.EFCore.DependencyInjection;
 using LLL.DurableTask.EFCore.Mappers;
-using Microsoft.EntityFrameworkCore;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -31,9 +31,9 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<IDistributedOrchestrationService>(p => p.GetRequiredService<EFCoreOrchestrationService>());
             services.AddSingleton<IOrchestrationService>(p => p.GetRequiredService<EFCoreOrchestrationService>());
             services.AddSingleton<IOrchestrationServiceClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
+            services.AddSingleton<IOrchestrationServiceQueryClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
             services.AddSingleton<IOrchestrationServicePurgeClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
             services.AddSingleton<IOrchestrationServiceFeaturesClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
-            services.AddSingleton<IOrchestrationServiceSearchClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
             services.AddSingleton<IOrchestrationServiceRewindClient>(p => p.GetRequiredService<EFCoreOrchestrationService>());
 
             services.AddSingleton<OrchestrationMessageMapper>();

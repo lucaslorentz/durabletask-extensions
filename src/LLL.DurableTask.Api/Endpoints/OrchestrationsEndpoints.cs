@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using DurableTask.Core;
 using DurableTask.Core.History;
+using DurableTask.Core.Query;
 using LLL.DurableTask.Api.Extensions;
 using LLL.DurableTask.Api.Metadata;
 using LLL.DurableTask.Api.Models;
@@ -27,11 +28,11 @@ namespace LLL.DurableTask.Api.Endpoints
 
             endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations", async context =>
             {
-                var orchestrationServiceSearchClient = context.RequestServices.GetRequiredService<IOrchestrationServiceSearchClient>();
+                var orchestrationServiceSearchClient = context.RequestServices.GetRequiredService<IOrchestrationServiceQueryClient>();
 
-                var query = context.ParseQuery<OrchestrationQuery>();
+                var query = context.ParseQuery<ExtendedOrchestrationQuery>();
 
-                var result = await orchestrationServiceSearchClient.GetOrchestrationsAsync(query);
+                var result = await orchestrationServiceSearchClient.GetOrchestrationWithQueryAsync(query, context.RequestAborted);
 
                 await context.RespondJson(result);
             }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata

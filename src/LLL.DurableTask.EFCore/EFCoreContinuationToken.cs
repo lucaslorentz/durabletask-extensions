@@ -6,8 +6,6 @@ namespace LLL.DurableTask.EFCore
 {
     public class EFCoreContinuationToken
     {
-        public long Index { get; set; }
-        public long Count { get; set; }
         public DateTime CreatedTime { get; set; }
         public string InstanceId { get; set; }
 

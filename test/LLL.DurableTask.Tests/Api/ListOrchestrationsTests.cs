@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Query;
 using FluentAssertions;
 using LLL.DurableTask.Core;
 using Microsoft.AspNetCore.TestHost;
@@ -35,40 +37,40 @@ namespace LLL.DurableTask.Tests.Api
 
             using var httpClient = _host.GetTestClient();
 
-            var firstPageHttpResponse = await httpClient.GetAsync("/api/v1/orchestrations?top=5");
+            var firstPageHttpResponse = await httpClient.GetAsync("/api/v1/orchestrations?pageSize=5");
             firstPageHttpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             firstPageHttpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
             var firstPageResponse = JsonConvert.DeserializeObject<OrchestrationQueryResult>(await firstPageHttpResponse.Content.ReadAsStringAsync());
-            firstPageResponse.Count.Should().Be(7);
             firstPageResponse.ContinuationToken.Should().NotBeEmpty();
-            firstPageResponse.Orchestrations.Should().HaveCount(5);
-            firstPageResponse.Orchestrations[0].Name.Should().Be("Name-7");
-            firstPageResponse.Orchestrations[0].Version.Should().Be("Version-7");
-            firstPageResponse.Orchestrations[0].OrchestrationInstance.Should().NotBeNull();
-            firstPageResponse.Orchestrations[0].OrchestrationInstance.InstanceId.Should().Be("InstanceId-7");
-            firstPageResponse.Orchestrations[0].OrchestrationInstance.ExecutionId.Should().NotBeEmpty();
-            firstPageResponse.Orchestrations[0].ParentInstance.Should().BeNull();
-            firstPageResponse.Orchestrations[0].Input.Should().Be("\"Input-7\"");
-            firstPageResponse.Orchestrations[0].Output.Should().BeNull();
-            firstPageResponse.Orchestrations[0].OrchestrationStatus.Should().Be(OrchestrationStatus.Running);
-            firstPageResponse.Orchestrations[0].Status.Should().BeNull();
-            firstPageResponse.Orchestrations[0].CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-            firstPageResponse.Orchestrations[0].LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-            firstPageResponse.Orchestrations[0].CompletedTime.Year.Should().Be(9999);
+            firstPageResponse.OrchestrationState.Should().HaveCount(5);
+            var firstOrchestration = firstPageResponse.OrchestrationState.First();
+            firstOrchestration.Name.Should().Be("Name-7");
+            firstOrchestration.Version.Should().Be("Version-7");
+            firstOrchestration.OrchestrationInstance.Should().NotBeNull();
+            firstOrchestration.OrchestrationInstance.InstanceId.Should().Be("InstanceId-7");
+            firstOrchestration.OrchestrationInstance.ExecutionId.Should().NotBeEmpty();
+            firstOrchestration.ParentInstance.Should().BeNull();
+            firstOrchestration.Input.Should().Be("\"Input-7\"");
+            firstOrchestration.Output.Should().BeNull();
+            firstOrchestration.OrchestrationStatus.Should().Be(OrchestrationStatus.Running);
+            firstOrchestration.Status.Should().BeNull();
+            firstOrchestration.CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+            firstOrchestration.LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+            firstOrchestration.CompletedTime.Year.Should().Be(9999);
 
-            firstPageResponse.Orchestrations[4].Name.Should().Be("Name-3");
+            var fifthOrchestration = firstPageResponse.OrchestrationState.ElementAt(4);
+            fifthOrchestration.Name.Should().Be("Name-3");
 
-            var secondPageHttpResponse = await httpClient.GetAsync($"/api/v1/orchestrations?top=5&continuationToken={firstPageResponse.ContinuationToken}");
+            var secondPageHttpResponse = await httpClient.GetAsync($"/api/v1/orchestrations?pageSize=5&continuationToken={firstPageResponse.ContinuationToken}");
             secondPageHttpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             secondPageHttpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
             var secondPageResponse = JsonConvert.DeserializeObject<OrchestrationQueryResult>(await secondPageHttpResponse.Content.ReadAsStringAsync());
-            secondPageResponse.Count.Should().Be(7);
             secondPageResponse.ContinuationToken.Should().BeNull();
-            secondPageResponse.Orchestrations.Should().HaveCount(2);
-            secondPageResponse.Orchestrations[0].Name.Should().Be("Name-2");
-            secondPageResponse.Orchestrations[1].Name.Should().Be("Name-1");
+            secondPageResponse.OrchestrationState.Should().HaveCount(2);
+            secondPageResponse.OrchestrationState.ElementAt(0).Name.Should().Be("Name-2");
+            secondPageResponse.OrchestrationState.ElementAt(1).Name.Should().Be("Name-1");
         }
     }
 }

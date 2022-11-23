@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Query;
 using DurableTaskGrpc;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -13,9 +14,9 @@ namespace LLL.DurableTask.Server.Client
 {
     public partial class GrpcClientOrchestrationService :
         IOrchestrationServiceClient,
+        IOrchestrationServiceQueryClient,
         IOrchestrationServicePurgeClient,
         IOrchestrationServiceFeaturesClient,
-        IOrchestrationServiceSearchClient,
         IOrchestrationServiceRewindClient
     {
         public async Task<OrchestrationFeature[]> GetFeatures()
@@ -148,34 +149,39 @@ namespace LLL.DurableTask.Server.Client
             return string.IsNullOrEmpty(response.State) ? null : _options.DataConverter.Deserialize<OrchestrationState>(response.State);
         }
 
-        public async Task<OrchestrationQueryResult> GetOrchestrationsAsync(OrchestrationQuery query, CancellationToken cancellationToken = default)
+        public async Task<OrchestrationQueryResult> GetOrchestrationWithQueryAsync(OrchestrationQuery query, CancellationToken cancellationToken)
         {
-            var request = new GetOrchestrationsRequest
-            {
-                Top = query.Top,
-                ContinuationToken = query.ContinuationToken,
-                InstanceId = query.InstanceId,
-                Name = query.Name,
-                CreatedTimeFrom = ToTimestamp(query.CreatedTimeFrom),
-                CreatedTimeTo = ToTimestamp(query.CreatedTimeTo),
-                IncludePreviousExecutions = query.IncludePreviousExecutions
-            };
+            var request = new GetOrchestrationWithQueryRequest();
 
             if (query.RuntimeStatus != null)
                 request.RuntimeStatus.AddRange(query.RuntimeStatus.Select(s => (int)s));
 
+            request.CreatedTimeFrom = ToTimestamp(query.CreatedTimeFrom);
+            request.CreatedTimeTo = ToTimestamp(query.CreatedTimeTo);
+
+            if (query.TaskHubNames != null)
+                request.TaskHubNames.AddRange(query.TaskHubNames);
+
+            request.PageSize = query.PageSize;
+            request.ContinuationToken = query.ContinuationToken;
+            request.InstanceIdPrefix = query.InstanceIdPrefix;
+            request.FetchInputsAndOutputs = query.FetchInputsAndOutputs;
+
+            if (query is ExtendedOrchestrationQuery extendedQuery)
+            {
+                request.NamePrefix = extendedQuery?.NamePrefix;
+                request.IncludePreviousExecutions = extendedQuery.IncludePreviousExecutions;
+            }
+
             var callOptions = new CallOptions(cancellationToken: cancellationToken);
 
-            var response = await _client.GetOrchestrationsAsync(request, callOptions);
+            var response = await _client.GetOrchestrationWithQueryAsync(request, callOptions);
 
-            return new OrchestrationQueryResult
-            {
-                Orchestrations = response.States
-                    .Select(s => _options.DataConverter.Deserialize<OrchestrationState>(s))
-                    .ToArray(),
-                Count = response.Count,
-                ContinuationToken = response.ContinuationToken
-            };
+            var orchestrationsState = response.OrchestrationState
+                .Select(s => _options.DataConverter.Deserialize<OrchestrationState>(s))
+                .ToArray();
+
+            return new OrchestrationQueryResult(orchestrationsState, response.ContinuationToken);
         }
 
         public async Task<PurgeResult> PurgeInstanceStateAsync(string instanceId)

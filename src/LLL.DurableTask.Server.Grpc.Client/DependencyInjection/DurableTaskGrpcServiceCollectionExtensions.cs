@@ -1,5 +1,6 @@
 ﻿using System;
 using DurableTask.Core;
+using DurableTask.Core.Query;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.Server.Client;
 using Microsoft.Extensions.Options;
@@ -20,9 +21,9 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<IOrchestrationService>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
             services.AddSingleton<IDistributedOrchestrationService>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
             services.AddSingleton<IOrchestrationServiceClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
+            services.AddSingleton<IOrchestrationServiceQueryClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
             services.AddSingleton<IOrchestrationServicePurgeClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
             services.AddSingleton<IOrchestrationServiceFeaturesClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
-            services.AddSingleton<IOrchestrationServiceSearchClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
             services.AddSingleton<IOrchestrationServiceRewindClient>(p => p.GetRequiredService<GrpcClientOrchestrationService>());
 
             return services.AddGrpcClient<OrchestrationServiceClient>((s, o) =>

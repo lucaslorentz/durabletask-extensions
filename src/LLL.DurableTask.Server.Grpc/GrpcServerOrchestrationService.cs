@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.History;
+using DurableTask.Core.Query;
 using DurableTaskGrpc;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -23,9 +24,9 @@ namespace LLL.DurableTask.Server.Grpc.Server
         private readonly IOrchestrationServiceClient _orchestrationServiceClient;
         private readonly ILogger<GrpcServerOrchestrationService> _logger;
         private readonly IDistributedOrchestrationService _distributedOrchestrationService;
+        private readonly IOrchestrationServiceQueryClient _orchestrationServiceQueryClient;
         private readonly IOrchestrationServicePurgeClient _orchestrationServicePurgeClient;
         private readonly IOrchestrationServiceFeaturesClient _orchestrationServiceFeaturesClient;
-        private readonly IOrchestrationServiceSearchClient _orchestrationServiceSearchClient;
         private readonly IOrchestrationServiceRewindClient _orchestrationServiceRewindClient;
 
         public GrpcServerOrchestrationService(
@@ -34,9 +35,9 @@ namespace LLL.DurableTask.Server.Grpc.Server
             IOrchestrationServiceClient orchestrationServiceClient,
             ILogger<GrpcServerOrchestrationService> logger,
             IDistributedOrchestrationService distributedOrchestrationService = null,
+            IOrchestrationServiceQueryClient orchestrationServiceQueryClient = null,
             IOrchestrationServicePurgeClient orchestrationServicePurgeClient = null,
             IOrchestrationServiceFeaturesClient orchestrationServiceFeaturesClient = null,
-            IOrchestrationServiceSearchClient orchestrationServiceSearchClient = null,
             IOrchestrationServiceRewindClient orchestrationServiceRewindClient = null)
         {
             _options = options.Value;
@@ -44,9 +45,9 @@ namespace LLL.DurableTask.Server.Grpc.Server
             _orchestrationServiceClient = orchestrationServiceClient;
             _logger = logger;
             _distributedOrchestrationService = distributedOrchestrationService;
+            _orchestrationServiceQueryClient = orchestrationServiceQueryClient;
             _orchestrationServicePurgeClient = orchestrationServicePurgeClient;
             _orchestrationServiceFeaturesClient = orchestrationServiceFeaturesClient;
-            _orchestrationServiceSearchClient = orchestrationServiceSearchClient;
             _orchestrationServiceRewindClient = orchestrationServiceRewindClient;
         }
 
@@ -156,26 +157,25 @@ namespace LLL.DurableTask.Server.Grpc.Server
             return response;
         }
 
-        public override async Task<GetOrchestrationsResponse> GetOrchestrations(GetOrchestrationsRequest request, ServerCallContext context)
+        public override async Task<GetOrchestrationWithQueryResponse> GetOrchestrationWithQuery(GetOrchestrationWithQueryRequest request, ServerCallContext context)
         {
-            var query = new OrchestrationQuery
-            {
-                Top = request.Top,
-                ContinuationToken = request.ContinuationToken,
-                InstanceId = request.InstanceId,
-                Name = request.Name,
-                CreatedTimeFrom = request.CreatedTimeFrom?.ToDateTime(),
-                CreatedTimeTo = request.CreatedTimeTo?.ToDateTime(),
-                RuntimeStatus = request.RuntimeStatus.Select(s => (OrchestrationStatus)s).ToArray(),
-                IncludePreviousExecutions = request.IncludePreviousExecutions
-            };
+            var query = new ExtendedOrchestrationQuery();
+            query.RuntimeStatus = request.RuntimeStatus.Select(s => (OrchestrationStatus)s).ToArray();
+            query.CreatedTimeFrom = request.CreatedTimeFrom?.ToDateTime();
+            query.CreatedTimeTo = request.CreatedTimeTo?.ToDateTime();
+            query.TaskHubNames = request.TaskHubNames;
+            query.PageSize = request.PageSize;
+            query.ContinuationToken = request.ContinuationToken;
+            query.InstanceIdPrefix = request.InstanceIdPrefix;
+            query.FetchInputsAndOutputs = request.FetchInputsAndOutputs;
+            query.NamePrefix = request.NamePrefix;
+            query.IncludePreviousExecutions = request.IncludePreviousExecutions;
 
-            var queryResult = await _orchestrationServiceSearchClient.GetOrchestrationsAsync(query, context.CancellationToken);
+            var queryResult = await _orchestrationServiceQueryClient.GetOrchestrationWithQueryAsync(query, context.CancellationToken);
 
-            var response = new GetOrchestrationsResponse
+            var response = new GetOrchestrationWithQueryResponse
             {
-                States = { queryResult.Orchestrations.Select(s => _options.DataConverter.Serialize(s)) },
-                Count = queryResult.Count,
+                OrchestrationState = { queryResult.OrchestrationState.Select(s => _options.DataConverter.Serialize(s)) },
                 ContinuationToken = queryResult.ContinuationToken
             };
 
