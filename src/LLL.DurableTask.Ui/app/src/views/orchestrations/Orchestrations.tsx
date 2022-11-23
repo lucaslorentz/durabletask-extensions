@@ -91,13 +91,13 @@ export function Orchestrations() {
       setIsLoading(true);
 
       var response = await apiClient.listOrchestrations({
-        instanceId: instanceId,
-        name: name,
+        instanceIdPrefix: instanceId,
+        namePrefix: name,
         createdTimeFrom: createdTimeFrom,
         createdTimeTo: createdTimeTo,
         runtimeStatus: statuses,
         includePreviousExecutions,
-        top: pageSize,
+        pageSize,
         continuationToken:
           continuationTokenStack.length > 0
             ? continuationTokenStack[0]
@@ -395,7 +395,7 @@ function OrchestrationsTable({
           </TableRow>
         </TableHead>
         <TableBody>
-          {result?.orchestrations.map((orchestration) => (
+          {result?.orchestrationState.map((orchestration) => (
             <TableRow key={orchestration.orchestrationInstance.executionId}>
               <TableCell>
                 <Link
@@ -488,7 +488,6 @@ function OchestrationsFooter(props: FooterProps) {
     pageSize,
     setPageSize,
     continuationTokenStack,
-    apiClient,
     changePage,
     result,
   } = props;
@@ -519,8 +518,7 @@ function OchestrationsFooter(props: FooterProps) {
       <Box>
         {continuationTokenStack.length * pageSize + 1}-
         {continuationTokenStack.length * pageSize +
-          (result?.orchestrations.length ?? 0)}{" "}
-        {apiClient.hasFeature("QueryCount") && `of ${result?.count}`}
+          (result?.orchestrationState.length ?? 0)}
       </Box>
       <Box>
         <IconButton

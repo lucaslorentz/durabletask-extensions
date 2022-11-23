@@ -31,7 +31,9 @@ namespace LLL.DurableTask.Api.Extensions
             {
                 if (context.Request.Query.TryGetValue(property.Name, out var values))
                 {
-                    if (property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    if (property.PropertyType.IsGenericType && (
+                        property.PropertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+                        || property.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>)))
                     {
                         var elementType = property.PropertyType.GenericTypeArguments[0];
                         var array = Array.CreateInstance(elementType, values.Count);

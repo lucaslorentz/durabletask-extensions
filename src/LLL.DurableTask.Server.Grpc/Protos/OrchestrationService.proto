@@ -21,7 +21,7 @@ service OrchestrationService {
     rpc PurgeOrchestrationHistory (PurgeOrchestrationHistoryRequest) returns (google.protobuf.Empty);
     rpc WaitForOrchestration (WaitForOrchestrationRequest) returns (WaitForOrchestrationResponse);
 
-    rpc GetOrchestrations (GetOrchestrationsRequest) returns (GetOrchestrationsResponse);
+    rpc GetOrchestrationWithQuery (GetOrchestrationWithQueryRequest) returns (GetOrchestrationWithQueryResponse);
     rpc PurgeInstanceHistory (PurgeInstanceHistoryRequest) returns (PurgeInstanceHistoryResponse);
 
     // OrchestrationService
@@ -105,20 +105,21 @@ enum OrchestrationTimeFilterType {
     ORCHESTRATION_TIME_FILTER_TYPE_UPDATED = 2;
 }
 
-message GetOrchestrationsRequest {
-    int32 top = 1;
-    google.protobuf.StringValue continuation_token = 2;
-    google.protobuf.StringValue instance_id = 3;
-    google.protobuf.StringValue name = 4;
-    google.protobuf.Timestamp created_time_from = 5;
-    google.protobuf.Timestamp created_time_to = 6;
-    repeated int32 runtime_status = 7;
-    bool include_previous_executions = 8;
+message GetOrchestrationWithQueryRequest {
+    repeated int32 runtime_status = 1;
+    google.protobuf.Timestamp created_time_from = 2;
+    google.protobuf.Timestamp created_time_to = 3;
+    repeated google.protobuf.StringValue task_hub_names = 4;
+    int32 page_size = 5;
+    google.protobuf.StringValue continuation_token = 6;
+    google.protobuf.StringValue instance_id_prefix = 7;
+    bool fetch_inputs_and_outputs = 8;
+    google.protobuf.StringValue name_prefix = 9;
+    bool include_previous_executions = 10;
 }
 
-message GetOrchestrationsResponse {
-    repeated string states = 1;
-    google.protobuf.Int64Value count = 2;
+message GetOrchestrationWithQueryResponse {
+    repeated string orchestration_state = 1;
     google.protobuf.StringValue continuation_token = 3;
 }
 

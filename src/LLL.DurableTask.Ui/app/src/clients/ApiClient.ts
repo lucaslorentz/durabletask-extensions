@@ -61,8 +61,8 @@ export class ApiClient {
   ): Promise<OrchestrationsResponse> {
     const params = new URLSearchParams();
     if (request) {
-      request.instanceId && params.append("instanceId", request.instanceId);
-      request.name && params.append("name", request.name);
+      request.instanceIdPrefix && params.append("instanceIdPrefix", request.instanceIdPrefix);
+      request.namePrefix && params.append("namePrefix", request.namePrefix);
       request.createdTimeFrom &&
         params.append("createdTimeFrom", request.createdTimeFrom);
       request.createdTimeTo &&
@@ -72,7 +72,8 @@ export class ApiClient {
       );
       request.includePreviousExecutions &&
         params.append("includePreviousExecutions", "true");
-      request.top && params.append("top", request.top.toString());
+      request.pageSize &&
+        params.append("pageSize", request.pageSize.toString());
       request.continuationToken &&
         params.append("continuationToken", request.continuationToken);
     }

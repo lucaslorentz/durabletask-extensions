@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
+using DurableTask.Core.Query;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Extensions;
 using LLL.DurableTask.EFCore.Mappers;
@@ -17,8 +18,8 @@ namespace LLL.DurableTask.EFCore
     public partial class EFCoreOrchestrationService :
         IOrchestrationServiceClient,
         IOrchestrationServiceFeaturesClient,
+        IOrchestrationServiceQueryClient,
         IOrchestrationServicePurgeClient,
-        IOrchestrationServiceSearchClient,
         IOrchestrationServiceRewindClient
     {
         public Task CreateTaskOrchestrationAsync(TaskMessage creationMessage)
@@ -205,24 +206,20 @@ namespace LLL.DurableTask.EFCore
                 OrchestrationFeature.SearchByName,
                 OrchestrationFeature.SearchByCreatedTime,
                 OrchestrationFeature.SearchByStatus,
-                OrchestrationFeature.QueryCount,
                 OrchestrationFeature.Rewind,
                 OrchestrationFeature.Tags,
                 OrchestrationFeature.StatePerExecution
             });
         }
 
-        public async Task<OrchestrationQueryResult> GetOrchestrationsAsync(OrchestrationQuery query, CancellationToken cancellationToken = default)
+        public async Task<OrchestrationQueryResult> GetOrchestrationWithQueryAsync(OrchestrationQuery query, CancellationToken cancellationToken)
         {
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
                 var queryable = dbContext.Executions as IQueryable<Entities.Execution>;
 
-                if (!string.IsNullOrEmpty(query.InstanceId))
-                    queryable = queryable.Where(e => e.InstanceId.StartsWith(query.InstanceId));
-
-                if (!string.IsNullOrEmpty(query.Name))
-                    queryable = queryable.Where(e => e.Name.StartsWith(query.Name));
+                if (!string.IsNullOrEmpty(query.InstanceIdPrefix))
+                    queryable = queryable.Where(e => e.InstanceId.StartsWith(query.InstanceIdPrefix));
 
                 if (query.CreatedTimeFrom != null)
                     queryable = queryable.Where(e => e.CreatedTime >= query.CreatedTimeFrom);
@@ -233,52 +230,48 @@ namespace LLL.DurableTask.EFCore
                 if (query.RuntimeStatus != null && query.RuntimeStatus.Any())
                     queryable = queryable.Where(e => query.RuntimeStatus.Contains(e.Status));
 
-                if (!query.IncludePreviousExecutions)
-                    queryable = queryable.Where(e => dbContext.Instances.Select(i => i.LastExecutionId).Contains(e.ExecutionId));
+                var extendedQuery = query as ExtendedOrchestrationQuery;
 
-                long index;
-                long count;
+                if (extendedQuery != null)
+                {
+                    if (!string.IsNullOrEmpty(extendedQuery.NamePrefix))
+                        queryable = queryable.Where(e => e.Name.StartsWith(extendedQuery.NamePrefix));
+                }
+
+                if (extendedQuery == null || !extendedQuery.IncludePreviousExecutions)
+                    queryable = queryable.Where(e => dbContext.Instances.Select(i => i.LastExecutionId).Contains(e.ExecutionId));
 
                 var continuationToken = EFCoreContinuationToken.Parse(query.ContinuationToken);
                 if (continuationToken != null)
                 {
-                    index = continuationToken.Index;
-                    count = continuationToken.Count;
-
                     queryable = queryable.Where(i =>
                         i.CreatedTime < continuationToken.CreatedTime ||
                         i.CreatedTime == continuationToken.CreatedTime && continuationToken.InstanceId.CompareTo(i.InstanceId) < 0);
-                }
-                else
-                {
-                    index = 0;
-                    count = await queryable.LongCountAsync();
                 }
 
                 var instances = await queryable
                     .OrderByDescending(x => x.CreatedTime)
                     .ThenByDescending(x => x.InstanceId)
-                    .Take(query.Top)
+                    .Take(query.PageSize + 1)
                     .ToArrayAsync();
 
-                var mappedInstances = instances
+                var pageInstances = instances
+                    .Take(query.PageSize)
+                    .ToArray();
+
+                var mappedPageInstances = pageInstances
                     .Select(_executionMapper.MapToState)
                     .ToArray();
 
-                return new OrchestrationQueryResult
-                {
-                    Orchestrations = mappedInstances,
-                    Count = count,
-                    ContinuationToken = count > index + instances.Length && instances.Length > 0
-                        ? new EFCoreContinuationToken
-                        {
-                            Index = index + instances.Length,
-                            Count = count,
-                            CreatedTime = instances.Last().CreatedTime,
-                            InstanceId = instances.Last().InstanceId,
-                        }.Serialize()
-                        : null
-                };
+                var newContinuationToken = instances.Length > pageInstances.Length
+                    ? new EFCoreContinuationToken
+                    {
+                        CreatedTime = pageInstances.Last().CreatedTime,
+                        InstanceId = pageInstances.Last().InstanceId,
+                    }.Serialize()
+                    : null;
+
+                return new OrchestrationQueryResult(mappedPageInstances, newContinuationToken);
             }
         }
 

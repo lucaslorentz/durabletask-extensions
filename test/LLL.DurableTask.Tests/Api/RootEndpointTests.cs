@@ -100,7 +100,6 @@ namespace LLL.DurableTask.Tests.Api
                      OrchestrationFeature.SearchByName,
                      OrchestrationFeature.SearchByCreatedTime,
                      OrchestrationFeature.SearchByStatus,
-                     OrchestrationFeature.QueryCount,
                      OrchestrationFeature.Rewind,
                      OrchestrationFeature.Tags,
                      OrchestrationFeature.StatePerExecution
