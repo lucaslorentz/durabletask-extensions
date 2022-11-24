@@ -17,7 +17,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.7")
+                .HasAnnotation("ProductVersion", "7.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -66,7 +66,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasIndex("LockedUntil", "Queue");
 
-                    b.ToTable("ActivityMessages", (string)null);
+                    b.ToTable("ActivityMessages");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
@@ -100,7 +100,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.HasIndex("InstanceId", "ExecutionId", "SequenceNumber")
                         .IsUnique();
 
-                    b.ToTable("Events", (string)null);
+                    b.ToTable("Events");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
@@ -149,7 +149,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Version")
                         .IsRequired()
@@ -158,7 +158,18 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasKey("ExecutionId");
 
-                    b.ToTable("Executions", (string)null);
+                    b.HasIndex("CreatedTime");
+
+                    b.HasIndex("InstanceId");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("CreatedTime", "InstanceId")
+                        .IsDescending();
+
+                    b.ToTable("Executions");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
@@ -187,9 +198,10 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasKey("InstanceId");
 
-                    b.HasIndex("LastExecutionId");
+                    b.HasIndex("LastExecutionId")
+                        .IsUnique();
 
-                    b.ToTable("Instances", (string)null);
+                    b.ToTable("Instances");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.OrchestrationMessage", b =>
@@ -227,7 +239,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                     b.HasIndex("AvailableAt", "Queue", "InstanceId");
 
-                    b.ToTable("OrchestrationMessages", (string)null);
+                    b.ToTable("OrchestrationMessages");
                 });
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
@@ -244,7 +256,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Event", b =>
                 {
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Execution", "Execution")
-                        .WithMany()
+                        .WithMany("Events")
                         .HasForeignKey("ExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -254,7 +266,7 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
                 {
-                    b.OwnsMany("LLL.DurableTask.EFCore.Entities.Execution.Tags#LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
+                    b.OwnsMany("LLL.DurableTask.EFCore.Entities.Tag", "Tags", b1 =>
                         {
                             b1.Property<string>("ExecutionId")
                                 .HasColumnType("nvarchar(100)");
@@ -289,8 +301,8 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Instance", b =>
                 {
                     b.HasOne("LLL.DurableTask.EFCore.Entities.Execution", "LastExecution")
-                        .WithMany()
-                        .HasForeignKey("LastExecutionId")
+                        .WithOne("LastExecutionInstance")
+                        .HasForeignKey("LLL.DurableTask.EFCore.Entities.Instance", "LastExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -306,6 +318,13 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                         .IsRequired();
 
                     b.Navigation("Instance");
+                });
+
+            modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.Execution", b =>
+                {
+                    b.Navigation("Events");
+
+                    b.Navigation("LastExecutionInstance");
                 });
 #pragma warning restore 612, 618
         }

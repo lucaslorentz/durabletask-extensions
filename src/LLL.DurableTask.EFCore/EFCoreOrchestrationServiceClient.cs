@@ -239,7 +239,7 @@ namespace LLL.DurableTask.EFCore
                 }
 
                 if (extendedQuery == null || !extendedQuery.IncludePreviousExecutions)
-                    queryable = queryable.Where(e => dbContext.Instances.Select(i => i.LastExecutionId).Contains(e.ExecutionId));
+                    queryable = queryable.Where(e => e.LastExecutionInstance != null);
 
                 var continuationToken = EFCoreContinuationToken.Parse(query.ContinuationToken);
                 if (continuationToken != null)
