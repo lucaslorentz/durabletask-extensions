@@ -33,5 +33,7 @@ namespace LLL.DurableTask.EFCore.Entities
         public string Output { get; set; }
 
         public IList<Event> Events { get; } = new List<Event>();
+
+        public Instance LastExecutionInstance { get; set; }
     }
 }

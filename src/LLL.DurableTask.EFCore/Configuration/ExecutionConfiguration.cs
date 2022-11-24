@@ -40,6 +40,17 @@ namespace LLL.DurableTask.EFCore.Configuration
 
             builder.Property(x => x.Input);
             builder.Property(x => x.Output);
+
+            builder.HasIndex(x => new { x.CreatedTime, x.InstanceId })
+                .IsDescending(true, true);
+
+            builder.HasIndex(x => new { x.CreatedTime });
+
+            builder.HasIndex(x => new { x.InstanceId });
+
+            builder.HasIndex(x => new { x.Name });
+
+            builder.HasIndex(x => new { x.Status });
         }
     }
 }
