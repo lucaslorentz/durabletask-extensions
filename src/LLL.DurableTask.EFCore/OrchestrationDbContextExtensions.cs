@@ -13,6 +13,16 @@ namespace LLL.DurableTask.EFCore
 
         public abstract Task WithinTransaction(OrchestrationDbContext dbContext, Func<Task> action);
 
+        public async Task<T> WithinTransaction<T>(OrchestrationDbContext dbContext, Func<Task<T>> action)
+        {
+            T result = default;
+            await WithinTransaction(dbContext, async () =>
+            {
+                result = await action();
+            });
+            return result;
+        }
+
         public abstract Task<Instance> LockInstanceForUpdate(
             OrchestrationDbContext dbContext,
             string instanceId);
