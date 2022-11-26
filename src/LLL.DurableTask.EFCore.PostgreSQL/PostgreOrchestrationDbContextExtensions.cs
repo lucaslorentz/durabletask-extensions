@@ -40,29 +40,25 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
-            using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
-            {
-                var instance = await dbContext.Instances.FromSqlRaw(@"
-                    SELECT ""Instances"".* FROM ""OrchestrationMessages""
-                        INNER JOIN ""Instances"" ON ""OrchestrationMessages"".""InstanceId"" = ""Instances"".""InstanceId""
-                    WHERE
-                        ""OrchestrationMessages"".""AvailableAt"" <= {0}
-                        AND ""Instances"".""LockedUntil"" <= {0}
-                    ORDER BY ""OrchestrationMessages"".""AvailableAt""
-                    LIMIT 1
-                    FOR UPDATE SKIP LOCKED
-                ", DateTime.UtcNow).SingleOrDefaultAsync();
+            var instance = await dbContext.Instances.FromSqlRaw(@"
+                SELECT ""Instances"".* FROM ""OrchestrationMessages""
+                    INNER JOIN ""Instances"" ON ""OrchestrationMessages"".""InstanceId"" = ""Instances"".""InstanceId""
+                WHERE
+                    ""OrchestrationMessages"".""AvailableAt"" <= {0}
+                    AND ""Instances"".""LockedUntil"" <= {0}
+                ORDER BY ""OrchestrationMessages"".""AvailableAt""
+                LIMIT 1
+                FOR UPDATE SKIP LOCKED
+            ", DateTime.UtcNow).SingleOrDefaultAsync();
 
-                if (instance == null)
-                    return null;
+            if (instance == null)
+                return null;
 
-                instance.LockId = Guid.NewGuid().ToString();
-                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
-                await dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+            instance.LockId = Guid.NewGuid().ToString();
+            instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+            await dbContext.SaveChangesAsync();
 
-                return instance;
-            }
+            return instance;
         }
 
         public override async Task<Instance> TryLockNextInstanceAsync(
@@ -70,60 +66,52 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
             string[] queues,
             TimeSpan lockTimeout)
         {
-            using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
-            {
-                var queuesParams = string.Join(",", queues.Select((_, i) => $"{{{i}}}"));
-                var utcNowParam = $"{{{queues.Length}}}";
-                var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
+            var queuesParams = string.Join(",", queues.Select((_, i) => $"{{{i}}}"));
+            var utcNowParam = $"{{{queues.Length}}}";
+            var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-                var instance = await dbContext.Instances.FromSqlRaw($@"
-                    SELECT ""Instances"".* FROM ""OrchestrationMessages""
-                        INNER JOIN ""Instances"" ON ""OrchestrationMessages"".""InstanceId"" = ""Instances"".""InstanceId""
-                    WHERE
-                        ""OrchestrationMessages"".""AvailableAt"" <= {utcNowParam}
-                        AND ""OrchestrationMessages"".""Queue"" IN ({queuesParams})
-                        AND ""Instances"".""LockedUntil"" <= {utcNowParam}
-                    ORDER BY ""OrchestrationMessages"".""AvailableAt""
-                    LIMIT 1
-                    FOR UPDATE SKIP LOCKED
-                ", parameters).SingleOrDefaultAsync();
+            var instance = await dbContext.Instances.FromSqlRaw($@"
+                SELECT ""Instances"".* FROM ""OrchestrationMessages""
+                    INNER JOIN ""Instances"" ON ""OrchestrationMessages"".""InstanceId"" = ""Instances"".""InstanceId""
+                WHERE
+                    ""OrchestrationMessages"".""AvailableAt"" <= {utcNowParam}
+                    AND ""OrchestrationMessages"".""Queue"" IN ({queuesParams})
+                    AND ""Instances"".""LockedUntil"" <= {utcNowParam}
+                ORDER BY ""OrchestrationMessages"".""AvailableAt""
+                LIMIT 1
+                FOR UPDATE SKIP LOCKED
+            ", parameters).SingleOrDefaultAsync();
 
-                if (instance == null)
-                    return null;
+            if (instance == null)
+                return null;
 
-                instance.LockId = Guid.NewGuid().ToString();
-                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
-                await dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+            instance.LockId = Guid.NewGuid().ToString();
+            instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+            await dbContext.SaveChangesAsync();
 
-                return instance;
-            }
+            return instance;
         }
 
         public override async Task<ActivityMessage> TryLockNextActivityMessageAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
-            using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
-            {
-                var instance = await dbContext.ActivityMessages.FromSqlRaw(@"
-                    SELECT * FROM ""ActivityMessages""
-                    WHERE ""LockedUntil"" <= {0}
-                    ORDER BY ""LockedUntil""
-                    LIMIT 1
-                    FOR UPDATE SKIP LOCKED
-                ", DateTime.UtcNow).SingleOrDefaultAsync();
+            var instance = await dbContext.ActivityMessages.FromSqlRaw(@"
+                SELECT * FROM ""ActivityMessages""
+                WHERE ""LockedUntil"" <= {0}
+                ORDER BY ""LockedUntil""
+                LIMIT 1
+                FOR UPDATE SKIP LOCKED
+            ", DateTime.UtcNow).SingleOrDefaultAsync();
 
-                if (instance == null)
-                    return null;
+            if (instance == null)
+                return null;
 
-                instance.LockId = Guid.NewGuid().ToString();
-                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
-                await dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+            instance.LockId = Guid.NewGuid().ToString();
+            instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+            await dbContext.SaveChangesAsync();
 
-                return instance;
-            }
+            return instance;
         }
 
         public override async Task<ActivityMessage> TryLockNextActivityMessageAsync(
@@ -131,31 +119,27 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
             string[] queues,
             TimeSpan lockTimeout)
         {
-            using (var transaction = dbContext.Database.BeginTransaction(TransactionIsolationLevel))
-            {
-                var queuesParams = string.Join(",", queues.Select((_, i) => $"{{{i}}}"));
-                var utcNowParam = $"{{{queues.Length}}}";
-                var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
+            var queuesParams = string.Join(",", queues.Select((_, i) => $"{{{i}}}"));
+            var utcNowParam = $"{{{queues.Length}}}";
+            var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-                var instance = await dbContext.ActivityMessages.FromSqlRaw($@"
-                    SELECT * FROM ""ActivityMessages""
-                    WHERE ""Queue"" IN ({queuesParams})
-                        AND ""LockedUntil"" <= {utcNowParam}
-                    ORDER BY ""LockedUntil""
-                    LIMIT 1
-                    FOR UPDATE SKIP LOCKED
-                ", parameters).SingleOrDefaultAsync();
+            var instance = await dbContext.ActivityMessages.FromSqlRaw($@"
+                SELECT * FROM ""ActivityMessages""
+                WHERE ""Queue"" IN ({queuesParams})
+                    AND ""LockedUntil"" <= {utcNowParam}
+                ORDER BY ""LockedUntil""
+                LIMIT 1
+                FOR UPDATE SKIP LOCKED
+            ", parameters).SingleOrDefaultAsync();
 
-                if (instance == null)
-                    return null;
+            if (instance == null)
+                return null;
 
-                instance.LockId = Guid.NewGuid().ToString();
-                instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
-                await dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+            instance.LockId = Guid.NewGuid().ToString();
+            instance.LockedUntil = DateTime.UtcNow.Add(lockTimeout);
+            await dbContext.SaveChangesAsync();
 
-                return instance;
-            }
+            return instance;
         }
     }
 }

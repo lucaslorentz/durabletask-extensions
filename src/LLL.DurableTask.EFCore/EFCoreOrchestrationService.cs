@@ -506,13 +506,15 @@ namespace LLL.DurableTask.EFCore
         private async Task<Instance> LockNextInstanceAsync(OrchestrationDbContext dbContext, INameVersionInfo[] orchestrations)
         {
             if (orchestrations == null)
-                return await _dbContextExtensions.TryLockNextInstanceAsync(dbContext, _options.OrchestrationLockTimeout);
+                return await _dbContextExtensions.WithinTransaction(dbContext,
+                    () => _dbContextExtensions.TryLockNextInstanceAsync(dbContext, _options.OrchestrationLockTimeout));
 
             var queues = orchestrations
                 .Select(QueueMapper.ToQueue)
                 .ToArray();
 
-            var instance = await _dbContextExtensions.TryLockNextInstanceAsync(dbContext, queues, _options.OrchestrationLockTimeout);
+            var instance = await _dbContextExtensions.WithinTransaction(dbContext,
+                () => _dbContextExtensions.TryLockNextInstanceAsync(dbContext, queues, _options.OrchestrationLockTimeout));
             if (instance != null)
                 return instance;
 
@@ -525,13 +527,15 @@ namespace LLL.DurableTask.EFCore
             var lockUntilUtc = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
 
             if (activities == null)
-                return await _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, _options.OrchestrationLockTimeout);
+                return await _dbContextExtensions.WithinTransaction(dbContext,
+                    () => _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, _options.OrchestrationLockTimeout));
 
             var queues = activities
                 .Select(QueueMapper.ToQueue)
                 .ToArray();
 
-            var activityMessage = await _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, queues, _options.OrchestrationLockTimeout);
+            var activityMessage = await _dbContextExtensions.WithinTransaction(dbContext,
+                () => _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, queues, _options.OrchestrationLockTimeout));
             if (activityMessage != null)
                 return activityMessage;
 

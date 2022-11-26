@@ -38,25 +38,47 @@ namespace LLL.DurableTask.Tests.Storages
             var dbContextFactory = _host.Services.GetService<IDbContextFactory<OrchestrationDbContext>>();
             var dbContextExtensions = _host.Services.GetService<OrchestrationDbContextExtensions>();
 
-            using var dbContextDispenser = new DbContextDispenser(dbContextFactory);
+            using var dbContext1 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext2 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext3 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext4 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext5 = await dbContextFactory.CreateDbContextAsync();
 
             var lockTimeout = TimeSpan.FromMinutes(1);
 
-            var instance1 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
-            var instance2 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
-            var instance3 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
-            var instance4 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
-            var instanceNull = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), lockTimeout);
+            await dbContextExtensions.WithinTransaction(dbContext1, async () =>
+            {
+                var instance1 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext1, lockTimeout);
+                instance1.Should().NotBeNull();
+                instance1.InstanceId.Should().Be("i1");
 
-            instance1.Should().NotBeNull();
-            instance1.InstanceId.Should().Be("i1");
-            instance2.Should().NotBeNull();
-            instance2.InstanceId.Should().Be("i2");
-            instance3.Should().NotBeNull();
-            instance3.InstanceId.Should().Be("i3");
-            instance4.Should().NotBeNull();
-            instance4.InstanceId.Should().Be("i4");
-            instanceNull.Should().BeNull();
+                await dbContextExtensions.WithinTransaction(dbContext2, async () =>
+                {
+                    var instance2 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext2, lockTimeout);
+                    instance2.Should().NotBeNull();
+                    instance2.InstanceId.Should().Be("i2");
+
+                    await dbContextExtensions.WithinTransaction(dbContext3, async () =>
+                    {
+                        var instance3 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext3, lockTimeout);
+                        instance3.Should().NotBeNull();
+                        instance3.InstanceId.Should().Be("i3");
+
+                        await dbContextExtensions.WithinTransaction(dbContext4, async () =>
+                        {
+                            var instance4 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext4, lockTimeout);
+                            instance4.Should().NotBeNull();
+                            instance4.InstanceId.Should().Be("i4");
+
+                            await dbContextExtensions.WithinTransaction(dbContext5, async () =>
+                            {
+                                var instanceNull = await dbContextExtensions.TryLockNextInstanceAsync(dbContext5, lockTimeout);
+                                instanceNull.Should().BeNull();
+                            });
+                        });
+                    });
+                });
+            });
 
             await taskHubClient.PurgeOrchestrationInstanceHistoryAsync(
                 DateTime.UtcNow,
@@ -72,53 +94,100 @@ namespace LLL.DurableTask.Tests.Storages
                 DateTime.UtcNow,
                 OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter);
 
-            await taskHubClient.CreateOrchestrationInstanceAsync($"o1", "", $"i1", null);
-            await taskHubClient.CreateOrchestrationInstanceAsync($"o2", "", $"i2", null);
-            await taskHubClient.CreateOrchestrationInstanceAsync($"o3", "", $"i3", null);
-            await taskHubClient.CreateOrchestrationInstanceAsync($"o1", "", $"i4", null);
-            await taskHubClient.CreateOrchestrationInstanceAsync($"o2", "", $"i5", null);
-            await taskHubClient.CreateOrchestrationInstanceAsync($"o3", "", $"i6", null);
-            await taskHubClient.CreateOrchestrationInstanceAsync($"o1", "", $"i7", null);
-            await taskHubClient.CreateOrchestrationInstanceAsync($"o2", "", $"i8", null);
-            await taskHubClient.CreateOrchestrationInstanceAsync($"o3", "", $"i9", null);
+            await taskHubClient.CreateOrchestrationInstanceAsync($"o1", "", $"o1-1", null);
+            await taskHubClient.CreateOrchestrationInstanceAsync($"o2", "", $"o2-1", null);
+            await taskHubClient.CreateOrchestrationInstanceAsync($"o3", "", $"o3-1", null);
+            await taskHubClient.CreateOrchestrationInstanceAsync($"o1", "", $"o1-2", null);
+            await taskHubClient.CreateOrchestrationInstanceAsync($"o2", "", $"o2-2", null);
+            await taskHubClient.CreateOrchestrationInstanceAsync($"o3", "", $"o3-2", null);
+            await taskHubClient.CreateOrchestrationInstanceAsync($"o1", "", $"o1-3", null);
+            await taskHubClient.CreateOrchestrationInstanceAsync($"o2", "", $"o2-3", null);
+            await taskHubClient.CreateOrchestrationInstanceAsync($"o3", "", $"o3-3", null);
 
             var dbContextFactory = _host.Services.GetService<IDbContextFactory<OrchestrationDbContext>>();
             var dbContextExtensions = _host.Services.GetService<OrchestrationDbContextExtensions>();
 
-            using var dbContextDispenser = new DbContextDispenser(dbContextFactory);
+            using var dbContext1 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext2 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext3 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext4 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext5 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext6 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext7 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext8 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext9 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext10 = await dbContextFactory.CreateDbContextAsync();
 
             var lockTimeout = TimeSpan.FromMinutes(1);
 
-            var instance3 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o3" }, lockTimeout);
-            var instance2 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o2" }, lockTimeout);
-            var instance1 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1" }, lockTimeout);
-            var instance4 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1" }, lockTimeout);
-            var instance5 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o2" }, lockTimeout);
-            var instance6 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o3" }, lockTimeout);
-            var instance7 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
-            var instance8 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
-            var instance9 = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
-            var instanceNull = await dbContextExtensions.TryLockNextInstanceAsync(dbContextDispenser.Get(), new[] { "o1", "o2", "o3" }, lockTimeout);
+            await dbContextExtensions.WithinTransaction(dbContext1, async () =>
+            {
+                var instance3 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext1, new[] { "o3" }, lockTimeout);
+                instance3.Should().NotBeNull();
+                instance3.InstanceId.Should().Be("o3-1");
 
-            instance1.Should().NotBeNull();
-            instance1.InstanceId.Should().Be("i1");
-            instance2.Should().NotBeNull();
-            instance2.InstanceId.Should().Be("i2");
-            instance3.Should().NotBeNull();
-            instance3.InstanceId.Should().Be("i3");
-            instance4.Should().NotBeNull();
-            instance4.InstanceId.Should().Be("i4");
-            instance5.Should().NotBeNull();
-            instance5.InstanceId.Should().Be("i5");
-            instance6.Should().NotBeNull();
-            instance6.InstanceId.Should().Be("i6");
-            instance7.Should().NotBeNull();
-            instance7.InstanceId.Should().Be("i7");
-            instance8.Should().NotBeNull();
-            instance8.InstanceId.Should().Be("i8");
-            instance9.Should().NotBeNull();
-            instance9.InstanceId.Should().Be("i9");
-            instanceNull.Should().BeNull();
+                await dbContextExtensions.WithinTransaction(dbContext2, async () =>
+                {
+                    var instance2 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext2, new[] { "o2" }, lockTimeout);
+                    instance2.Should().NotBeNull();
+                    instance2.InstanceId.Should().Be("o2-1");
+
+                    await dbContextExtensions.WithinTransaction(dbContext3, async () =>
+                    {
+                        var instance1 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext3, new[] { "o1" }, lockTimeout);
+                        instance1.Should().NotBeNull();
+                        instance1.InstanceId.Should().Be("o1-1");
+
+                        await dbContextExtensions.WithinTransaction(dbContext4, async () =>
+                        {
+                            var instance4 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext4, new[] { "o1" }, lockTimeout);
+                            instance4.Should().NotBeNull();
+                            instance4.InstanceId.Should().Be("o1-2");
+
+                            await dbContextExtensions.WithinTransaction(dbContext5, async () =>
+                            {
+                                var instance5 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext5, new[] { "o2" }, lockTimeout);
+                                instance5.Should().NotBeNull();
+                                instance5.InstanceId.Should().Be("o2-2");
+
+                                await dbContextExtensions.WithinTransaction(dbContext6, async () =>
+                                {
+                                    var instance6 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext6, new[] { "o3" }, lockTimeout);
+                                    instance6.Should().NotBeNull();
+                                    instance6.InstanceId.Should().Be("o3-2");
+
+                                    await dbContextExtensions.WithinTransaction(dbContext7, async () =>
+                                    {
+                                        var instance7 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext7, new[] { "o1", "o2", "o3" }, lockTimeout);
+                                        instance7.Should().NotBeNull();
+                                        instance7.InstanceId.Should().Be("o1-3");
+
+                                        await dbContextExtensions.WithinTransaction(dbContext8, async () =>
+                                        {
+                                            var instance8 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext8, new[] { "o1", "o2", "o3" }, lockTimeout);
+                                            instance8.Should().NotBeNull();
+                                            instance8.InstanceId.Should().Be("o2-3");
+
+                                            await dbContextExtensions.WithinTransaction(dbContext9, async () =>
+                                            {
+                                                var instance9 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext9, new[] { "o1", "o2", "o3" }, lockTimeout);
+                                                instance9.Should().NotBeNull();
+                                                instance9.InstanceId.Should().Be("o3-3");
+
+                                                await dbContextExtensions.WithinTransaction(dbContext10, async () =>
+                                                {
+                                                    var instanceNull = await dbContextExtensions.TryLockNextInstanceAsync(dbContext10, new[] { "o1", "o2", "o3" }, lockTimeout);
+                                                    instanceNull.Should().BeNull();
+                                                });
+                                            });
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
 
             await taskHubClient.PurgeOrchestrationInstanceHistoryAsync(
                 DateTime.UtcNow,
