@@ -47,7 +47,7 @@ namespace LLL.DurableTask.EFCore.MySql
                     OrchestrationMessages.AvailableAt <= {0}
                     AND Instances.LockedUntil <= {0}
                 LIMIT 1
-                FOR UPDATE SKIP LOCKED
+                FOR UPDATE OF Instances SKIP LOCKED
             ", DateTime.UtcNow).SingleOrDefaultAsync();
 
             if (instance == null)
@@ -77,7 +77,7 @@ namespace LLL.DurableTask.EFCore.MySql
                     AND OrchestrationMessages.Queue IN ({queuesParams})
                     AND Instances.LockedUntil <= {utcNowParam}
                 LIMIT 1
-                FOR UPDATE SKIP LOCKED
+                FOR UPDATE OF Instances SKIP LOCKED
             ", parameters).SingleOrDefaultAsync();
 
             if (instance == null)

@@ -48,7 +48,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
                     AND ""Instances"".""LockedUntil"" <= {0}
                 ORDER BY ""OrchestrationMessages"".""AvailableAt""
                 LIMIT 1
-                FOR UPDATE SKIP LOCKED
+                FOR UPDATE OF ""Instances"" SKIP LOCKED
             ", DateTime.UtcNow).SingleOrDefaultAsync();
 
             if (instance == null)
@@ -79,7 +79,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
                     AND ""Instances"".""LockedUntil"" <= {utcNowParam}
                 ORDER BY ""OrchestrationMessages"".""AvailableAt""
                 LIMIT 1
-                FOR UPDATE SKIP LOCKED
+                FOR UPDATE OF ""Instances"" SKIP LOCKED
             ", parameters).SingleOrDefaultAsync();
 
             if (instance == null)
