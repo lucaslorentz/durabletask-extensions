@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using DurableTask.Core.Exceptions;
 using DurableTask.Core.Serializing;
 using LLL.DurableTask.Core.Serializing;
-using DUtils = DurableTask.Core.Common.Utils;
 
 namespace LLL.DurableTask.Worker.Orchestrations
 {
@@ -39,18 +38,16 @@ namespace LLL.DurableTask.Worker.Orchestrations
                 [typeof(OrchestrationGuidGenerator)] = () => new OrchestrationGuidGenerator(context.OrchestrationInstance.ExecutionId)
             });
 
-            string serializedResult;
             try
             {
                 var result = _methodInfo.Invoke(Instance, parameters);
-                serializedResult = await SerializeResult(result);
+                return await SerializeResult(result);
             }
-            catch (Exception e) when (!DUtils.IsFatal(e) && !DUtils.IsExecutionAborting(e))
+            catch (TargetInvocationException ex)
             {
-                var details = DUtils.SerializeCause(e, _dataConverter);
-                throw new OrchestrationFailureException(e.Message, details);
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw;
             }
-            return serializedResult;
         }
 
         public override string GetStatus()

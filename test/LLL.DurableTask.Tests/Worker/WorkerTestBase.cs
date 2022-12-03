@@ -46,7 +46,7 @@ namespace LLL.DurableTask.Tests.Worker
 
                     services.AddDurableTaskWorker(builder =>
                     {
-                        ConigureWorker(builder);
+                        ConfigureWorker(builder);
                     });
                 }).StartAsync();
         }
@@ -61,7 +61,7 @@ namespace LLL.DurableTask.Tests.Worker
         {
         }
 
-        protected virtual void ConigureWorker(IDurableTaskWorkerBuilder builder)
+        protected virtual void ConfigureWorker(IDurableTaskWorkerBuilder builder)
         {
         }
 

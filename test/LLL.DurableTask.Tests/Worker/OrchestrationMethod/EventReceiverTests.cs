@@ -19,9 +19,9 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationMethod
         {
         }
 
-        protected override void ConigureWorker(IDurableTaskWorkerBuilder builder)
+        protected override void ConfigureWorker(IDurableTaskWorkerBuilder builder)
         {
-            base.ConigureWorker(builder);
+            base.ConfigureWorker(builder);
 
             builder.AddFromType(typeof(Orchestrations));
         }

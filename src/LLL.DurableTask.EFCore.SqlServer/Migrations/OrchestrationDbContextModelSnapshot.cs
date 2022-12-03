@@ -121,6 +121,10 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
                     b.Property<string>("CustomStatus")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("FailureDetails")
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Input")
                         .HasColumnType("nvarchar(max)");
 

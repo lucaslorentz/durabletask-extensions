@@ -27,6 +27,7 @@ namespace LLL.DurableTask.EFCore.Configuration
             builder.Property(x => x.Size).IsRequired();
 
             builder.Property(x => x.Status).IsRequired().HasConversion(new EnumToStringConverter<OrchestrationStatus>());
+            builder.Property(x => x.FailureDetails).HasMaxLength(int.MaxValue);
             builder.Property(x => x.CustomStatus);
 
             builder.Property(x => x.ParentInstance).HasMaxLength(2000);

@@ -30,18 +30,8 @@ namespace LLL.DurableTask.Worker
 
             var parameter = DataConverter.Deserialize<TInput>(input);
 
-            string serializedResult;
-            try
-            {
-                var result = await Execute(parameter);
-                serializedResult = DataConverter.Serialize(result);
-            }
-            catch (Exception e) when (!DUtils.IsFatal(e) && !DUtils.IsExecutionAborting(e))
-            {
-                var details = DUtils.SerializeCause(e, DataConverter);
-                throw new OrchestrationFailureException(e.Message, details);
-            }
-            return serializedResult;
+            var result = await Execute(parameter);
+            return DataConverter.Serialize(result);
         }
 
         public sealed override string GetStatus()

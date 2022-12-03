@@ -3,6 +3,7 @@ using System;
 using LLL.DurableTask.EFCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LLL.DurableTask.EFCore.MySql.Migrations
 {
     [DbContext(typeof(OrchestrationDbContext))]
-    partial class OrchestrationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20221203122137_FailureDetails")]
+    partial class FailureDetails
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
