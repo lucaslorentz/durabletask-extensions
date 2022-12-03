@@ -121,6 +121,10 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                     b.Property<string>("CustomStatus")
                         .HasColumnType("text");
 
+                    b.Property<string>("FailureDetails")
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("text");
+
                     b.Property<string>("Input")
                         .HasColumnType("text");
 

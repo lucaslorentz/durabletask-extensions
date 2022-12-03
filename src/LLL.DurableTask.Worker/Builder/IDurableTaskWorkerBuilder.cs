@@ -12,7 +12,7 @@ namespace LLL.DurableTask.Worker.Builder
 
         bool HasAllOrchestrations { get; set; }
         bool HasAllActivities { get; set; }
-        
+
         DurableTaskWorkerBuilder AddOrchestration(Func<IServiceProvider, TaskOrchestration> factory, string name = null, string version = null);
 
         DurableTaskWorkerBuilder AddActivity(Func<IServiceProvider, TaskActivity> factory, string name = null, string version = null);

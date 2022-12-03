@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Serializing;
@@ -38,9 +38,16 @@ namespace LLL.DurableTask.Worker.Orchestrations
                 [typeof(TaskContext)] = () => context
             });
 
-            var result = _methodInfo.Invoke(Instance, parameters);
-
-            return await SerializeResult(result);
+            try
+            {
+                var result = _methodInfo.Invoke(Instance, parameters);
+                return await SerializeResult(result);
+            }
+            catch (TargetInvocationException ex)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw;
+            }
         }
 
         private object[] PrepareParameters(

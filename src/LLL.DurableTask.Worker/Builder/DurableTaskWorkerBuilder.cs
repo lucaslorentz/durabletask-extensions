@@ -111,6 +111,8 @@ namespace LLL.DurableTask.Worker.Builder
             taskHubWorker.AddTaskOrchestrations(orchestrations);
             taskHubWorker.AddTaskActivities(activities);
 
+            taskHubWorker.ErrorPropagationMode = ErrorPropagationMode.UseFailureDetails;
+
             return taskHubWorker;
         }
 

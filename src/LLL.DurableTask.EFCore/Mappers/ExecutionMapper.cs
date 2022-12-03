@@ -33,6 +33,9 @@ namespace LLL.DurableTask.EFCore.Mappers
             execution.Name = runtimeState.Name;
             execution.Version = runtimeState.Version;
             execution.Status = runtimeState.OrchestrationStatus;
+            execution.FailureDetails = runtimeState.FailureDetails != null
+                ? _options.DataConverter.Serialize(runtimeState.FailureDetails)
+                : null;
             execution.CreatedTime = runtimeState.CreatedTime;
             execution.CompletedTime = runtimeState.CompletedTime;
             execution.LastUpdatedTime = DateTime.UtcNow;
@@ -90,6 +93,9 @@ namespace LLL.DurableTask.EFCore.Mappers
             orchestrationState.Name = execution.Name;
             orchestrationState.Version = execution.Version;
             orchestrationState.OrchestrationStatus = execution.Status;
+            orchestrationState.FailureDetails = !string.IsNullOrEmpty(execution.FailureDetails)
+                ? _options.DataConverter.Deserialize<FailureDetails>(execution.FailureDetails)
+                : null;
             orchestrationState.CreatedTime = execution.CreatedTime;
             orchestrationState.LastUpdatedTime = execution.LastUpdatedTime;
             orchestrationState.CompletedTime = execution.CompletedTime;

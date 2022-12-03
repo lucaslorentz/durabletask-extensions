@@ -22,6 +22,8 @@ namespace LLL.DurableTask.EFCore.Entities
 
         public OrchestrationStatus Status { get; set; }
 
+        public string FailureDetails { get; set; }
+
         public string CustomStatus { get; set; }
 
         public string ParentInstance { get; set; }
