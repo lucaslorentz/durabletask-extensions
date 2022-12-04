@@ -22,11 +22,11 @@ NOTE: Cadence was recently forked by one of it's creators and [Temporal](https:/
 
 | Name (click for readme) | Package | Description |
 | - | - | - |
-| [LLL.DurableTask.Client](src/LLL.DurableTask.Client) | [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Client)](https://www.nuget.org/packages/LLL.DurableTask.Client/) | DI extensions to onfigure TaskHubClient. |
+| [LLL.DurableTask.Client](src/LLL.DurableTask.Client) | [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Client)](https://www.nuget.org/packages/LLL.DurableTask.Client/) | DI extensions to configure TaskHubClient. |
 | [LLL.DurableTask.Worker](src/LLL.DurableTask.Worker) | [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Worker)](https://www.nuget.org/packages/LLL.DurableTask.Worker/) | DI extensions to configure TaskHubWorker. |
 | [LLL.DurableTask.Api](src/LLL.DurableTask.Api) | [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Api)](https://www.nuget.org/packages/LLL.DurableTask.Api/) | Exposes TaskHubClient operations as REST API. |
 | [LLL.DurableTask.Ui](src/LLL.DurableTask.Ui) | [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Ui)](https://www.nuget.org/packages/LLL.DurableTask.Ui/) | UI to monitor and manage orchestrations. |
-| [LLL.DurableTask.Server](src/LLL.DurableTask.Server) | [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Server)](https://www.nuget.org/packages/LLL.DurableTask.Server/) | Expose storages as API. |
+| [LLL.DurableTask.Server](src/LLL.DurableTask.Server) | [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Server)](https://www.nuget.org/packages/LLL.DurableTask.Server/) | Expose storage as API. |
 | &nbsp;&nbsp;[LLL.DurableTask.Server.Grpc](src/LLL.DurableTask.Server.Grpc) | [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Server.Grpc)](https://www.nuget.org/packages/LLL.DurableTask.Server.Grpc/) | GRPC endpoints for server. |
 | &nbsp;&nbsp;[LLL.DurableTask.Server.Grpc.Client](src/LLL.DurableTask.Server.Grpc.Client) | [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Server.Grpc.Client)](https://www.nuget.org/packages/LLL.DurableTask.Server.Grpc.Client/) | Storage implementation using server GRPC endpoints. |
 | [LLL.DurableTask.AzureStorage](src/LLL.DurableTask.AzureStorage) | [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.AzureStorage)](https://www.nuget.org/packages/LLL.DurableTask.AzureStorage/) | Dependency injection for [Azure Storage](https://github.com/Azure/durabletask/tree/main/src/DurableTask.AzureStorage) |
