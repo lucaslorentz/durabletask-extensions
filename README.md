@@ -4,19 +4,25 @@
 
 ## Introduction
 
-This project aims to extend [Durable Task Framework](https://github.com/Azure/durabletask) with more features and make it easier to use.
-
-### Context
-
 [Durable Task Framework](https://github.com/Azure/durabletask) is an open source framework that provides a foundation for workflow as code in .NET platform.
 
-[Azure Durable Functions](https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview) connects Durable Task Framework to Azure serverless platform, making it simpler to create workflows as code.
+This project aims to extend it with:
+- .NET Dependency Injection and Hosting integration  
+- Administrative and monitoring UI
+- EFCore storage with support for InMemory, MySQL, PostgreSQL, SQL Server and some [extra features](./src/LLL.DurableTask.EFCore/README.md#features).
+- Storage delegation via GRPC protocol
 
-The concepts of Durable Functions led to the development of [Cadence](https://cadenceworkflow.io/). A platform that brings Durable Functions to other programming languages and extends it with concepts for better microservices orchestration, like tasks lists and distributed workers.
+### Related projects
 
-Because of the bad integration of Cadence with .NET platform, I decided to try to add to Durable Task Framework the features I like from Cadence.
+#### [Azure Durable Functions](https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview)
 
-NOTE: Cadence was recently forked by one of it's creators and [Temporal](https://temporal.io/) was created, backed by a company focused on evolving the platform. That might change this landscape in a short term.
+Builds on top of Durable Task Framework and delivers a workflow as code product focused on a user friendliness, multi-language support, serverless and Azure.
+
+#### [Cadence](https://cadenceworkflow.io/) and [Temporal](https://temporal.io/)
+
+Cadence is a scalable and reliable workflow as code platform built an used by Uber. It is heavily inspired on Durable Functions, but also includes some addicional features like [tasks lists](https://cadenceworkflow.io/docs/concepts/task-lists/) and a [monitoring UI](https://github.com/uber/cadence-web). Cadence features are used as inspiration for this project.
+
+Temporal is a fork of Cadence backed by a company with the same name and founded by the original creators of Cadence. It is under active development and might end up officially supporting .NET clients.
 
 ## Components
 
