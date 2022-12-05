@@ -14,7 +14,7 @@ This project aims to extend it with:
 
 #### [Azure Durable Functions](https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview)
 
-Builds on top of Durable Task Framework and delivers a workflow as code product focused on a user friendliness, multi-language support, serverless and Azure.
+Builds on top of Durable Task Framework to deliver a serverless workflow as code product focused on Azure.
 
 #### [Cadence](https://cadenceworkflow.io/) and [Temporal](https://temporal.io/)
 
