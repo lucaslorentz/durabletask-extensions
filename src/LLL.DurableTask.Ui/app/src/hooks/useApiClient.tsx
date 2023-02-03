@@ -1,9 +1,9 @@
 import React, { useContext } from "react";
 import { useAsync } from "react-use";
-import { useAuth } from "./AuthProvider";
-import { ApiClient } from "./clients/ApiClient";
-import { ErrorAlert } from "./components/ErrorAlert";
-import { useConfiguration } from "./ConfigurationProvider";
+import { useAuth } from "./useAuth";
+import { ApiClient } from "../clients/ApiClient";
+import { ErrorAlert } from "../components/ErrorAlert";
+import { useConfiguration } from "../ConfigurationProvider";
 
 type Props = {
   children: React.ReactNode;

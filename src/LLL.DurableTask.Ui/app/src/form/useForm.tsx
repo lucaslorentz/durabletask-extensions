@@ -157,7 +157,7 @@ export class Field<T> {
       }
       return fields;
     } else {
-      return Object.keys(this.value).map((key: any) => {
+      return Object.keys(this.value as Object).map((key: any) => {
         return this.field(key);
       }) as any[];
     }

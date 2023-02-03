@@ -1,6 +1,6 @@
 import Alert from "@mui/material/Alert";
 import React from "react";
-import { useApiClient } from "../ApiClientProvider";
+import { useApiClient } from "../hooks/useApiClient";
 import { Endpoint } from "../models/ApiModels";
 
 type Props = {

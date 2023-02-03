@@ -3,17 +3,17 @@ import {
   Theme,
   ThemeProvider,
 } from "@mui/material/styles";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConfirmProvider } from "material-ui-confirm";
 import { SnackbarProvider } from "notistack";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { unstable_HistoryRouter as HistoryRouter } from "react-router-dom";
-import { ApiClientProvider } from "./ApiClientProvider";
+import { HashRouter } from "react-router-dom";
 import { App } from "./App";
-import { AuthProvider } from "./AuthProvider";
 import { ConfigurationProvider } from "./ConfigurationProvider";
 import { customTheme } from "./CustomTheme";
-import { history } from "./history";
+import { ApiClientProvider } from "./hooks/useApiClient";
+import { AuthProvider } from "./hooks/useAuth";
 import * as serviceWorker from "./serviceWorker";
 
 declare module "@mui/styles/defaultTheme" {
@@ -24,9 +24,20 @@ declare module "@mui/styles/defaultTheme" {
 const container = document.getElementById("root");
 const root = createRoot(container!);
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      cacheTime: 0,
+      retry: 0,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
+
 root.render(
   // <React.StrictMode>
-  <HistoryRouter history={history}>
+  <HashRouter>
     <StyledEngineProvider injectFirst>
       <ThemeProvider theme={customTheme}>
         <SnackbarProvider
@@ -39,7 +50,9 @@ root.render(
             <ConfigurationProvider>
               <AuthProvider>
                 <ApiClientProvider>
-                  <App />
+                  <QueryClientProvider client={queryClient}>
+                    <App />
+                  </QueryClientProvider>
                 </ApiClientProvider>
               </AuthProvider>
             </ConfigurationProvider>
@@ -47,7 +60,7 @@ root.render(
         </SnackbarProvider>
       </ThemeProvider>
     </StyledEngineProvider>
-  </HistoryRouter>
+  </HashRouter>
   // </React.StrictMode>
 );
 

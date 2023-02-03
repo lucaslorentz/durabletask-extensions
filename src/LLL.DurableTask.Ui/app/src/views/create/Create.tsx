@@ -1,4 +1,5 @@
 import DeleteIcon from "@mui/icons-material/Delete";
+import { LoadingButton } from "@mui/lab";
 import {
   Box,
   Breadcrumbs,
@@ -7,15 +8,18 @@ import {
   IconButton,
   Link,
   Paper,
+  Stack,
   Typography,
 } from "@mui/material";
+import { useMutation } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 import React from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import * as yup from "yup";
-import { useApiClient } from "../../ApiClientProvider";
+import { CodeEditor } from "../../form/CodeEditor";
 import { TextField } from "../../form/TextField";
 import { useForm } from "../../form/useForm";
+import { useApiClient } from "../../hooks/useApiClient";
 import { CreateOrchestrationRequest } from "../../models/ApiModels";
 import { validateJson } from "../../utils/yup-utils";
 
@@ -28,6 +32,7 @@ const schema = yup
       .string()
       .label("Input")
       .default("")
+      .required()
       .test("JSON", "Must be a valid json", validateJson),
     tags: yup
       .array(
@@ -49,6 +54,12 @@ export function Create() {
   const apiClient = useApiClient();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
+  const createMutation = useMutation<
+    Awaited<ReturnType<typeof apiClient.createOrchestration>>,
+    unknown,
+    Parameters<typeof apiClient.createOrchestration>
+  >((args) => apiClient.createOrchestration(...args));
+
   async function handleSaveClick() {
     try {
       const request: CreateOrchestrationRequest = {
@@ -62,7 +73,7 @@ export function Create() {
         }, {} as Record<string, string>),
       };
 
-      const instance = await apiClient.createOrchestration(request);
+      const instance = await createMutation.mutateAsync([request]);
 
       enqueueSnackbar("Orchestration created", {
         variant: "success",
@@ -95,18 +106,21 @@ export function Create() {
       <Paper variant="outlined">
         <Box padding={2}>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField field={form.field("name")} />
+            <Grid item xs={12} sm={6}>
+              <TextField field={form.field("name")} autoFocus />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12} sm={6}>
               <TextField field={form.field("version")} />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12} sm={6}>
               <TextField field={form.field("instanceId")} />
             </Grid>
-            <Grid item xs={6}></Grid>
             <Grid item xs={12}>
-              <TextField field={form.field("input")} multiline rows={6} />
+              <CodeEditor
+                field={form.field("input")}
+                height={200}
+                defaultLanguage="json"
+              />
             </Grid>
             {apiClient.hasFeature("Tags") && (
               <>
@@ -122,22 +136,21 @@ export function Create() {
                 {form.field("tags").render((field) =>
                   field.fields().map((tagField) => (
                     <Grid key={tagField.path} item xs={12}>
-                      <Box display="flex">
-                        <Box marginX={1} flex={1}>
-                          <TextField field={tagField.field("key")} />
-                        </Box>
-                        <Box marginX={1} flex={1}>
-                          <TextField field={tagField.field("value")} />
-                        </Box>
-                        <Box>
-                          <IconButton
-                            onClick={() => field.remove(tagField.value)}
-                            size="large"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Box>
-                      </Box>
+                      <Stack direction="row" alignItems="start" spacing={1}>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6}>
+                            <TextField field={tagField.field("key")} />
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <TextField field={tagField.field("value")} />
+                          </Grid>
+                        </Grid>
+                        <IconButton
+                          onClick={() => field.remove(tagField.value)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Stack>
                     </Grid>
                   ))
                 )}
@@ -152,9 +165,10 @@ export function Create() {
                 justifyContent="space-between"
               >
                 <Grid item>
-                  <Button
+                  <LoadingButton
                     variant="contained"
                     color="primary"
+                    loading={createMutation.isLoading}
                     onClick={handleSaveClick}
                     disabled={
                       form.pendingValidation ||
@@ -162,10 +176,15 @@ export function Create() {
                     }
                   >
                     Create
-                  </Button>
+                  </LoadingButton>
                 </Grid>
                 <Grid item>
-                  <Button onClick={() => form.reset()}>Reset</Button>
+                  <Button
+                    onClick={() => form.reset()}
+                    disabled={createMutation.isLoading}
+                  >
+                    Reset
+                  </Button>
                 </Grid>
               </Grid>
             ))}

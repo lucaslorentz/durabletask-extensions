@@ -1,6 +1,5 @@
-import { Location } from "history";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { history } from "../history";
+import { useCallback, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 type StringOptions = {
   multiple?: false;
@@ -59,31 +58,28 @@ export function useQueryState<T>(
 ): [T, (v: T) => void] {
   const { multiple, parse, stringify } = options ?? {};
 
-  const [stateValue, setStateValue] = useState<T>(() =>
-    getLocationValue(history.location, name, initialValue, multiple, parse)
-  );
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const lastValueJson = useRef<string>(JSON.stringify(stateValue));
+  const searchParams = new URLSearchParams(location.search);
+  const valuesJson = JSON.stringify(searchParams.getAll(name));
 
-  useEffect(() => {
-    return history.listen(({ location }) => {
-      const locationValue = getLocationValue(
-        location,
-        name,
-        initialValue,
-        multiple,
-        parse
-      );
-      const locationValueJson = JSON.stringify(locationValue);
-      if (lastValueJson.current === locationValueJson) return;
-      lastValueJson.current = locationValueJson;
-      setStateValue(locationValue);
-    });
-  }, [name, initialValue, multiple, parse]);
+  const stateValue = useMemo(() => {
+    const values = JSON.parse(valuesJson);
+    if (values.length === 0) {
+      return initialValue;
+    } else if (multiple) {
+      if (parse) return values.map((v: any) => parse(v));
+      else return values;
+    } else {
+      if (parse) return parse(values[0]);
+      else return values[0];
+    }
+  }, [initialValue, multiple, parse, valuesJson]);
 
   const setValue = useCallback(
     (newValue: any) => {
-      const searchParams = new URLSearchParams(history.location.search);
+      const searchParams = new URLSearchParams(location.search);
 
       searchParams.delete(name);
 
@@ -105,33 +101,18 @@ export function useQueryState<T>(
         }
       }
 
-      history.replace({
-        ...history.location,
-        search: "?" + searchParams.toString(),
-      });
+      navigate(
+        {
+          ...location,
+          search: "?" + searchParams.toString(),
+        },
+        {
+          replace: true,
+        }
+      );
     },
-    [name, initialValue, multiple, stringify]
+    [location, name, initialValue, navigate, multiple, stringify]
   );
 
   return [stateValue, setValue];
-}
-
-function getLocationValue<T>(
-  location: Location,
-  name: string,
-  initialValue: T | T[],
-  multiple?: boolean,
-  parse?: any
-): any {
-  const searchParams = new URLSearchParams(location.search);
-  const values = searchParams.getAll(name);
-  if (values.length === 0) {
-    return initialValue;
-  } else if (multiple) {
-    if (parse) return values.map((v) => parse(v));
-    else return values;
-  } else {
-    if (parse) return parse(values[0]);
-    else return values[0];
-  }
 }

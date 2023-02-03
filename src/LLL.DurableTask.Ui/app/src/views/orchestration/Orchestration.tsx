@@ -1,10 +1,9 @@
-import { ArrowDropDown, Sync } from "@mui/icons-material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { LoadingButton } from "@mui/lab";
 import {
   Box,
   Breadcrumbs,
   Button,
-  ButtonGroup,
   LinearProgress,
   Link,
   Paper,
@@ -13,17 +12,16 @@ import {
   Tabs,
   Typography,
 } from "@mui/material";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useConfirm } from "material-ui-confirm";
 import { useSnackbar } from "notistack";
-import React, { useEffect, useReducer, useState } from "react";
+import React, { useCallback } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
-import { useApiClient } from "../../ApiClientProvider";
 import { ErrorAlert } from "../../components/ErrorAlert";
+import { AutoRefreshButton } from "../../components/RefreshButton";
+import { useApiClient } from "../../hooks/useApiClient";
 import { useQueryState } from "../../hooks/useQueryState";
 import { useRefreshInterval } from "../../hooks/useRefreshInterval";
-import { HistoryEvent, OrchestrationState } from "../../models/ApiModels";
 import { HistoryTable } from "./HistoryTable";
 import { RaiseEvent } from "./RaiseEvent";
 import { Rewind } from "./Rewind";
@@ -35,14 +33,6 @@ type RouteParams = {
   executionId: string;
 };
 
-const autoRefreshOptions = [
-  { value: undefined, label: "Off" },
-  { value: 5, label: "5 seconds" },
-  { value: 10, label: "10 seconds" },
-  { value: 20, label: "20 seconds" },
-  { value: 30, label: "30 seconds" },
-];
-
 type TabValue =
   | "state"
   | "history"
@@ -52,17 +42,10 @@ type TabValue =
   | "json";
 
 export function Orchestration() {
-  const [state, setState] = useState<OrchestrationState | undefined>(undefined);
-  const [historyEvents, setHistoryEvents] = useState<
-    HistoryEvent[] | undefined
-  >(undefined);
-  const [error, setError] = useState<any>();
   const [tab, setTab] = useQueryState<TabValue>("tab", "state");
-  const [isLoading, setIsLoading] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useRefreshInterval();
-  const [refreshAnchor, setRefreshAnchor] = useState<HTMLElement | undefined>();
-  const [refreshCount, triggerRefresh] = useReducer((x) => x + 1, 0);
-  const [loadedCount, incrementLoadedCount] = useReducer((x) => x + 1, 0);
+
+  const [refreshInterval, setRefreshInterval] =
+    useRefreshInterval("orchestration");
   const apiClient = useApiClient();
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -73,56 +56,44 @@ export function Orchestration() {
   const executionId =
     params.executionId && decodeURIComponent(params.executionId);
 
-  useEffect(() => {
-    setState(undefined);
-    setHistoryEvents(undefined);
-  }, [instanceId, executionId]);
+  const stateQuery = useQuery({
+    queryKey: ["orchestration", instanceId, executionId],
+    queryFn: () => apiClient.getOrchestrationState(instanceId, executionId),
+    refetchInterval: refreshInterval ? refreshInterval * 1000 : undefined,
+  });
 
-  useEffect(() => {
-    if (!refreshInterval) return;
+  const historyQuery = useQuery({
+    queryKey: [
+      "orchestration",
+      instanceId,
+      stateQuery.data?.orchestrationInstance.executionId,
+      "history",
+      stateQuery.dataUpdatedAt,
+    ],
+    queryFn: () =>
+      apiClient.getOrchestrationHistory(
+        instanceId,
+        stateQuery.data!.orchestrationInstance.executionId
+      ),
+    keepPreviousData: true,
+    enabled:
+      Boolean(stateQuery.data?.orchestrationInstance.executionId) &&
+      apiClient.isAuthorized("OrchestrationsGetExecutionHistory"),
+  });
 
-    const timeout = setTimeout(() => triggerRefresh(), refreshInterval * 1000);
-    return () => clearTimeout(timeout);
-  }, [refreshInterval, loadedCount]);
+  const purgeMutation = useMutation<
+    void,
+    unknown,
+    Parameters<typeof apiClient.purgeOrchestration>
+  >((args) => apiClient.purgeOrchestration(...args));
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setIsLoading(true);
-
-        const stateResult = await apiClient.getOrchestrationState(
-          instanceId,
-          executionId
-        );
-        setState(stateResult);
-
-        if (apiClient.isAuthorized("OrchestrationsGetExecutionHistory")) {
-          var historyEventsResult = await apiClient.getOrchestrationHistory(
-            instanceId,
-            stateResult.orchestrationInstance.executionId
-          );
-          setHistoryEvents(historyEventsResult);
-        }
-
-        setError(undefined);
-      } catch (error) {
-        setError(error);
-        setState(undefined);
-        setHistoryEvents(undefined);
-      } finally {
-        setIsLoading(false);
-        incrementLoadedCount();
-      }
-    })();
-  }, [instanceId, executionId, refreshCount, apiClient]);
-
-  function handlePurgeClick() {
+  const handlePurgeClick = useCallback(() => {
     confirm({
       description:
         "This action is irreversible. Do you confirm the purge of this instance?",
     }).then(async () => {
       try {
-        await apiClient.purgeOrchestration(instanceId);
+        await purgeMutation.mutateAsync([instanceId]);
         enqueueSnackbar("Instance purged", {
           variant: "success",
         });
@@ -139,7 +110,14 @@ export function Orchestration() {
         });
       }
     });
-  }
+  }, [
+    closeSnackbar,
+    confirm,
+    enqueueSnackbar,
+    instanceId,
+    navigate,
+    purgeMutation,
+  ]);
 
   return (
     <div>
@@ -166,70 +144,44 @@ export function Orchestration() {
       </Box>
       <Stack direction="row" spacing={4} alignItems="center">
         <Box flex={1}>
-          <ButtonGroup color="primary" size="small">
-            <Button onClick={() => triggerRefresh()} title="Refresh">
-              <Sync />
-            </Button>
-            <Button onClick={(e) => setRefreshAnchor(e.currentTarget)}>
-              {refreshInterval ? `${refreshInterval} seconds` : "Off"}
-              <ArrowDropDown />
-            </Button>
-          </ButtonGroup>
-          <Menu
-            anchorEl={refreshAnchor}
-            keepMounted
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "right",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "right",
-            }}
-            open={Boolean(refreshAnchor)}
-            onClose={() => setRefreshAnchor(undefined)}
-          >
-            {autoRefreshOptions.map((option, index) => (
-              <MenuItem
-                key={index}
-                selected={refreshInterval === option.value}
-                onClick={() => {
-                  setRefreshInterval(option.value);
-                  setRefreshAnchor(undefined);
-                }}
-              >
-                {option.label}
-              </MenuItem>
-            ))}
-          </Menu>
+          <AutoRefreshButton
+            onClick={stateQuery.refetch}
+            refreshInterval={refreshInterval}
+            setRefreshInterval={setRefreshInterval}
+          />
         </Box>
-        {apiClient.isAuthorized("OrchestrationsPurgeInstance") && state && (
-          <Box>
-            <Button
-              variant="outlined"
-              startIcon={<DeleteIcon />}
-              onClick={handlePurgeClick}
-              size="small"
-            >
-              Purge
-            </Button>
-          </Box>
-        )}
+        {apiClient.isAuthorized("OrchestrationsPurgeInstance") &&
+          stateQuery.isSuccess && (
+            <Box>
+              <LoadingButton
+                variant="outlined"
+                startIcon={<DeleteIcon />}
+                loading={purgeMutation.isLoading}
+                onClick={handlePurgeClick}
+                size="small"
+              >
+                Purge
+              </LoadingButton>
+            </Box>
+          )}
       </Stack>
       <Box height={4} marginTop={0.5} marginBottom={0.5}>
-        {isLoading && <LinearProgress />}
+        {(stateQuery.isFetching || historyQuery.isFetching) && (
+          <LinearProgress />
+        )}
       </Box>
-      {error && (
+      {stateQuery.error ?? historyQuery.error ? (
         <Box marginBottom={2}>
-          <ErrorAlert error={error} />
+          <ErrorAlert error={stateQuery.error ?? historyQuery.error} />
         </Box>
-      )}
+      ) : null}
       <Paper variant="outlined">
         <Tabs
           value={tab}
           onChange={(x, v) => setTab(v)}
           indicatorColor="primary"
           textColor="primary"
+          variant="scrollable"
         >
           <Tab value="state" label="State" />
           {apiClient.isAuthorized("OrchestrationsGetExecutionHistory") && (
@@ -247,20 +199,25 @@ export function Orchestration() {
             )}
           <Tab value="json" label="Json" />
         </Tabs>
-        {state && (
+        {stateQuery.data ? (
           <>
             {tab === "state" && (
-              <State state={state} definedExecutionId={Boolean(executionId)} />
+              <State
+                state={stateQuery.data}
+                definedExecutionId={Boolean(executionId)}
+              />
             )}
             {apiClient.isAuthorized("OrchestrationsGetExecutionHistory") &&
               tab === "history" &&
-              historyEvents && <HistoryTable historyEvents={historyEvents} />}
+              historyQuery.data && (
+                <HistoryTable historyEvents={historyQuery.data} />
+              )}
             {apiClient.isAuthorized("OrchestrationsRaiseEvent") &&
               tab === "raise_event" && (
                 <Box padding={2}>
                   <RaiseEvent
                     instanceId={instanceId}
-                    onRaiseEvent={triggerRefresh}
+                    onRaiseEvent={stateQuery.refetch}
                   />
                 </Box>
               )}
@@ -269,7 +226,7 @@ export function Orchestration() {
                 <Box padding={2}>
                   <Terminate
                     instanceId={instanceId}
-                    onTerminate={triggerRefresh}
+                    onTerminate={stateQuery.refetch}
                   />
                 </Box>
               )}
@@ -277,14 +234,17 @@ export function Orchestration() {
               apiClient.isAuthorized("OrchestrationsRewind") &&
               tab === "rewind" && (
                 <Box padding={2}>
-                  <Rewind instanceId={instanceId} onRewind={triggerRefresh} />
+                  <Rewind
+                    instanceId={instanceId}
+                    onRewind={stateQuery.refetch}
+                  />
                 </Box>
               )}
             {tab === "json" && (
               <Box padding={2}>
                 <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
                   {JSON.stringify(
-                    { state: state, history: historyEvents },
+                    { state: stateQuery.data, history: historyQuery.data },
                     null,
                     2
                   )}
@@ -292,7 +252,7 @@ export function Orchestration() {
               </Box>
             )}
           </>
-        )}
+        ) : null}
       </Paper>
     </div>
   );

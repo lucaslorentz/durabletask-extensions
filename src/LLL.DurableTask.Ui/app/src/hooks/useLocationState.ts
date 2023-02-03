@@ -1,39 +1,35 @@
-import { Location } from "history";
-import { useCallback, useEffect, useState } from "react";
-import { history } from "../history";
+import { useCallback, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export function useLocationState<T>(
   name: string,
   initialValue: T
 ): [T, (v: T) => void] {
-  const [stateValue, setStateValue] = useState<T>(() =>
-    getLocationValue(history.location, name, initialValue)
-  );
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    return history.listen(({ location }) =>
-      setStateValue(getLocationValue(location, name, initialValue))
-    );
-  }, [name, initialValue]);
+  const stateValue = useMemo(() => {
+    const state = location.state as Record<string, any>;
+    return state && name in state ? state[name] : initialValue;
+  }, [initialValue, location.state, name]);
 
   const setValue = useCallback(
     (newValue: T) => {
-      history.replace(history.location, {
-        ...(history.location.state as any),
-        [name]: newValue,
-      });
+      navigate(
+        {
+          ...location,
+        },
+        {
+          replace: true,
+          state: {
+            ...(location.state as any),
+            [name]: newValue,
+          },
+        }
+      );
     },
-    [name]
+    [location, name, navigate]
   );
 
   return [stateValue, setValue];
-}
-
-function getLocationValue<T>(
-  location: Location,
-  name: string,
-  initialValue: T
-) {
-  const state = location.state as Record<string, any>;
-  return state && name in state ? state[name] : initialValue;
 }

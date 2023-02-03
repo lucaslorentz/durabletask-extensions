@@ -2,9 +2,12 @@ import { Button, Grid } from "@mui/material";
 import { useSnackbar } from "notistack";
 import React from "react";
 import * as yup from "yup";
-import { useApiClient } from "../../ApiClientProvider";
+import { useApiClient } from "../../hooks/useApiClient";
 import { TextField } from "../../form/TextField";
 import { useForm } from "../../form/useForm";
+import { useMutation } from "@tanstack/react-query";
+import { LoadingButton } from "@mui/lab";
+import { CodeEditor } from "../../form/CodeEditor";
 
 type Props = {
   instanceId: string;
@@ -18,6 +21,7 @@ const schema = yup
       .string()
       .label("Event data")
       .default("")
+      .required()
       .test("JSON", "be a json", function (v) {
         if (!v) return true;
         try {
@@ -40,6 +44,12 @@ export function RaiseEvent(props: Props) {
   const apiClient = useApiClient();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
+  const raiseEventMutation = useMutation<
+    void,
+    unknown,
+    Parameters<typeof apiClient.raiseOrchestrationEvent>
+  >((args) => apiClient.raiseOrchestrationEvent(...args));
+
   async function handleSaveClick() {
     try {
       const eventName = form.value.eventName;
@@ -47,7 +57,7 @@ export function RaiseEvent(props: Props) {
         ? JSON.parse(form.value.eventData)
         : null;
 
-      await apiClient.raiseOrchestrationEvent(instanceId, eventName, eventData);
+      await raiseEventMutation.mutateAsync([instanceId, eventName, eventData]);
 
       enqueueSnackbar("Event raised", {
         variant: "success",
@@ -72,12 +82,15 @@ export function RaiseEvent(props: Props) {
   return (
     <div>
       <Grid container spacing={2}>
-        <Grid item xs={6}>
+        <Grid item xs={12} md={6}>
           <TextField field={form.field("eventName")} />
         </Grid>
-        <Grid item xs={6}></Grid>
         <Grid item xs={12}>
-          <TextField field={form.field("eventData")} multiline rows={6} />
+          <CodeEditor
+            field={form.field("eventData")}
+            height={200}
+            defaultLanguage="json"
+          />
         </Grid>
         {form.render((form) => (
           <Grid
@@ -88,19 +101,27 @@ export function RaiseEvent(props: Props) {
             justifyContent="space-between"
           >
             <Grid item>
-              <Button
+              <LoadingButton
                 variant="contained"
                 color="primary"
-                onClick={handleSaveClick}
+                loading={raiseEventMutation.isLoading}
                 disabled={
-                  form.pendingValidation || Object.keys(form.errors).length > 0
+                  form.pendingValidation ||
+                  Object.keys(form.errors).length > 0 ||
+                  raiseEventMutation.isLoading
                 }
+                onClick={handleSaveClick}
               >
                 Raise Event
-              </Button>
+              </LoadingButton>
             </Grid>
             <Grid item>
-              <Button onClick={() => form.reset()}>Reset</Button>
+              <Button
+                onClick={() => form.reset()}
+                disabled={raiseEventMutation.isLoading}
+              >
+                Reset
+              </Button>
             </Grid>
           </Grid>
         ))}

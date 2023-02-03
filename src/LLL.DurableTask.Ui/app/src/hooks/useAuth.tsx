@@ -1,7 +1,7 @@
 import { User, UserManager } from "oidc-client";
 import React, { useContext, useLayoutEffect, useMemo, useState } from "react";
-import { useConfiguration } from "./ConfigurationProvider";
-import { history } from "./history";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useConfiguration } from "../ConfigurationProvider";
 
 type Props = {
   children: React.ReactNode;
@@ -77,6 +77,8 @@ export function AuthProvider(props: Props) {
     };
   }, [userManager]);
 
+  const navigate = useNavigate();
+
   // Handle callbacks and load user
   useLayoutEffect(() => {
     if (!userManager) return;
@@ -91,7 +93,9 @@ export function AuthProvider(props: Props) {
         } else {
           const user = await userManager.signinRedirectCallback();
           if (user.state) {
-            history.replace(user.state);
+            navigate(user.state, {
+              replace: true,
+            });
           }
           setUser(user);
           setShouldRender(true);
@@ -114,7 +118,9 @@ export function AuthProvider(props: Props) {
         setShouldRender(true);
       }
     })();
-  }, [userManager]);
+  }, [navigate, userManager]);
+
+  const location = useLocation();
 
   // Context value
   const auth = useMemo<Auth>(() => {
@@ -128,17 +134,24 @@ export function AuthProvider(props: Props) {
       signIn: async () => {
         await userManager.signinRedirect({
           state: {
-            pathname: history.location.pathname,
-            search: history.location.search,
-            hash: history.location.hash,
-            state: history.location.state,
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            state: location.state,
           },
         });
         await new Promise((resolve) => setTimeout(resolve, 30000));
       },
       signOut: () => userManager.signoutRedirect(),
     };
-  }, [userManager, user]);
+  }, [
+    userManager,
+    user,
+    location.pathname,
+    location.search,
+    location.hash,
+    location.state,
+  ]);
 
   if (!shouldRender) return null;
 

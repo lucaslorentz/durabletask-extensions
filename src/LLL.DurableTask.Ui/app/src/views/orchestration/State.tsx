@@ -2,7 +2,7 @@ import { Box, Chip, Link, Table, TableBody, TableCell, TableContainer, TableRow 
 import makeStyles from '@mui/styles/makeStyles';
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { useApiClient } from "../../ApiClientProvider";
+import { useApiClient } from "../../hooks/useApiClient";
 import { OrchestrationState } from "../../models/ApiModels";
 import { formatDateTime } from "../../utils/date-utils";
 
