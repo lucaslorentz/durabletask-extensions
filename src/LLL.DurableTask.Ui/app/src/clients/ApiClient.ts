@@ -115,7 +115,6 @@ export class ApiClient {
   public async createOrchestration(
     request: CreateOrchestrationRequest
   ): Promise<OrchestrationInstance> {
-    await new Promise((r) => setTimeout(r, 4000));
     const response = await this.apiAxios.post<OrchestrationInstance>(
       `/v1/orchestrations`,
       request
@@ -127,7 +126,6 @@ export class ApiClient {
     instanceId: string,
     request: TerminateRequest
   ): Promise<void> {
-    await new Promise((r) => setTimeout(r, 4000));
     await this.apiAxios.post(
       `/v1/orchestrations/${encodeURIComponent(instanceId)}/terminate`,
       request
@@ -138,7 +136,6 @@ export class ApiClient {
     instanceId: string,
     request: RewindRequest
   ): Promise<void> {
-    await new Promise((r) => setTimeout(r, 4000));
     await this.apiAxios.post(
       `/v1/orchestrations/${encodeURIComponent(instanceId)}/rewind`,
       request
@@ -146,7 +143,6 @@ export class ApiClient {
   }
 
   public async purgeOrchestration(instanceId: string): Promise<void> {
-    await new Promise((r) => setTimeout(r, 4000));
     await this.apiAxios.delete(
       `/v1/orchestrations/${encodeURIComponent(instanceId)}`
     );
@@ -157,7 +153,6 @@ export class ApiClient {
     eventName: string,
     eventData: any
   ): Promise<void> {
-    await new Promise((r) => setTimeout(r, 4000));
     await this.apiAxios.post(
       `/v1/orchestrations/${encodeURIComponent(
         instanceId
