@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,11 +19,13 @@ namespace Server
         {
             services.AddGrpc();
 
+            // var mysqlConnectionString = "server=localhost;database=durabletask;user=root;password=root";
+
             services.AddDurableTaskEFCoreStorage()
                 .UseInMemoryDatabase("Sample");
-                //.UseNpgsql("Server=localhost;Port=5432;Database=durabletask;User Id=postgres;Password=root");
-                //.UseMySql("server=localhost;database=durabletask;user=root;password=root");
-                //.UseSqlServer("server=localhost;database=durabletask;user=sa;password=P1ssw0rd");
+            // .UseNpgsql("Server=localhost;Port=5432;Database=durabletask;User Id=postgres;Password=root");
+            // .UseMySql(mysqlConnectionString, ServerVersion.AutoDetect(mysqlConnectionString));
+            // .UseSqlServer("server=localhost;database=durabletask;user=sa;password=P1ssw0rd");
 
             services.AddDurableTaskServer(builder =>
             {

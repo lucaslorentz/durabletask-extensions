@@ -75,7 +75,7 @@ export function TopNav() {
     <>
       <AppBar position="static" elevation={0}>
         <Container maxWidth="xl">
-          <Toolbar>
+          <Toolbar disableGutters>
             <IconButton
               color="inherit"
               aria-label="open drawer"
@@ -85,9 +85,7 @@ export function TopNav() {
             >
               <MenuIcon />
             </IconButton>
-            <Box sx={{ display: { xs: "none", md: "block" }, mr: 2 }}>
-              {logoLink}
-            </Box>
+            <Box sx={{ mr: 2 }}>{logoLink}</Box>
             <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
               {pages.map((page) => (
                 <Grid key={page.label} item>

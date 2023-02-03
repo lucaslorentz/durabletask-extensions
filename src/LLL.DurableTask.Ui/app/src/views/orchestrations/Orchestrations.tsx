@@ -34,7 +34,7 @@ export function Orchestrations() {
 
   const [pageSize, setPageSize] = usePageSize();
 
-  const debouncedFilter = useDebounce(filter, 500);
+  const [debouncedFilter] = useDebounce(filter, 500);
 
   const request: OrchestrationsRequest = {
     ...debouncedFilter,
