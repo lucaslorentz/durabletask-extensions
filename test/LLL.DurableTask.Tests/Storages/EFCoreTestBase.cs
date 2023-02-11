@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
 using LLL.DurableTask.EFCore;
 using LLL.DurableTask.Tests.Storage.Orchestrations;
-using LLL.DurableTask.Tests.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,7 +24,7 @@ namespace LLL.DurableTask.Tests.Storages
         }
 
         [SkippableFact]
-        public async Task TryLockNextInstanceAsync_AnyQueue()
+        public async Task TryLockNextInstanceAsync()
         {
             var taskHubClient = _host.Services.GetService<TaskHubClient>();
 
@@ -73,6 +73,75 @@ namespace LLL.DurableTask.Tests.Storages
                             await dbContextExtensions.WithinTransaction(dbContext5, async () =>
                             {
                                 var instanceNull = await dbContextExtensions.TryLockNextInstanceAsync(dbContext5, lockTimeout);
+                                instanceNull.Should().BeNull();
+                            });
+                        });
+                    });
+                });
+            });
+
+            await taskHubClient.PurgeOrchestrationInstanceHistoryAsync(
+                DateTime.UtcNow,
+                OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter);
+        }
+
+        [SkippableFact]
+        public async Task TryLockNextInstanceAsync_AllQueues()
+        {
+            var taskHubClient = _host.Services.GetService<TaskHubClient>();
+
+            await taskHubClient.PurgeOrchestrationInstanceHistoryAsync(
+                DateTime.UtcNow,
+                OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter);
+
+            var queues = new List<string>();
+
+            for (var i = 1; i <= 4; i++)
+            {
+                await taskHubClient.CreateOrchestrationInstanceAsync($"o{i}", "", $"i{i}", null);
+                queues.Add($"o{i}");
+            }
+
+            var dbContextFactory = _host.Services.GetService<IDbContextFactory<OrchestrationDbContext>>();
+            var dbContextExtensions = _host.Services.GetService<OrchestrationDbContextExtensions>();
+
+            using var dbContext1 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext2 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext3 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext4 = await dbContextFactory.CreateDbContextAsync();
+            using var dbContext5 = await dbContextFactory.CreateDbContextAsync();
+
+            var lockTimeout = TimeSpan.FromMinutes(1);
+
+            var queuesArray = queues.ToArray();
+
+            await dbContextExtensions.WithinTransaction(dbContext1, async () =>
+            {
+                var instance1 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext1, queuesArray, lockTimeout);
+                instance1.Should().NotBeNull();
+                instance1.InstanceId.Should().Be("i1");
+
+                await dbContextExtensions.WithinTransaction(dbContext2, async () =>
+                {
+                    var instance2 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext2, queuesArray, lockTimeout);
+                    instance2.Should().NotBeNull();
+                    instance2.InstanceId.Should().Be("i2");
+
+                    await dbContextExtensions.WithinTransaction(dbContext3, async () =>
+                    {
+                        var instance3 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext3, queuesArray, lockTimeout);
+                        instance3.Should().NotBeNull();
+                        instance3.InstanceId.Should().Be("i3");
+
+                        await dbContextExtensions.WithinTransaction(dbContext4, async () =>
+                        {
+                            var instance4 = await dbContextExtensions.TryLockNextInstanceAsync(dbContext4, queuesArray, lockTimeout);
+                            instance4.Should().NotBeNull();
+                            instance4.InstanceId.Should().Be("i4");
+
+                            await dbContextExtensions.WithinTransaction(dbContext5, async () =>
+                            {
+                                var instanceNull = await dbContextExtensions.TryLockNextInstanceAsync(dbContext5, queuesArray, lockTimeout);
                                 instanceNull.Should().BeNull();
                             });
                         });

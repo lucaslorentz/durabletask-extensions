@@ -29,7 +29,6 @@ namespace LLL.DurableTask.EFCore.Configuration
             builder.Property(x => x.LockId).HasMaxLength(100).IsConcurrencyToken();
 
             builder.HasIndex(x => new { x.LockedUntil, x.Queue });
-            builder.HasIndex(x => new { x.LockedUntil });
         }
     }
 }

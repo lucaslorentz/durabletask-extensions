@@ -17,7 +17,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.0")
+                .HasAnnotation("ProductVersion", "7.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -61,8 +61,6 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("InstanceId");
-
-                    b.HasIndex("LockedUntil");
 
                     b.HasIndex("LockedUntil", "Queue");
 
@@ -204,6 +202,8 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.HasIndex("LastExecutionId")
                         .IsUnique();
+
+                    b.HasIndex("InstanceId", "LockedUntil");
 
                     b.ToTable("Instances");
                 });

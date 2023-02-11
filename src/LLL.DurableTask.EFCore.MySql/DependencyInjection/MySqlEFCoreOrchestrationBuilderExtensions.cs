@@ -20,6 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return builder.ConfigureDbContext(options =>
             {
+                options.AddInterceptors(new StraightJoinCommandInterceptor());
                 options.UseMySql(connectionString, serverVersion, mysqlOptions =>
                 {
                     mysqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);

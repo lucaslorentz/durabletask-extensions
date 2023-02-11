@@ -29,18 +29,18 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
 
         public override async Task<Instance> LockInstanceForUpdate(OrchestrationDbContext dbContext, string instanceId)
         {
-            return await dbContext.Instances.FromSqlRaw(@"
+            return (await dbContext.Instances.FromSqlRaw(@"
                 SELECT * FROM ""Instances""
                 WHERE ""Instances"".""InstanceId"" = {0}
                 FOR UPDATE
-            ", instanceId).SingleOrDefaultAsync();
+            ", instanceId).ToArrayAsync()).FirstOrDefault();
         }
 
         public override async Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
-            var instance = await dbContext.Instances.FromSqlRaw(@"
+            var instance = (await dbContext.Instances.FromSqlRaw(@"
                 SELECT ""Instances"".* FROM ""OrchestrationMessages""
                     INNER JOIN ""Instances"" ON ""OrchestrationMessages"".""InstanceId"" = ""Instances"".""InstanceId""
                 WHERE
@@ -49,7 +49,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
                 ORDER BY ""OrchestrationMessages"".""AvailableAt""
                 LIMIT 1
                 FOR UPDATE SKIP LOCKED
-            ", DateTime.UtcNow).SingleOrDefaultAsync();
+            ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;
@@ -70,7 +70,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
             var utcNowParam = $"{{{queues.Length}}}";
             var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-            var instance = await dbContext.Instances.FromSqlRaw($@"
+            var instance = (await dbContext.Instances.FromSqlRaw($@"
                 SELECT ""Instances"".* FROM ""OrchestrationMessages""
                     INNER JOIN ""Instances"" ON ""OrchestrationMessages"".""InstanceId"" = ""Instances"".""InstanceId""
                 WHERE
@@ -80,7 +80,7 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
                 ORDER BY ""OrchestrationMessages"".""AvailableAt""
                 LIMIT 1
                 FOR UPDATE SKIP LOCKED
-            ", parameters).SingleOrDefaultAsync();
+            ", parameters).ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;
@@ -96,13 +96,13 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
-            var instance = await dbContext.ActivityMessages.FromSqlRaw(@"
+            var instance = (await dbContext.ActivityMessages.FromSqlRaw(@"
                 SELECT * FROM ""ActivityMessages""
                 WHERE ""LockedUntil"" <= {0}
                 ORDER BY ""LockedUntil""
                 LIMIT 1
                 FOR UPDATE SKIP LOCKED
-            ", DateTime.UtcNow).SingleOrDefaultAsync();
+            ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;
@@ -123,14 +123,14 @@ namespace LLL.DurableTask.EFCore.PostgreSQL
             var utcNowParam = $"{{{queues.Length}}}";
             var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-            var instance = await dbContext.ActivityMessages.FromSqlRaw($@"
+            var instance = (await dbContext.ActivityMessages.FromSqlRaw($@"
                 SELECT * FROM ""ActivityMessages""
                 WHERE ""Queue"" IN ({queuesParams})
                     AND ""LockedUntil"" <= {utcNowParam}
                 ORDER BY ""LockedUntil""
                 LIMIT 1
                 FOR UPDATE SKIP LOCKED
-            ", parameters).SingleOrDefaultAsync();
+            ", parameters).ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;

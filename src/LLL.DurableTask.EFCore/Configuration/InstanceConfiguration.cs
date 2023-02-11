@@ -22,6 +22,8 @@ namespace LLL.DurableTask.EFCore.Configuration
 
             builder.Property(x => x.LockedUntil).IsRequired().HasConversion(new UtcDateTimeConverter());
             builder.Property(x => x.LockId).HasMaxLength(100).IsConcurrencyToken();
+
+            builder.HasIndex(x => new { x.InstanceId, x.LockedUntil });
         }
     }
 }

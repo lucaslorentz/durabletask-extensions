@@ -16,7 +16,7 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.0")
+                .HasAnnotation("ProductVersion", "7.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("LLL.DurableTask.EFCore.Entities.ActivityMessage", b =>
@@ -58,8 +58,6 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("InstanceId");
-
-                    b.HasIndex("LockedUntil");
 
                     b.HasIndex("LockedUntil", "Queue");
 
@@ -201,6 +199,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.HasIndex("LastExecutionId")
                         .IsUnique();
+
+                    b.HasIndex("InstanceId", "LockedUntil");
 
                     b.ToTable("Instances");
                 });
