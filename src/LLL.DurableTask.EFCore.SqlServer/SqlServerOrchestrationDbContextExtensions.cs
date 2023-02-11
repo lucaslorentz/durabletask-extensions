@@ -29,23 +29,25 @@ namespace LLL.DurableTask.EFCore.SqlServer
 
         public override async Task<Instance> LockInstanceForUpdate(OrchestrationDbContext dbContext, string instanceId)
         {
-            return await dbContext.Instances.FromSqlRaw(@"
+            return (await dbContext.Instances.FromSqlRaw(@"
                 SELECT * FROM Instances WITH (UPDLOCK)
                 WHERE InstanceId = {0}
-            ", instanceId).SingleOrDefaultAsync();
+            ", instanceId).ToArrayAsync()).FirstOrDefault();
         }
 
         public override async Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
-            var instance = await dbContext.Instances.FromSqlRaw(@"
-                    SELECT TOP 1 Instances.* FROM OrchestrationMessages
-                        INNER JOIN Instances WITH (UPDLOCK, READPAST) ON OrchestrationMessages.InstanceId = Instances.InstanceId
+            var instance = (await dbContext.Instances.FromSqlRaw(@"
+                    SELECT TOP 1 Instances.*
+                    FROM OrchestrationMessages WITH (INDEX(IX_OrchestrationMessages_AvailableAt_Queue_InstanceId))
+                        INNER JOIN Instances WITH (UPDLOCK, READPAST, INDEX(IX_Instances_InstanceId_LockedUntil))
+                            ON OrchestrationMessages.InstanceId = Instances.InstanceId
                     WHERE
                         OrchestrationMessages.AvailableAt <= {0}
                         AND Instances.LockedUntil <= {0}
-                ", DateTime.UtcNow).SingleOrDefaultAsync();
+                ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;
@@ -66,14 +68,16 @@ namespace LLL.DurableTask.EFCore.SqlServer
             var utcNowParam = $"{{{queues.Length}}}";
             var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-            var instance = await dbContext.Instances.FromSqlRaw($@"
-                    SELECT TOP 1 Instances.* FROM OrchestrationMessages
-                        INNER JOIN Instances WITH (UPDLOCK, READPAST) ON OrchestrationMessages.InstanceId = Instances.InstanceId
+            var instance = (await dbContext.Instances.FromSqlRaw($@"
+                    SELECT TOP 1 Instances.*
+                    FROM OrchestrationMessages WITH (INDEX(IX_OrchestrationMessages_AvailableAt_Queue_InstanceId))
+                        INNER JOIN Instances WITH (UPDLOCK, READPAST, INDEX(IX_Instances_InstanceId_LockedUntil))
+                            ON OrchestrationMessages.InstanceId = Instances.InstanceId
                     WHERE
                         OrchestrationMessages.AvailableAt <= {utcNowParam}
                         AND OrchestrationMessages.Queue IN ({queuesParams})
                         AND Instances.LockedUntil <= {utcNowParam}
-                ", parameters).SingleOrDefaultAsync();
+                ", parameters).ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;
@@ -89,10 +93,11 @@ namespace LLL.DurableTask.EFCore.SqlServer
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
-            var instance = await dbContext.ActivityMessages.FromSqlRaw(@"
-                    SELECT TOP 1 * FROM ActivityMessages WITH (UPDLOCK, READPAST)
+            var instance = (await dbContext.ActivityMessages.FromSqlRaw(@"
+                    SELECT TOP 1 *
+                    FROM ActivityMessages WITH (UPDLOCK, READPAST, INDEX(IX_ActivityMessages_LockedUntil_Queue))
                     WHERE LockedUntil <= {0}
-                ", DateTime.UtcNow).SingleOrDefaultAsync();
+                ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;
@@ -113,12 +118,13 @@ namespace LLL.DurableTask.EFCore.SqlServer
             var utcNowParam = $"{{{queues.Length}}}";
             var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-            var instance = await dbContext.ActivityMessages.FromSqlRaw($@"
-                SELECT TOP 1 * FROM ActivityMessages
-                WITH (UPDLOCK, READPAST)
+            var instance = (await dbContext.ActivityMessages.FromSqlRaw($@"
+                SELECT TOP 1 *
+                FROM ActivityMessages
+                WITH (UPDLOCK, READPAST, INDEX(IX_ActivityMessages_LockedUntil_Queue))
                 WHERE Queue IN ({queuesParams})
                     AND LockedUntil <= {utcNowParam}
-            ", parameters).SingleOrDefaultAsync();
+            ", parameters).ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;

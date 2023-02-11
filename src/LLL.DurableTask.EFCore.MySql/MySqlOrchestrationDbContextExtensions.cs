@@ -2,7 +2,6 @@ using System;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,26 +28,28 @@ namespace LLL.DurableTask.EFCore.MySql
 
         public override async Task<Instance> LockInstanceForUpdate(OrchestrationDbContext dbContext, string instanceId)
         {
-            return await dbContext.Instances.FromSqlRaw(@"
+            return (await dbContext.Instances.FromSqlRaw(@"
                 SELECT * FROM Instances
                 WHERE InstanceId = {0}
                 FOR UPDATE
-            ", instanceId).SingleOrDefaultAsync();
+            ", instanceId).ToArrayAsync()).FirstOrDefault();
         }
 
         public override async Task<Instance> TryLockNextInstanceAsync(
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
-            var instance = await dbContext.Instances.FromSqlRaw(@"
-                SELECT Instances.* FROM OrchestrationMessages
-                    INNER JOIN Instances ON OrchestrationMessages.InstanceId = Instances.InstanceId
+            var instance = (await dbContext.Instances.FromSqlRaw(@"
+                SELECT Instances.*
+                FROM OrchestrationMessages FORCE INDEX (IX_OrchestrationMessages_AvailableAt_Queue_InstanceId)
+                    INNER JOIN Instances FORCE INDEX (IX_Instances_InstanceId_LockedUntil)
+                        ON OrchestrationMessages.InstanceId = Instances.InstanceId
                 WHERE
                     OrchestrationMessages.AvailableAt <= {0}
                     AND Instances.LockedUntil <= {0}
                 LIMIT 1
                 FOR UPDATE SKIP LOCKED
-            ", DateTime.UtcNow).SingleOrDefaultAsync();
+            ", DateTime.UtcNow).WithStraightJoin().ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;
@@ -69,16 +70,18 @@ namespace LLL.DurableTask.EFCore.MySql
             var utcNowParam = $"{{{queues.Length}}}";
             var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-            var instance = await dbContext.Instances.FromSqlRaw($@"
-                SELECT Instances.* FROM OrchestrationMessages
-                    INNER JOIN Instances ON OrchestrationMessages.InstanceId = Instances.InstanceId
+            var instance = (await dbContext.Instances.FromSqlRaw($@"
+                SELECT Instances.*
+                FROM OrchestrationMessages FORCE INDEX (IX_OrchestrationMessages_AvailableAt_Queue_InstanceId)
+                    INNER JOIN Instances FORCE INDEX (IX_Instances_InstanceId_LockedUntil)
+                        ON OrchestrationMessages.InstanceId = Instances.InstanceId
                 WHERE
                     OrchestrationMessages.AvailableAt <= {utcNowParam}
                     AND OrchestrationMessages.Queue IN ({queuesParams})
                     AND Instances.LockedUntil <= {utcNowParam}
                 LIMIT 1
                 FOR UPDATE SKIP LOCKED
-            ", parameters).SingleOrDefaultAsync();
+            ", parameters).WithStraightJoin().ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;
@@ -94,13 +97,13 @@ namespace LLL.DurableTask.EFCore.MySql
             OrchestrationDbContext dbContext,
             TimeSpan lockTimeout)
         {
-            var instance = await dbContext.ActivityMessages.FromSqlRaw(@"
-                SELECT * FROM ActivityMessages
+            var instance = (await dbContext.ActivityMessages.FromSqlRaw(@"
+                SELECT *
+                FROM ActivityMessages FORCE INDEX(IX_ActivityMessages_LockedUntil_Queue)
                 WHERE LockedUntil <= {0}
-                ORDER BY LockedUntil
                 LIMIT 1
                 FOR UPDATE SKIP LOCKED
-            ", DateTime.UtcNow).SingleOrDefaultAsync();
+            ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;
@@ -121,14 +124,13 @@ namespace LLL.DurableTask.EFCore.MySql
             var utcNowParam = $"{{{queues.Length}}}";
             var parameters = queues.Cast<object>().Concat(new object[] { DateTime.UtcNow }).ToArray();
 
-            var instance = await dbContext.ActivityMessages.FromSqlRaw($@"
-                SELECT * FROM ActivityMessages
+            var instance = (await dbContext.ActivityMessages.FromSqlRaw($@"
+                SELECT * FROM ActivityMessages FORCE INDEX(IX_ActivityMessages_LockedUntil_Queue)
                 WHERE Queue IN ({queuesParams})
                     AND LockedUntil <= {utcNowParam}
-                ORDER BY LockedUntil
                 LIMIT 1
                 FOR UPDATE SKIP LOCKED
-            ", parameters).SingleOrDefaultAsync();
+            ", parameters).ToArrayAsync()).FirstOrDefault();
 
             if (instance == null)
                 return null;
