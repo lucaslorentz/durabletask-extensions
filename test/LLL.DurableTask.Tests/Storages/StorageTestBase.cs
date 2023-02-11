@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Query;
 using FluentAssertions;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Polling;
@@ -306,6 +307,24 @@ namespace LLL.DurableTask.Tests.Storages
 
             var stateAfterPurge = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
             stateAfterPurge.Should().BeNull();
+        }
+
+        [Trait("Category", "Integration")]
+        [SkippableFact]
+        public async Task GetOrchestrationsWithQuery_ShouldNotError()
+        {
+            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+            var queryClient = _host.Services.GetService<IOrchestrationServiceQueryClient>();
+            Skip.If(queryClient == null, "Query client instance not supported");
+
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                EmptyOrchestration.Name,
+                EmptyOrchestration.Version,
+                string.Empty);
+
+            var queryResult = await queryClient.GetOrchestrationWithQueryAsync(new ExtendedOrchestrationQuery(), default);
+
+            queryResult.OrchestrationState.Should().HaveCountGreaterThan(0);
         }
     }
 }
