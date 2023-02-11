@@ -135,5 +135,13 @@ namespace LLL.DurableTask.EFCore.SqlServer
 
             return instance;
         }
+
+        public override IQueryable<Execution> LatestExecutions(OrchestrationDbContext dbContext)
+        {
+            return dbContext.Executions.FromSqlInterpolated($@"
+                SELECT Executions.* FROM Executions
+                    INNER JOIN Instances ON Executions.ExecutionId = Instances.LastExecutionId
+            ");
+        }
     }
 }

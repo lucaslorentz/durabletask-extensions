@@ -216,7 +216,11 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
-                var queryable = dbContext.Executions as IQueryable<Entities.Execution>;
+                var extendedQuery = query as ExtendedOrchestrationQuery;
+
+                var queryable = extendedQuery == null || extendedQuery.IncludePreviousExecutions
+                    ? dbContext.Executions
+                    : _dbContextExtensions.LatestExecutions(dbContext);
 
                 if (!string.IsNullOrEmpty(query.InstanceIdPrefix))
                     queryable = queryable.Where(e => e.InstanceId.StartsWith(query.InstanceIdPrefix));
@@ -230,16 +234,11 @@ namespace LLL.DurableTask.EFCore
                 if (query.RuntimeStatus != null && query.RuntimeStatus.Any())
                     queryable = queryable.Where(e => query.RuntimeStatus.Contains(e.Status));
 
-                var extendedQuery = query as ExtendedOrchestrationQuery;
-
                 if (extendedQuery != null)
                 {
                     if (!string.IsNullOrEmpty(extendedQuery.NamePrefix))
                         queryable = queryable.Where(e => e.Name.StartsWith(extendedQuery.NamePrefix));
                 }
-
-                if (extendedQuery == null || !extendedQuery.IncludePreviousExecutions)
-                    queryable = queryable.Where(e => e.LastExecutionInstance != null);
 
                 var continuationToken = EFCoreContinuationToken.Parse(query.ContinuationToken);
                 if (continuationToken != null)

@@ -87,5 +87,9 @@ namespace LLL.DurableTask.EFCore
         {
             return query.ExecuteDeleteAsync();
         }
+
+        public virtual IQueryable<Execution> LatestExecutions(OrchestrationDbContext dbContext) {
+            return dbContext.Executions.Where(e => e.LastExecutionInstance != null);
+        }
     }
 }
