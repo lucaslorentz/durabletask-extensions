@@ -30,7 +30,9 @@ namespace LLL.DurableTask.EFCore.Extensions
         public static IList<HistoryEvent> Reopen(this IList<HistoryEvent> historyEvents, DataConverter dataConverter)
         {
             return historyEvents
-                .Select(e => e is ExecutionCompletedEvent ? e.Rewind(dataConverter) : e)
+                .Select(e => e is ExecutionCompletedEvent completedEvent
+                    && completedEvent.OrchestrationStatus == OrchestrationStatus.Completed
+                    ? e.Rewind(dataConverter) : e)
                 .ToArray();
         }
 
