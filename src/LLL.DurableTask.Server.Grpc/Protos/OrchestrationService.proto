@@ -116,6 +116,7 @@ message GetOrchestrationWithQueryRequest {
     bool fetch_inputs_and_outputs = 8;
     google.protobuf.StringValue name_prefix = 9;
     bool include_previous_executions = 10;
+    map<string, string> tags = 11;
 }
 
 message GetOrchestrationWithQueryResponse {

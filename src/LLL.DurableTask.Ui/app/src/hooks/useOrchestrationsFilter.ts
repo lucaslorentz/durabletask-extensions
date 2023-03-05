@@ -15,6 +15,8 @@ export interface OrchestrationsFilter {
   setRuntimeStatus: Dispatch<OrchestrationStatus[]>;
   includePreviousExecutions: boolean;
   setIncludePreviousExecutions: Dispatch<boolean>;
+  tags: { key: string; value: string }[];
+  setTags: Dispatch<{ key: string; value: string }[]>;
 }
 
 export function useOrchestrationsFilter(): OrchestrationsFilter {
@@ -31,16 +33,22 @@ export function useOrchestrationsFilter(): OrchestrationsFilter {
     "createdTimeTo",
     ""
   );
-  let [runtimeStatus, setRuntimeStatus] = useQueryState<OrchestrationStatus[]>(
-    "runtimeStatus",
-    [],
-    { multiple: true }
-  );
-  let [includePreviousExecutions, setIncludePreviousExecutions] =
+  const [runtimeStatus, setRuntimeStatus] = useQueryState<
+    OrchestrationStatus[]
+  >("runtimeStatus", [], { multiple: true });
+  const [includePreviousExecutions, setIncludePreviousExecutions] =
     useQueryState<boolean>("includePreviousExecutions", false, {
       parse: JSON.parse,
       stringify: JSON.stringify,
     });
+  const [tags, setTags] = useQueryState<{ key: string; value: string }[]>(
+    "tags",
+    [],
+    {
+      parse: JSON.parse,
+      stringify: JSON.stringify,
+    }
+  );
 
   return useMemo<OrchestrationsFilter>(() => {
     return {
@@ -56,6 +64,8 @@ export function useOrchestrationsFilter(): OrchestrationsFilter {
       setRuntimeStatus,
       includePreviousExecutions,
       setIncludePreviousExecutions,
+      tags,
+      setTags,
     };
   }, [
     createdTimeFrom,
@@ -70,5 +80,7 @@ export function useOrchestrationsFilter(): OrchestrationsFilter {
     setNamePrefix,
     setRuntimeStatus,
     runtimeStatus,
+    tags,
+    setTags,
   ]);
 }

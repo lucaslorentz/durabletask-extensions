@@ -170,6 +170,8 @@ namespace LLL.DurableTask.Server.Grpc.Server
             query.FetchInputsAndOutputs = request.FetchInputsAndOutputs;
             query.NamePrefix = request.NamePrefix;
             query.IncludePreviousExecutions = request.IncludePreviousExecutions;
+            foreach (var kv in request.Tags)
+                query.Tags.Add(kv.Key, kv.Value);
 
             var queryResult = await _orchestrationServiceQueryClient.GetOrchestrationWithQueryAsync(query, context.CancellationToken);
 

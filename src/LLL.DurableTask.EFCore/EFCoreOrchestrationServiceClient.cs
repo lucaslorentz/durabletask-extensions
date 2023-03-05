@@ -238,6 +238,9 @@ namespace LLL.DurableTask.EFCore
                 {
                     if (!string.IsNullOrEmpty(extendedQuery.NamePrefix))
                         queryable = queryable.Where(e => e.Name.StartsWith(extendedQuery.NamePrefix));
+
+                    foreach (var kv in extendedQuery.Tags)
+                        queryable = queryable.Where(e => e.Tags.Any(t => t.Name == kv.Key && t.Value == kv.Value));
                 }
 
                 var continuationToken = EFCoreContinuationToken.Parse(query.ContinuationToken);
