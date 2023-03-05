@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DurableTask.Core.Query;
 
 namespace LLL.DurableTask.Core
@@ -6,5 +7,6 @@ namespace LLL.DurableTask.Core
     {
         public string NamePrefix { get; set; }
         public bool IncludePreviousExecutions { get; set; }
+        public Dictionary<string, string> Tags { get; } = new Dictionary<string, string>();
     }
 }

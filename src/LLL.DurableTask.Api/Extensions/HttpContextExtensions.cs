@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -42,17 +44,36 @@ namespace LLL.DurableTask.Api.Extensions
                             var convertedValue = ConvertQueryValue(elementType, values[i]);
                             array.SetValue(convertedValue, i);
                         }
-                        property.SetValue(obj, array);
+                        SetProperty(property, obj, array);
                     }
                     else
                     {
                         var firstValue = values.First();
                         var convertedValue = ConvertQueryValue(property.PropertyType, firstValue);
-                        property.SetValue(obj, convertedValue);
+                        SetProperty(property, obj, convertedValue);
                     }
                 }
             }
             return obj;
+        }
+
+        static void SetProperty(PropertyInfo property, object target, object value)
+        {
+            if (property.CanWrite)
+            {
+                property.SetValue(target, value);
+                return;
+            }
+
+            var propertyValue = property.GetValue(target);
+            if (propertyValue is IDictionary targetDict && value is IDictionary dictValue)
+            {
+                foreach (var key in dictValue.Keys)
+                    targetDict.Add(key, dictValue[key]);
+                return; 
+            }
+
+            throw new Exception($"Property {property.Name} cannot be written");
         }
 
         static object ConvertQueryValue(Type type, string value)
@@ -65,7 +86,15 @@ namespace LLL.DurableTask.Api.Extensions
             }
             else
             {
-                return Convert.ChangeType(value, type);
+                var typeCode = Type.GetTypeCode(type);
+                switch (typeCode)
+                {
+                    case TypeCode.Object:
+                        return JsonConvert.DeserializeObject(value, type);
+                    default:
+                        return Convert.ChangeType(value, type);
+                }
+
             }
         }
 

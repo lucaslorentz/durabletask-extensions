@@ -320,9 +320,19 @@ namespace LLL.DurableTask.Tests.Storages
             var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
                 EmptyOrchestration.Name,
                 EmptyOrchestration.Version,
-                string.Empty);
+                string.Empty,
+                new { },
+                new Dictionary<string, string> {
+                    { "key", "value" }
+                });
 
-            var queryResult = await queryClient.GetOrchestrationWithQueryAsync(new ExtendedOrchestrationQuery(), default);
+            var query = new ExtendedOrchestrationQuery
+            {
+                Tags = {
+                    { "key", "value" }
+                }
+            };
+            var queryResult = await queryClient.GetOrchestrationWithQueryAsync(query, default);
 
             queryResult.OrchestrationState.Should().HaveCountGreaterThan(0);
         }

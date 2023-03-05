@@ -23,6 +23,7 @@ export interface OrchestrationsRequest {
   includePreviousExecutions?: boolean;
   pageSize?: number;
   continuationToken?: string;
+  tags?: Record<string, string>;
 }
 
 export interface OrchestrationsResponse {

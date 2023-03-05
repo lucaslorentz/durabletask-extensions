@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from "axios";
+import qs from "qs";
 import {
   CreateOrchestrationRequest,
   Endpoint,
@@ -59,28 +60,20 @@ export class ApiClient {
   public async listOrchestrations(
     request?: OrchestrationsRequest
   ): Promise<OrchestrationsResponse> {
-    const params = new URLSearchParams();
-    if (request) {
-      request.instanceIdPrefix &&
-        params.append("instanceIdPrefix", request.instanceIdPrefix);
-      request.namePrefix && params.append("namePrefix", request.namePrefix);
-      request.createdTimeFrom &&
-        params.append("createdTimeFrom", request.createdTimeFrom);
-      request.createdTimeTo &&
-        params.append("createdTimeTo", request.createdTimeTo);
-      request.runtimeStatus?.forEach((status) =>
-        params.append("runtimeStatus", status)
-      );
-      request.includePreviousExecutions &&
-        params.append("includePreviousExecutions", "true");
-      request.pageSize &&
-        params.append("pageSize", request.pageSize.toString());
-      request.continuationToken &&
-        params.append("continuationToken", request.continuationToken);
-    }
+    const query = qs.stringify(request, {
+      skipNulls: true,
+      arrayFormat: "repeat",
+      filter(prefix, value) {
+        if (prefix && value?.constructor === Object) {
+          return JSON.stringify(value);
+        } else {
+          return value ? value : undefined;
+        }
+      },
+    });
 
     var response = await this.apiAxios.get<OrchestrationsResponse>(
-      `/v1/orchestrations?${params.toString()}`
+      `/v1/orchestrations?${query}`
     );
 
     return response.data;

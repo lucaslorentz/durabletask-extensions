@@ -1,18 +1,23 @@
+import DeleteIcon from "@mui/icons-material/Delete";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Button,
   FormControl,
   FormControlLabel,
   FormGroup,
   Grid,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
+  Stack,
   Switch,
   TextField,
 } from "@mui/material";
+import { produce } from "immer";
 import React, { useState } from "react";
 import { useApiClient } from "../../hooks/useApiClient";
 import { OrchestrationsFilter } from "../../hooks/useOrchestrationsFilter";
@@ -37,6 +42,8 @@ export function OrchestrationsSearch(props: Props) {
       setRuntimeStatus: setStatuses,
       includePreviousExecutions,
       setIncludePreviousExecutions,
+      tags,
+      setTags,
     },
   } = props;
 
@@ -158,6 +165,66 @@ export function OrchestrationsSearch(props: Props) {
                 />
               </FormGroup>
             </Grid>
+          )}
+          {apiClient.hasFeature("Tags") && (
+            <>
+              <Grid item xs={12}>
+                <Button
+                  onClick={() => setTags([...tags, { key: "", value: "" }])}
+                >
+                  Add tag
+                </Button>
+              </Grid>
+              {tags.map((tag, index) => (
+                <Grid key={index} item xs={12}>
+                  <Stack direction="row" alignItems="start" spacing={1}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Key"
+                          value={tag.key}
+                          onChange={(e) =>
+                            setTags(
+                              produce(tags, (d) => {
+                                d[index].key = e.currentTarget.value;
+                              })
+                            )
+                          }
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Value"
+                          value={tag.value}
+                          onChange={(e) =>
+                            setTags(
+                              produce(tags, (d) => {
+                                d[index].value = e.currentTarget.value;
+                              })
+                            )
+                          }
+                        />
+                      </Grid>
+                    </Grid>
+                    <IconButton
+                      onClick={() =>
+                        setTags(
+                          produce(tags, (d) => {
+                            d.splice(index, 1);
+                          })
+                        )
+                      }
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Stack>
+                </Grid>
+              ))}
+            </>
           )}
         </Grid>
       </AccordionDetails>

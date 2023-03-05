@@ -6,7 +6,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { default as React, useCallback } from "react";
+import { default as React, useCallback, useMemo } from "react";
 import { useDebounce } from "use-debounce";
 import { useApiClient } from "../../hooks/useApiClient";
 import { AutoRefreshButton } from "../../components/RefreshButton";
@@ -36,12 +36,21 @@ export function Orchestrations() {
 
   const [debouncedFilter] = useDebounce(filter, 500);
 
-  const request: OrchestrationsRequest = {
-    ...debouncedFilter,
-    pageSize,
-    continuationToken:
-      continuationTokenStack.length > 0 ? continuationTokenStack[0] : undefined,
-  };
+  const request: OrchestrationsRequest = useMemo(() => {
+    const tagsEntries = debouncedFilter.tags
+      ?.filter((t) => t.key && t.value)
+      .map((t) => [t.key, t.value]);
+
+    return {
+      ...debouncedFilter,
+      tags: tagsEntries?.length ? Object.fromEntries(tagsEntries) : undefined,
+      pageSize,
+      continuationToken:
+        continuationTokenStack.length > 0
+          ? continuationTokenStack[0]
+          : undefined,
+    };
+  }, [continuationTokenStack, debouncedFilter, pageSize]);
 
   const query = useQuery({
     queryKey: ["orchestrations", request],

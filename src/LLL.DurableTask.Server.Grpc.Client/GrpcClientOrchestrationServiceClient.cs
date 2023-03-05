@@ -171,6 +171,8 @@ namespace LLL.DurableTask.Server.Client
             {
                 request.NamePrefix = extendedQuery?.NamePrefix;
                 request.IncludePreviousExecutions = extendedQuery.IncludePreviousExecutions;
+                foreach (var kv in extendedQuery.Tags)
+                    request.Tags.Add(kv.Key, kv.Value);
             }
 
             var callOptions = new CallOptions(cancellationToken: cancellationToken);
