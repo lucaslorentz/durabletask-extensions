@@ -323,13 +323,15 @@ namespace LLL.DurableTask.Tests.Storages
                 string.Empty,
                 new { },
                 new Dictionary<string, string> {
-                    { "key", "value" }
+                    { "key-a", "value-a" },
+                    { "key-b", "value-b" }
                 });
 
             var query = new ExtendedOrchestrationQuery
             {
                 Tags = {
-                    { "key", "value" }
+                    { "key-a", "value-a" },
+                    { "key-b", "value-b" }
                 }
             };
             var queryResult = await queryClient.GetOrchestrationWithQueryAsync(query, default);

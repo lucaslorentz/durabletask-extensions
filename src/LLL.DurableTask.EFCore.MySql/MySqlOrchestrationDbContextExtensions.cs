@@ -2,6 +2,8 @@ using System;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using DurableTask.Core.Query;
+using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -142,12 +144,19 @@ namespace LLL.DurableTask.EFCore.MySql
             return instance;
         }
 
-        public override IQueryable<Execution> LatestExecutions(OrchestrationDbContext dbContext)
+        public override IQueryable<Execution> CreateFilteredQueryable(
+            OrchestrationDbContext dbContext,
+            OrchestrationQuery query)
         {
-            return dbContext.Executions.FromSqlInterpolated($@"
-                SELECT Executions.* FROM Executions
-                    INNER JOIN Instances ON Executions.ExecutionId = Instances.LastExecutionId
-            ").WithStraightJoin();
+            var queryable = base.CreateFilteredQueryable(dbContext, query);
+
+            if (query is not ExtendedOrchestrationQuery extendedQuery
+                || !extendedQuery.Tags.Any())
+            {
+                queryable = queryable.WithStraightJoin();
+            }
+
+            return queryable;
         }
     }
 }
