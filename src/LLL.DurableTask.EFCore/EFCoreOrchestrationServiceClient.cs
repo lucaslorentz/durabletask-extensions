@@ -216,42 +216,7 @@ namespace LLL.DurableTask.EFCore
         {
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
-                var extendedQuery = query as ExtendedOrchestrationQuery;
-
-                var queryable = extendedQuery == null || extendedQuery.IncludePreviousExecutions
-                    ? dbContext.Executions
-                    : _dbContextExtensions.LatestExecutions(dbContext);
-
-                if (!string.IsNullOrEmpty(query.InstanceIdPrefix))
-                    queryable = queryable.Where(e => e.InstanceId.StartsWith(query.InstanceIdPrefix));
-
-                if (query.CreatedTimeFrom != null)
-                    queryable = queryable.Where(e => e.CreatedTime >= query.CreatedTimeFrom);
-
-                if (query.CreatedTimeTo != null)
-                    queryable = queryable.Where(e => e.CreatedTime <= query.CreatedTimeTo);
-
-                if (query.RuntimeStatus != null && query.RuntimeStatus.Any())
-                    queryable = queryable.Where(e => query.RuntimeStatus.Contains(e.Status));
-
-                if (extendedQuery != null)
-                {
-                    if (!string.IsNullOrEmpty(extendedQuery.NamePrefix))
-                        queryable = queryable.Where(e => e.Name.StartsWith(extendedQuery.NamePrefix));
-
-                    foreach (var kv in extendedQuery.Tags)
-                        queryable = queryable.Where(e => e.Tags.Any(t => t.Name == kv.Key && t.Value == kv.Value));
-                }
-
-                var continuationToken = EFCoreContinuationToken.Parse(query.ContinuationToken);
-                if (continuationToken != null)
-                {
-                    queryable = queryable.Where(i =>
-                        i.CreatedTime < continuationToken.CreatedTime ||
-                        i.CreatedTime == continuationToken.CreatedTime && continuationToken.InstanceId.CompareTo(i.InstanceId) < 0);
-                }
-
-                var instances = await queryable
+                var instances = await _dbContextExtensions.CreateFilteredQueryable(dbContext, query)
                     .OrderByDescending(x => x.CreatedTime)
                     .ThenByDescending(x => x.InstanceId)
                     .Take(query.PageSize + 1)

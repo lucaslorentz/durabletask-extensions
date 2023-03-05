@@ -36,7 +36,9 @@ namespace LLL.DurableTask.EFCore.Configuration
                 o.ToTable("ExecutionTags");
                 o.WithOwner().HasForeignKey("ExecutionId");
                 o.Property(x => x.Name).IsRequired().HasMaxLength(100);
-                o.Property(x => x.Value).IsRequired().HasMaxLength(2000);
+                o.Property(x => x.Value).IsRequired().HasMaxLength(500);
+                o.HasIndex("ExecutionId", "Name").IsUnique();
+                o.HasIndex(x => new { x.Name, x.Value });
             });
 
             builder.Property(x => x.Input);

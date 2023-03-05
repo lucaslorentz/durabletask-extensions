@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Query;
+using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -88,8 +90,58 @@ namespace LLL.DurableTask.EFCore
             return query.ExecuteDeleteAsync();
         }
 
-        public virtual IQueryable<Execution> LatestExecutions(OrchestrationDbContext dbContext) {
-            return dbContext.Executions.Where(e => e.LastExecutionInstance != null);
+        public virtual IQueryable<Execution> CreateFilteredQueryable(
+            OrchestrationDbContext dbContext,
+            OrchestrationQuery query)
+        {
+            var extendedQuery = query as ExtendedOrchestrationQuery;
+
+            var queryable = dbContext.Executions as IQueryable<Entities.Execution>;
+
+            if (extendedQuery != null && !extendedQuery.IncludePreviousExecutions)
+                queryable = queryable.Join(dbContext.Instances, x => x.ExecutionId, x => x.LastExecutionId, (x, y) => x);
+
+            if (!string.IsNullOrEmpty(query.InstanceIdPrefix))
+                queryable = queryable.Where(e => e.InstanceId.StartsWith(query.InstanceIdPrefix));
+
+            if (query.CreatedTimeFrom != null)
+                queryable = queryable.Where(e => e.CreatedTime >= query.CreatedTimeFrom);
+
+            if (query.CreatedTimeTo != null)
+                queryable = queryable.Where(e => e.CreatedTime <= query.CreatedTimeTo);
+
+            if (query.RuntimeStatus != null && query.RuntimeStatus.Any())
+                queryable = queryable.Where(e => query.RuntimeStatus.Contains(e.Status));
+
+            if (extendedQuery != null)
+            {
+                if (!string.IsNullOrEmpty(extendedQuery.NamePrefix))
+                    queryable = queryable.Where(e => e.Name.StartsWith(extendedQuery.NamePrefix));
+
+                foreach (var kv in extendedQuery.Tags)
+                {
+                    var executionsWithTag = dbContext.Executions
+                        .SelectMany(e => e.Tags, (e, t) => new { e, t })
+                        .Where(e => e.t.Name == kv.Key && e.t.Value == kv.Value)
+                        .Select(x => new { x.e.ExecutionId });
+
+                    queryable = queryable.Join(
+                        executionsWithTag,
+                        x => x.ExecutionId,
+                        x => x.ExecutionId,
+                        (x, y) => x);
+                }
+            }
+
+            var continuationToken = EFCoreContinuationToken.Parse(query.ContinuationToken);
+            if (continuationToken != null)
+            {
+                queryable = queryable.Where(i =>
+                    i.CreatedTime < continuationToken.CreatedTime ||
+                    i.CreatedTime == continuationToken.CreatedTime && continuationToken.InstanceId.CompareTo(i.InstanceId) < 0);
+            }
+
+            return queryable;
         }
     }
 }

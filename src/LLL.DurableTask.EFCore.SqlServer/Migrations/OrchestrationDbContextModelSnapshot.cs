@@ -288,10 +288,15 @@ namespace LLL.DurableTask.EFCore.SqlServer.Migrations
 
                             b1.Property<string>("Value")
                                 .IsRequired()
-                                .HasMaxLength(2000)
-                                .HasColumnType("nvarchar(2000)");
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)");
 
                             b1.HasKey("ExecutionId", "Id");
+
+                            b1.HasIndex("ExecutionId", "Name")
+                                .IsUnique();
+
+                            b1.HasIndex("Name", "Value");
 
                             b1.ToTable("ExecutionTags", (string)null);
 
