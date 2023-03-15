@@ -39,7 +39,7 @@ namespace HotelWorker
 
             services.AddDurableTaskWorker(builder =>
             {
-                builder.AddFromAssembly(typeof(Program).Assembly);
+                builder.AddAnnotatedFromAssembly(typeof(Program).Assembly);
             });
         }
     }

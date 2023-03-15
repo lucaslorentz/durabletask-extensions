@@ -22,8 +22,8 @@ namespace LLL.DurableTask.Tests.Worker.ActivityMethod
             base.ConfigureWorker(builder);
 
             builder
-                .AddFromType(typeof(InvokeActivityOrchestration))
-                .AddFromType(typeof(Activities));
+                .AddAnnotatedFromType(typeof(InvokeActivityOrchestration))
+                .AddAnnotatedFromType(typeof(Activities));
         }
 
         [InlineData("AsyncThrow")]

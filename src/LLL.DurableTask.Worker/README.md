@@ -31,19 +31,28 @@ services.AddDurableTaskWorker(builder =>
 });
 ```
 
-Or you can also scan an assembly to add all orchestrations and/or activities marked with attributes [OrchestrationAttribute](src/LLL.DurableTask.Worker/Attributes/OrchestrationAttribute.cs) or [ActivityAttribute](src/LLL.DurableTask.Worker/Attributes/ActivityAttribute.cs):
+Or you can also scan an assembly to add all orchestrations and/or activities annotated with attributes [OrchestrationAttribute](src/LLL.DurableTask.Worker/Attributes/OrchestrationAttribute.cs) or [ActivityAttribute](src/LLL.DurableTask.Worker/Attributes/ActivityAttribute.cs):
 
 ```C#
 services.AddDurableTaskWorker(builder =>
 {
     // Adds all orchestrations and activities from assembly
-    builder.AddFromAssembly(typeof(Startup).Assembly);
+    builder.AddAnnotatedFromAssembly(typeof(Startup).Assembly);
 
     // Add only orchestrations from assembly
-    builder.AddOrchestrationsFromAssembly(typeof(Startup).Assembly);
+    builder.AddAnnotatedOrchestrationsFromAssembly(typeof(Startup).Assembly);
 
     // Add only activities from assembly
-    builder.AddActivitiesFromAssembly(typeof(Startup).Assembly);
+    builder.AddAnnotatedActivitiesFromAssembly(typeof(Startup).Assembly);
+});
+```
+
+Registering activities from interfaces:
+```C#
+services.AddDurableTaskWorker(builder =>
+{
+    // Add all interface methods as activities
+    builder.AddActivitiesFromInterface<IMyActivities, MyActivities>();
 });
 ```
 

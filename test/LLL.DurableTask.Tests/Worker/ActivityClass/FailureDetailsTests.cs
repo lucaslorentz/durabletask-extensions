@@ -23,8 +23,8 @@ namespace LLL.DurableTask.Tests.Worker.ActivityClass
             base.ConfigureWorker(builder);
 
             builder
-                .AddFromType(typeof(InvokeActivityOrchestration))
-                .AddFromType(typeof(ThrowActivity));
+                .AddAnnotatedFromType(typeof(InvokeActivityOrchestration))
+                .AddAnnotatedFromType(typeof(ThrowActivity));
         }
 
         [Fact]
