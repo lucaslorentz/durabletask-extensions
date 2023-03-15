@@ -12,33 +12,34 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class DurableTaskWorkerBuilderExtensions
     {
-        public static IDurableTaskWorkerBuilder AddFromAssembly(
+        public static IDurableTaskWorkerBuilder AddAnnotatedFromAssembly(
             this IDurableTaskWorkerBuilder builder,
             Assembly assembly)
         {
             return builder
-                .AddOrchestrationsFromAssembly(assembly)
-                .AddActivitiesFromAssembly(assembly);
+                .AddAnnotatedOrchestrationsFromAssembly(assembly)
+                .AddAnnotatedActivitiesFromAssembly(assembly);
         }
-        public static IDurableTaskWorkerBuilder AddFromType(
+
+        public static IDurableTaskWorkerBuilder AddAnnotatedFromType(
             this IDurableTaskWorkerBuilder builder,
             Type type)
         {
             return builder
-                .AddOrchestrationsFromType(type)
-                .AddActivitiesFromType(type);
+                .AddAnnotatedOrchestrationsFromType(type)
+                .AddAnnotatedActivitiesFromType(type);
         }
 
-        public static IDurableTaskWorkerBuilder AddOrchestrationsFromAssembly(
+        public static IDurableTaskWorkerBuilder AddAnnotatedOrchestrationsFromAssembly(
             this IDurableTaskWorkerBuilder builder,
             Assembly assembly)
         {
             foreach (var type in assembly.GetTypes())
-                builder.AddOrchestrationsFromType(type);
+                builder.AddAnnotatedOrchestrationsFromType(type);
             return builder;
         }
 
-        public static IDurableTaskWorkerBuilder AddOrchestrationsFromType(
+        public static IDurableTaskWorkerBuilder AddAnnotatedOrchestrationsFromType(
             this IDurableTaskWorkerBuilder builder,
             Type type)
         {
@@ -86,24 +87,22 @@ namespace Microsoft.Extensions.DependencyInjection
             string name = null,
             string version = null)
         {
-            builder.Services.AddScoped(type, type);
-
             return builder.AddOrchestration(
                 p => ActivatorUtilities.GetServiceOrCreateInstance(p, type) as TaskOrchestration,
                 name ?? NameVersionHelper.GetDefaultName(type),
                 version ?? NameVersionHelper.GetDefaultVersion(type));
         }
 
-        public static IDurableTaskWorkerBuilder AddActivitiesFromAssembly(
+        public static IDurableTaskWorkerBuilder AddAnnotatedActivitiesFromAssembly(
             this IDurableTaskWorkerBuilder builder,
             Assembly assembly)
         {
             foreach (var type in assembly.GetTypes())
-                builder.AddActivitiesFromType(type);
+                builder.AddAnnotatedActivitiesFromType(type);
             return builder;
         }
 
-        public static IDurableTaskWorkerBuilder AddActivitiesFromType(
+        public static IDurableTaskWorkerBuilder AddAnnotatedActivitiesFromType(
             this IDurableTaskWorkerBuilder builder,
             Type type)
         {
@@ -123,15 +122,49 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
+        public static IDurableTaskWorkerBuilder AddActivitiesFromInterface<TService, TImplementation>(
+            this IDurableTaskWorkerBuilder builder,
+            bool useFullyQualifiedMethodNames = false)
+            where TImplementation : TService
+        {
+            return builder.AddActivitiesFromInterface(typeof(TService), typeof(TImplementation), useFullyQualifiedMethodNames);
+        }
+
+        public static IDurableTaskWorkerBuilder AddActivitiesFromInterface(
+            this IDurableTaskWorkerBuilder builder,
+            Type interfaceType,
+            Type implementationType,
+            bool useFullyQualifiedMethodNames = false)
+        {
+            if (!interfaceType.IsInterface)
+                throw new ArgumentException($"Type {interfaceType} is not an interface", nameof(interfaceType));
+
+            if (!interfaceType.IsAssignableFrom(implementationType))
+                throw new ArgumentException($"{implementationType.FullName} does not implement {interfaceType.FullName}", nameof(implementationType));
+
+            foreach (var methodInfo in interfaceType.GetMethods())
+            {
+                var name = NameVersionHelper.GetDefaultName(methodInfo, useFullyQualifiedMethodNames);
+                var version = NameVersionHelper.GetDefaultVersion(methodInfo);
+                builder.AddActivityMethod(
+                    implementationType,
+                    methodInfo,
+                    name,
+                    version);
+            }
+
+            return builder;
+        }
+
         public static IDurableTaskWorkerBuilder AddActivityMethod(
             this IDurableTaskWorkerBuilder builder,
-            Type type,
+            Type serviceType,
             MethodInfo methodInfo,
             string name = null,
             string version = null)
         {
             return builder.AddActivity(
-                p => new MethodTaskActivity(ActivatorUtilities.GetServiceOrCreateInstance(p, type), methodInfo),
+                p => new MethodTaskActivity(ActivatorUtilities.GetServiceOrCreateInstance(p, serviceType), methodInfo),
                 name ?? NameVersionHelper.GetDefaultName(methodInfo),
                 version ?? NameVersionHelper.GetDefaultVersion(methodInfo));
         }
@@ -151,8 +184,6 @@ namespace Microsoft.Extensions.DependencyInjection
             string name = null,
             string version = null)
         {
-            builder.Services.AddScoped(type, type);
-
             return builder.AddActivity(
                 p => ActivatorUtilities.GetServiceOrCreateInstance(p, type) as TaskActivity,
                 name ?? NameVersionHelper.GetDefaultName(type),

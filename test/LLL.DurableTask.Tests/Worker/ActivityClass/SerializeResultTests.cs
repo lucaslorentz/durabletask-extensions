@@ -22,9 +22,9 @@ namespace LLL.DurableTask.Tests.Worker.ActivityClass
         {
             base.ConfigureWorker(builder);
 
-            builder.AddFromType(typeof(InvokeActivityOrchestration));
-            builder.AddFromType(typeof(AsyncReturnGenericTaskString));
-            builder.AddFromType(typeof(ReturnGenericTaskString));
+            builder.AddAnnotatedFromType(typeof(InvokeActivityOrchestration));
+            builder.AddAnnotatedFromType(typeof(AsyncReturnGenericTaskString));
+            builder.AddAnnotatedFromType(typeof(ReturnGenericTaskString));
         }
 
         [InlineData("AsyncReturnGenericTaskString", "\"Something\"")]
