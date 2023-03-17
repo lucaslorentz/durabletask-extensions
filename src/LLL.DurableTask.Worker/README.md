@@ -37,13 +37,13 @@ Or you can also scan an assembly to add all orchestrations and/or activities ann
 services.AddDurableTaskWorker(builder =>
 {
     // Adds all orchestrations and activities from assembly
-    builder.AddAnnotatedFromAssembly(typeof(Startup).Assembly);
+    builder.AddAnnotatedFrom(typeof(Startup).Assembly);
 
     // Add only orchestrations from assembly
-    builder.AddAnnotatedOrchestrationsFromAssembly(typeof(Startup).Assembly);
+    builder.AddAnnotatedOrchestrationsFrom(typeof(Startup).Assembly);
 
     // Add only activities from assembly
-    builder.AddAnnotatedActivitiesFromAssembly(typeof(Startup).Assembly);
+    builder.AddAnnotatedActivitiesFrom(typeof(Startup).Assembly);
 });
 ```
 

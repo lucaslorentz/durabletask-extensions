@@ -20,7 +20,7 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationMethod
         {
             base.ConfigureWorker(builder);
 
-            builder.AddAnnotatedFromType(typeof(Orchestrations));
+            builder.AddAnnotatedFrom(typeof(Orchestrations));
         }
 
         [InlineData("AsyncReturnGenericTaskString", "\"Something\"")]

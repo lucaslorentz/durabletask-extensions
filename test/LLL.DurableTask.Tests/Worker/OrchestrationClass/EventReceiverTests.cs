@@ -23,8 +23,8 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
         {
             base.ConfigureWorker(builder);
 
-            builder.AddAnnotatedFromType(typeof(WaitForEventOrchestration));
-            builder.AddAnnotatedFromType(typeof(AddEventListenerOrchestration));
+            builder.AddAnnotatedFrom(typeof(WaitForEventOrchestration));
+            builder.AddAnnotatedFrom(typeof(AddEventListenerOrchestration));
         }
 
         [Fact]
