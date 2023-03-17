@@ -31,7 +31,7 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
         {
             base.ConfigureWorker(builder);
 
-            builder.AddAnnotatedFromType(typeof(TestOrchestration));
+            builder.AddAnnotatedFrom(typeof(TestOrchestration));
         }
 
         [Fact]

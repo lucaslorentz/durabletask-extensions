@@ -30,7 +30,7 @@ namespace LLL.DurableTask.Tests.Worker.ActivityMethod
         {
             base.ConfigureWorker(builder);
 
-            builder.AddAnnotatedFromType(typeof(Orchestrations));
+            builder.AddAnnotatedFrom(typeof(Orchestrations));
             builder.AddActivitiesFromInterface<IActivities, Activities>(true);
         }
 

@@ -21,8 +21,8 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
         {
             base.ConfigureWorker(builder);
 
-            builder.AddAnnotatedFromType(typeof(AsyncReturnGenericTaskString));
-            builder.AddAnnotatedFromType(typeof(ReturnGenericTaskString));
+            builder.AddAnnotatedFrom(typeof(AsyncReturnGenericTaskString));
+            builder.AddAnnotatedFrom(typeof(ReturnGenericTaskString));
         }
 
         [InlineData("AsyncReturnGenericTaskString", "\"Something\"")]

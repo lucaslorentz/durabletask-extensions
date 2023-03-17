@@ -12,34 +12,34 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class DurableTaskWorkerBuilderExtensions
     {
-        public static IDurableTaskWorkerBuilder AddAnnotatedFromAssembly(
+        public static IDurableTaskWorkerBuilder AddAnnotatedFrom(
             this IDurableTaskWorkerBuilder builder,
             Assembly assembly)
         {
             return builder
-                .AddAnnotatedOrchestrationsFromAssembly(assembly)
-                .AddAnnotatedActivitiesFromAssembly(assembly);
+                .AddAnnotatedOrchestrationsFrom(assembly)
+                .AddAnnotatedActivitiesFrom(assembly);
         }
 
-        public static IDurableTaskWorkerBuilder AddAnnotatedFromType(
+        public static IDurableTaskWorkerBuilder AddAnnotatedFrom(
             this IDurableTaskWorkerBuilder builder,
             Type type)
         {
             return builder
-                .AddAnnotatedOrchestrationsFromType(type)
-                .AddAnnotatedActivitiesFromType(type);
+                .AddAnnotatedOrchestrationsFrom(type)
+                .AddAnnotatedActivitiesFrom(type);
         }
 
-        public static IDurableTaskWorkerBuilder AddAnnotatedOrchestrationsFromAssembly(
+        public static IDurableTaskWorkerBuilder AddAnnotatedOrchestrationsFrom(
             this IDurableTaskWorkerBuilder builder,
             Assembly assembly)
         {
             foreach (var type in assembly.GetTypes())
-                builder.AddAnnotatedOrchestrationsFromType(type);
+                builder.AddAnnotatedOrchestrationsFrom(type);
             return builder;
         }
 
-        public static IDurableTaskWorkerBuilder AddAnnotatedOrchestrationsFromType(
+        public static IDurableTaskWorkerBuilder AddAnnotatedOrchestrationsFrom(
             this IDurableTaskWorkerBuilder builder,
             Type type)
         {
@@ -93,16 +93,16 @@ namespace Microsoft.Extensions.DependencyInjection
                 version ?? NameVersionHelper.GetDefaultVersion(type));
         }
 
-        public static IDurableTaskWorkerBuilder AddAnnotatedActivitiesFromAssembly(
+        public static IDurableTaskWorkerBuilder AddAnnotatedActivitiesFrom(
             this IDurableTaskWorkerBuilder builder,
             Assembly assembly)
         {
             foreach (var type in assembly.GetTypes())
-                builder.AddAnnotatedActivitiesFromType(type);
+                builder.AddAnnotatedActivitiesFrom(type);
             return builder;
         }
 
-        public static IDurableTaskWorkerBuilder AddAnnotatedActivitiesFromType(
+        public static IDurableTaskWorkerBuilder AddAnnotatedActivitiesFrom(
             this IDurableTaskWorkerBuilder builder,
             Type type)
         {

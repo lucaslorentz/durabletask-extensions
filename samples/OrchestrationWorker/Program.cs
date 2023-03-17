@@ -39,7 +39,7 @@ namespace OrchestrationWorker
 
             services.AddDurableTaskWorker(builder =>
             {
-                builder.AddAnnotatedFromAssembly(typeof(Program).Assembly);
+                builder.AddAnnotatedFrom(typeof(Program).Assembly);
             });
         }
     }

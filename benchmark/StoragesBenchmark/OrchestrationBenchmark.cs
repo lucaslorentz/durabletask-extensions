@@ -61,7 +61,7 @@ namespace StoragesBenchmark
 
         protected virtual void ConfigureWorker(IDurableTaskWorkerBuilder builder)
         {
-            builder.AddAnnotatedFromType(typeof(Orchestrations));
+            builder.AddAnnotatedFrom(typeof(Orchestrations));
         }
 
         [Benchmark]

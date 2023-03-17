@@ -22,7 +22,7 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
             base.ConfigureWorker(builder);
 
             builder
-                .AddAnnotatedFromType(typeof(ThrowOrchestration));
+                .AddAnnotatedFrom(typeof(ThrowOrchestration));
         }
 
         [Fact]

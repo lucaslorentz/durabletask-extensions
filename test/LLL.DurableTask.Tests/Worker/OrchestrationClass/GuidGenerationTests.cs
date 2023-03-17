@@ -22,7 +22,7 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
         {
             base.ConfigureWorker(builder);
 
-            builder.AddAnnotatedFromType(typeof(GenerateGuidOrchestration));
+            builder.AddAnnotatedFrom(typeof(GenerateGuidOrchestration));
         }
 
         [Fact]

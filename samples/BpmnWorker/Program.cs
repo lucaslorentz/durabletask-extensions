@@ -42,7 +42,7 @@ namespace WorkflowApi
 
             services.AddDurableTaskWorker(builder =>
             {
-                builder.AddAnnotatedFromAssembly(typeof(Program).Assembly);
+                builder.AddAnnotatedFrom(typeof(Program).Assembly);
             });
 
             services.AddSingleton<IBPMNProvider, LocalFileBPMNProvider>();
