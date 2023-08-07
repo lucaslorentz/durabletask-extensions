@@ -14,6 +14,7 @@ namespace LLL.DurableTask.Worker.Orchestrations
         private readonly MethodInfo _methodInfo;
         private readonly DataConverter _dataConverter;
         private OrchestrationEventReceiver _eventReceiver;
+        private OrchestrationStatusPublisher _statusPublisher;
 
         public MethodTaskOrchestration(
             object instance,
@@ -35,7 +36,8 @@ namespace LLL.DurableTask.Worker.Orchestrations
             {
                 [typeof(OrchestrationContext)] = () => context,
                 [typeof(OrchestrationEventReceiver)] = () => _eventReceiver = new OrchestrationEventReceiver(context),
-                [typeof(OrchestrationGuidGenerator)] = () => new OrchestrationGuidGenerator(context.OrchestrationInstance.ExecutionId)
+                [typeof(OrchestrationGuidGenerator)] = () => new OrchestrationGuidGenerator(context.OrchestrationInstance.ExecutionId),
+                [typeof(OrchestrationStatusPublisher)] = () => _statusPublisher = new OrchestrationStatusPublisher()
             });
 
             try
@@ -52,6 +54,9 @@ namespace LLL.DurableTask.Worker.Orchestrations
 
         public override string GetStatus()
         {
+            if (_statusPublisher != null)
+                return _dataConverter.Serialize(_statusPublisher.Status);
+
             return null;
         }
 

@@ -67,7 +67,9 @@ namespace Microsoft.Extensions.DependencyInjection
             string version = null)
         {
             return builder.AddOrchestration(
-                p => new MethodTaskOrchestration(ActivatorUtilities.GetServiceOrCreateInstance(p, type), methodInfo),
+                p => new MethodTaskOrchestration(
+                    type.IsAbstract && type.IsSealed ? null : ActivatorUtilities.GetServiceOrCreateInstance(p, type),
+                    methodInfo),
                 name ?? NameVersionHelper.GetDefaultName(methodInfo),
                 version ?? NameVersionHelper.GetDefaultVersion(methodInfo));
         }
@@ -158,13 +160,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IDurableTaskWorkerBuilder AddActivityMethod(
             this IDurableTaskWorkerBuilder builder,
-            Type serviceType,
+            Type type,
             MethodInfo methodInfo,
             string name = null,
             string version = null)
         {
             return builder.AddActivity(
-                p => new MethodTaskActivity(ActivatorUtilities.GetServiceOrCreateInstance(p, serviceType), methodInfo),
+                p => new MethodTaskActivity(
+                    type.IsAbstract && type.IsSealed ? null : ActivatorUtilities.GetServiceOrCreateInstance(p, type),
+                    methodInfo),
                 name ?? NameVersionHelper.GetDefaultName(methodInfo),
                 version ?? NameVersionHelper.GetDefaultVersion(methodInfo));
         }
