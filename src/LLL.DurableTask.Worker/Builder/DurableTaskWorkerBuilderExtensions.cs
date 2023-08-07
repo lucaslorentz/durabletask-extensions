@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             return builder.AddOrchestration(
                 p => new MethodTaskOrchestration(
-                    type.IsAbstract && type.IsSealed ? null : ActivatorUtilities.GetServiceOrCreateInstance(p, type),
+                    methodInfo.IsStatic ? null : ActivatorUtilities.GetServiceOrCreateInstance(p, type),
                     methodInfo),
                 name ?? NameVersionHelper.GetDefaultName(methodInfo),
                 version ?? NameVersionHelper.GetDefaultVersion(methodInfo));
@@ -167,7 +167,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             return builder.AddActivity(
                 p => new MethodTaskActivity(
-                    type.IsAbstract && type.IsSealed ? null : ActivatorUtilities.GetServiceOrCreateInstance(p, type),
+                    methodInfo.IsStatic ? null : ActivatorUtilities.GetServiceOrCreateInstance(p, type),
                     methodInfo),
                 name ?? NameVersionHelper.GetDefaultName(methodInfo),
                 version ?? NameVersionHelper.GetDefaultVersion(methodInfo));
