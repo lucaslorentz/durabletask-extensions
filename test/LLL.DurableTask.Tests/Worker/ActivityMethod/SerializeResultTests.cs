@@ -46,41 +46,41 @@ namespace LLL.DurableTask.Tests.Worker.ActivityMethod
             result.Output.Should().Be(expectedOutput);
         }
 
-        public class Activities
+        public static class Activities
         {
             [Activity(Name = "AsyncReturnGenericTaskString")]
-            public async Task<string> AsyncReturnGenericTaskString()
+            public static async Task<string> AsyncReturnGenericTaskString()
             {
                 await Task.Delay(1);
                 return "Something";
             }
 
             [Activity(Name = "ReturnGenericTaskString")]
-            public Task<string> ReturnGenericTaskString()
+            public static Task<string> ReturnGenericTaskString()
             {
                 return Task.FromResult("Something");
             }
 
             [Activity(Name = "AsyncReturnTask")]
-            public async Task AsyncReturnTask()
+            public static async Task AsyncReturnTask()
             {
                 await Task.Delay(1);
             }
 
             [Activity(Name = "ReturnTask")]
-            public Task ReturnTask()
+            public static Task ReturnTask()
             {
                 return Task.CompletedTask;
             }
 
             [Activity(Name = "ReturnString")]
-            public string ReturnString()
+            public static string ReturnString()
             {
                 return "Something";
             }
 
             [Activity(Name = "ReturnVoid")]
-            public void ReturnVoid()
+            public static void ReturnVoid()
             {
             }
         }
