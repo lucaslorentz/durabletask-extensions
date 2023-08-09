@@ -118,6 +118,12 @@ namespace LLL.DurableTask.EFCore
                 if (!string.IsNullOrEmpty(extendedQuery.NamePrefix))
                     queryable = queryable.Where(e => e.Name.StartsWith(extendedQuery.NamePrefix));
 
+                if (extendedQuery.CompletedTimeFrom != null)
+                    queryable = queryable.Where(e => e.CompletedTime >= extendedQuery.CompletedTimeFrom);
+
+                if (extendedQuery.CompletedTimeTo != null)
+                    queryable = queryable.Where(e => e.CompletedTime <= extendedQuery.CompletedTimeTo);
+
                 foreach (var kv in extendedQuery.Tags)
                 {
                     var executionsWithTag = dbContext.Executions

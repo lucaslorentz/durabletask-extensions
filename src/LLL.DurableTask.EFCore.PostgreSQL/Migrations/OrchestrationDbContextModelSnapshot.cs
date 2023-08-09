@@ -160,6 +160,8 @@ namespace LLL.DurableTask.EFCore.PostgreSQL.Migrations
 
                     b.HasKey("ExecutionId");
 
+                    b.HasIndex("CompletedTime");
+
                     b.HasIndex("CreatedTime");
 
                     b.HasIndex("InstanceId");

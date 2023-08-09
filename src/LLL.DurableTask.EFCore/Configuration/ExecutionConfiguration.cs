@@ -49,6 +49,8 @@ namespace LLL.DurableTask.EFCore.Configuration
 
             builder.HasIndex(x => new { x.CreatedTime });
 
+            builder.HasIndex(x => new { x.CompletedTime });
+
             builder.HasIndex(x => new { x.InstanceId });
 
             builder.HasIndex(x => new { x.Name });

@@ -117,6 +117,8 @@ message GetOrchestrationWithQueryRequest {
     google.protobuf.StringValue name_prefix = 9;
     bool include_previous_executions = 10;
     map<string, string> tags = 11;
+    google.protobuf.Timestamp completed_time_from = 12;
+    google.protobuf.Timestamp completed_time_to = 13;
 }
 
 message GetOrchestrationWithQueryResponse {

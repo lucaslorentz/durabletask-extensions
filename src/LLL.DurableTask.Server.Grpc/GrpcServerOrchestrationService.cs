@@ -169,6 +169,8 @@ namespace LLL.DurableTask.Server.Grpc.Server
             query.InstanceIdPrefix = request.InstanceIdPrefix;
             query.FetchInputsAndOutputs = request.FetchInputsAndOutputs;
             query.NamePrefix = request.NamePrefix;
+            query.CompletedTimeFrom = request.CompletedTimeFrom?.ToDateTime();
+            query.CompletedTimeTo = request.CompletedTimeTo?.ToDateTime();
             query.IncludePreviousExecutions = request.IncludePreviousExecutions;
             foreach (var kv in request.Tags)
                 query.Tags.Add(kv.Key, kv.Value);
