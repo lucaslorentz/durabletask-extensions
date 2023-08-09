@@ -157,6 +157,8 @@ namespace LLL.DurableTask.EFCore.MySql.Migrations
 
                     b.HasKey("ExecutionId");
 
+                    b.HasIndex("CompletedTime");
+
                     b.HasIndex("CreatedTime");
 
                     b.HasIndex("InstanceId");

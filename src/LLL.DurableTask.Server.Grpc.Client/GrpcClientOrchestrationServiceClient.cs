@@ -169,7 +169,9 @@ namespace LLL.DurableTask.Server.Client
 
             if (query is ExtendedOrchestrationQuery extendedQuery)
             {
-                request.NamePrefix = extendedQuery?.NamePrefix;
+                request.NamePrefix = extendedQuery.NamePrefix;
+                request.CompletedTimeFrom = ToTimestamp(extendedQuery.CompletedTimeFrom);
+                request.CompletedTimeTo = ToTimestamp(extendedQuery.CompletedTimeTo);
                 request.IncludePreviousExecutions = extendedQuery.IncludePreviousExecutions;
                 foreach (var kv in extendedQuery.Tags)
                     request.Tags.Add(kv.Key, kv.Value);
