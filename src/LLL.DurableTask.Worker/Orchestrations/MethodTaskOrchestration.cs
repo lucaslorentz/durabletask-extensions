@@ -13,8 +13,7 @@ namespace LLL.DurableTask.Worker.Orchestrations
     {
         private readonly MethodInfo _methodInfo;
         private readonly DataConverter _dataConverter;
-        private OrchestrationEventReceiver _eventReceiver;
-        private OrchestrationStatusPublisher _statusPublisher;
+        private ExtendedOrchestrationContext _extendedContext;
 
         public MethodTaskOrchestration(
             object instance,
@@ -35,9 +34,7 @@ namespace LLL.DurableTask.Worker.Orchestrations
             var parameters = PrepareParameters(input, new Dictionary<Type, Func<object>>
             {
                 [typeof(OrchestrationContext)] = () => context,
-                [typeof(OrchestrationEventReceiver)] = () => _eventReceiver = new OrchestrationEventReceiver(context),
-                [typeof(OrchestrationGuidGenerator)] = () => new OrchestrationGuidGenerator(context.OrchestrationInstance.ExecutionId),
-                [typeof(OrchestrationStatusPublisher)] = () => _statusPublisher = new OrchestrationStatusPublisher()
+                [typeof(ExtendedOrchestrationContext)] = () => _extendedContext = new ExtendedOrchestrationContext(context),
             });
 
             try
@@ -54,15 +51,12 @@ namespace LLL.DurableTask.Worker.Orchestrations
 
         public override string GetStatus()
         {
-            if (_statusPublisher != null)
-                return _dataConverter.Serialize(_statusPublisher.Status);
-
-            return null;
+            return _extendedContext?.StatusProvider?.Invoke();
         }
 
         public override void RaiseEvent(OrchestrationContext context, string name, string input)
         {
-            _eventReceiver?.RaiseEvent(name, input);
+            _extendedContext?.RaiseEvent(name, input);
         }
 
         private object[] PrepareParameters(

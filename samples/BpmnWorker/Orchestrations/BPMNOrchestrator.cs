@@ -347,8 +347,7 @@ namespace BpmnWorker.Orchestrations
         {
             var messageRef = messageEventDefinition.MessageRef.ToString();
             _logger.LogWarning("Waiting for message {message}", messageRef);
-
-            var result = await EventReceiver.WaitForEventAsync<JObject>(messageRef, _terminateCancellationTokenSource.Token);
+            await Context.WaitForEventAsync<JObject>(messageRef, _terminateCancellationTokenSource.Token);
             _logger.LogWarning("Received message {message}", messageRef);
 
             await VisitFlowNodes(GetParallelOutgoingNodes(intermediateCatchEvent));

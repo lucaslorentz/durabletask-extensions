@@ -11,9 +11,9 @@ using Xunit.Abstractions;
 
 namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
 {
-    public class GuidGenerationTests : WorkerTestBase
+    public class GuidTests : WorkerTestBase
     {
-        public GuidGenerationTests(ITestOutputHelper output)
+        public GuidTests(ITestOutputHelper output)
             : base(output)
         {
         }
@@ -48,7 +48,7 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
         {
             public override Task<Guid> Execute(object input)
             {
-                return Task.FromResult(GuidGenerator.NewGuid());
+                return Task.FromResult(Context.NewGuid());
             }
         }
     }
