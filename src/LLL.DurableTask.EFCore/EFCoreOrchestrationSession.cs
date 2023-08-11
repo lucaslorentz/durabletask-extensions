@@ -8,99 +8,96 @@ using LLL.DurableTask.EFCore.Entities;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
 
-namespace LLL.DurableTask.EFCore
+namespace LLL.DurableTask.EFCore;
+
+public class EFCoreOrchestrationSession : IOrchestrationSession
 {
-    public class EFCoreOrchestrationSession : IOrchestrationSession
+    private readonly EFCoreOrchestrationOptions _options;
+
+    private readonly IDbContextFactory<OrchestrationDbContext> _dbContextFactory;
+    private readonly CancellationToken _stopCancellationToken;
+
+    public EFCoreOrchestrationSession(
+        EFCoreOrchestrationOptions options,
+        IDbContextFactory<OrchestrationDbContext> dbContextFactory,
+        Instance instance,
+        Execution execution,
+        OrchestrationRuntimeState runtimeState,
+        CancellationToken stopCancellationToken)
     {
-        private readonly EFCoreOrchestrationOptions _options;
+        _options = options;
+        _dbContextFactory = dbContextFactory;
+        Instance = instance;
+        Execution = execution;
+        RuntimeState = runtimeState;
+        _stopCancellationToken = stopCancellationToken;
+    }
 
-        private readonly IDbContextFactory<OrchestrationDbContext> _dbContextFactory;
-        private readonly CancellationToken _stopCancellationToken;
+    public Instance Instance { get; }
+    public Execution Execution { get; set; }
+    public OrchestrationRuntimeState RuntimeState { get; set; }
+    public List<OrchestrationMessage> Messages { get; } = new List<OrchestrationMessage>();
 
-        public EFCoreOrchestrationSession(
-            EFCoreOrchestrationOptions options,
-            IDbContextFactory<OrchestrationDbContext> dbContextFactory,
-            Instance instance,
-            Execution execution,
-            OrchestrationRuntimeState runtimeState,
-            CancellationToken stopCancellationToken)
+    public bool Released { get; set; }
+
+    public async Task<IList<TaskMessage>> FetchNewOrchestrationMessagesAsync(
+        TaskOrchestrationWorkItem workItem)
+    {
+        return await BackoffPollingHelper.PollAsync(async () =>
         {
-            _options = options;
-            _dbContextFactory = dbContextFactory;
-            Instance = instance;
-            Execution = execution;
-            RuntimeState = runtimeState;
-            _stopCancellationToken = stopCancellationToken;
-        }
+            using var dbContext = _dbContextFactory.CreateDbContext();
+            var messages = await FetchNewMessagesAsync(dbContext);
+            await dbContext.SaveChangesAsync();
+            return messages;
+        },
+        x => x == null || x.Count > 0,
+        _options.FetchNewMessagesPollingTimeout,
+        _options.PollingInterval,
+        _stopCancellationToken);
+    }
 
-        public Instance Instance { get; }
-        public Execution Execution { get; set; }
-        public OrchestrationRuntimeState RuntimeState { get; set; }
-        public List<OrchestrationMessage> Messages { get; } = new List<OrchestrationMessage>();
+    public async Task<IList<TaskMessage>> FetchNewMessagesAsync(
+        OrchestrationDbContext dbContext,
+        CancellationToken cancellationToken = default)
+    {
+        var newDbMessages = await dbContext.OrchestrationMessages
+            .Where(w => w.AvailableAt <= DateTime.UtcNow
+                && w.InstanceId == Instance.InstanceId
+                && w.Instance.LockId == Instance.LockId // Ensure we still own the lock
+                && !Messages.Contains(w))
+            .OrderBy(w => w.AvailableAt)
+            .ThenBy(w => w.SequenceNumber)
+            .AsNoTracking()
+            .ToArrayAsync(cancellationToken);
 
-        public bool Released { get; set; }
+        var messagesToDiscard = newDbMessages
+            .Where(m => m.ExecutionId != null && m.ExecutionId != Instance.LastExecutionId)
+            .ToArray();
 
-        public async Task<IList<TaskMessage>> FetchNewOrchestrationMessagesAsync(
-            TaskOrchestrationWorkItem workItem)
+        if (messagesToDiscard.Length > 0)
         {
-            return await BackoffPollingHelper.PollAsync(async () =>
+            foreach (var message in messagesToDiscard)
             {
-                using (var dbContext = _dbContextFactory.CreateDbContext())
-                {
-                    var messages = await FetchNewMessagesAsync(dbContext);
-                    await dbContext.SaveChangesAsync();
-                    return messages;
-                }
-            },
-            x => x == null || x.Count > 0,
-            _options.FetchNewMessagesPollingTimeout,
-            _options.PollingInterval,
-            _stopCancellationToken);
-        }
-
-        public async Task<IList<TaskMessage>> FetchNewMessagesAsync(
-            OrchestrationDbContext dbContext,
-            CancellationToken cancellationToken = default)
-        {
-            var newDbMessages = await dbContext.OrchestrationMessages
-                .Where(w => w.AvailableAt <= DateTime.UtcNow
-                    && w.InstanceId == Instance.InstanceId
-                    && w.Instance.LockId == Instance.LockId // Ensure we still own the lock
-                    && !Messages.Contains(w))
-                .OrderBy(w => w.AvailableAt)
-                .ThenBy(w => w.SequenceNumber)
-                .AsNoTracking()
-                .ToArrayAsync(cancellationToken);
-
-            var messagesToDiscard = newDbMessages
-                .Where(m => m.ExecutionId != null && m.ExecutionId != Instance.LastExecutionId)
-                .ToArray();
-
-            if (messagesToDiscard.Length > 0)
-            {
-                foreach (var message in messagesToDiscard)
-                {
-                    dbContext.OrchestrationMessages.Attach(message);
-                    dbContext.OrchestrationMessages.Remove(message);
-                }
-
-                newDbMessages = newDbMessages
-                    .Except(messagesToDiscard)
-                    .ToArray();
+                dbContext.OrchestrationMessages.Attach(message);
+                dbContext.OrchestrationMessages.Remove(message);
             }
 
-            Messages.AddRange(newDbMessages);
-
-            var deserializedMessages = newDbMessages
-                .Select(w => _options.DataConverter.Deserialize<TaskMessage>(w.Message))
-                .ToList();
-
-            return deserializedMessages;
+            newDbMessages = newDbMessages
+                .Except(messagesToDiscard)
+                .ToArray();
         }
 
-        public void ClearMessages()
-        {
-            Messages.Clear();
-        }
+        Messages.AddRange(newDbMessages);
+
+        var deserializedMessages = newDbMessages
+            .Select(w => _options.DataConverter.Deserialize<TaskMessage>(w.Message))
+            .ToList();
+
+        return deserializedMessages;
+    }
+
+    public void ClearMessages()
+    {
+        Messages.Clear();
     }
 }

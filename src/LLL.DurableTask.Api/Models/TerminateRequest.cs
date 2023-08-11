@@ -1,7 +1,6 @@
-﻿namespace LLL.DurableTask.Api.Models
+﻿namespace LLL.DurableTask.Api.Models;
+
+public class TerminateRequest
 {
-    public class TerminateRequest
-    {
-        public string Reason { get; set; }
-    }
+    public string Reason { get; set; }
 }

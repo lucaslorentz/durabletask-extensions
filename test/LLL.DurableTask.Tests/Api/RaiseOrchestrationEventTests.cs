@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -12,44 +12,43 @@ using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace LLL.DurableTask.Tests.Api
+namespace LLL.DurableTask.Tests.Api;
+
+public class RaiseOrchestrationEventTests : ApiTestBase
 {
-    public class RaiseOrchestrationEventTests : ApiTestBase
+    public RaiseOrchestrationEventTests(ITestOutputHelper output) : base(output)
     {
-        public RaiseOrchestrationEventTests(ITestOutputHelper output) : base(output)
+    }
+
+    [Trait("Category", "Integration")]
+    [Fact]
+    public async Task RaiseOrchestrationEvent_ShouldReturnSuccess()
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+
+        var orchestrationInstance = await taskHubClient.CreateOrchestrationInstanceAsync("Test", "v1", null);
+
+        using var httpClient = _host.GetTestClient();
+
+        var eventData = new
         {
-        }
+            field = "value"
+        };
+        var requestJson = JsonConvert.SerializeObject(eventData);
+        var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
-        [Trait("Category", "Integration")]
-        [Fact]
-        public async Task RaiseOrchestrationEvent_ShouldReturnSuccess()
-        {
-            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+        var httpResponse = await httpClient.PostAsync($"/api/v1/orchestrations/{orchestrationInstance.InstanceId}/raiseevent/TestEvent", requestContent);
+        httpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
 
-            var orchestrationInstance = await taskHubClient.CreateOrchestrationInstanceAsync("Test", "v1", null);
+        var content = await httpResponse.Content.ReadAsStringAsync();
+        content.Should().Be("{}");
 
-            using var httpClient = _host.GetTestClient();
+        var messages = GetOrchestrationMessages(orchestrationInstance.InstanceId);
+        messages.Should().HaveCount(2);
 
-            var eventData = new
-            {
-                field = "value"
-            };
-            var requestJson = JsonConvert.SerializeObject(eventData);
-            var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
-
-            var httpResponse = await httpClient.PostAsync($"/api/v1/orchestrations/{orchestrationInstance.InstanceId}/raiseevent/TestEvent", requestContent);
-            httpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-            httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
-
-            var content = await httpResponse.Content.ReadAsStringAsync();
-            content.Should().Be("{}");
-
-            var messages = GetOrchestrationMessages(orchestrationInstance.InstanceId);
-            messages.Should().HaveCount(2);
-
-            var eventRaisedEvent = messages.Last().Event.Should().BeOfType<EventRaisedEvent>().Subject;
-            eventRaisedEvent.Name.Should().Be("TestEvent");
-            eventRaisedEvent.Input.Should().Be("{\"field\":\"value\"}");
-        }
+        var eventRaisedEvent = messages.Last().Event.Should().BeOfType<EventRaisedEvent>().Subject;
+        eventRaisedEvent.Name.Should().Be("TestEvent");
+        eventRaisedEvent.Input.Should().Be("{\"field\":\"value\"}");
     }
 }

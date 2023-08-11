@@ -2,21 +2,20 @@
 using LLL.DurableTask.Server.Configuration;
 using LLL.DurableTask.Server.Services;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Microsoft.Extensions.DependencyInjection;
+
+public static class DurableTaskServerServiceCollectionExtensions
 {
-    public static class DurableTaskServerServiceCollectionExtensions
+    public static IServiceCollection AddDurableTaskServer(
+        this IServiceCollection services,
+        Action<TaskHubServerBuilder> config = null)
     {
-        public static IServiceCollection AddDurableTaskServer(
-            this IServiceCollection services,
-            Action<TaskHubServerBuilder> config = null)
-        {
-            services.AddHostedService<ServerHostedService>();
+        services.AddHostedService<ServerHostedService>();
 
-            var builder = new TaskHubServerBuilder(services);
+        var builder = new TaskHubServerBuilder(services);
 
-            config?.Invoke(builder);
+        config?.Invoke(builder);
 
-            return services;
-        }
+        return services;
     }
 }

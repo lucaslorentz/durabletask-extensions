@@ -6,33 +6,32 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Microsoft.Extensions.DependencyInjection;
+
+public static class InMemoryEFCoreOrchestrationBuilderExtensions
 {
-    public static class InMemoryEFCoreOrchestrationBuilderExtensions
+    public static IEFCoreOrchestrationBuilder UseInMemoryDatabase(
+        this IEFCoreOrchestrationBuilder builder,
+        string databaseName,
+        Action<InMemoryDbContextOptionsBuilder> inMemoryOptionsAction = null)
     {
-        public static IEFCoreOrchestrationBuilder UseInMemoryDatabase(
-            this IEFCoreOrchestrationBuilder builder,
-            string databaseName,
-            Action<InMemoryDbContextOptionsBuilder> inMemoryOptionsAction = null)
-        {
-            return builder.UseInMemoryDatabase(databaseName, null, inMemoryOptionsAction);
-        }
+        return builder.UseInMemoryDatabase(databaseName, null, inMemoryOptionsAction);
+    }
 
-        public static IEFCoreOrchestrationBuilder UseInMemoryDatabase(
-            this IEFCoreOrchestrationBuilder builder,
-            string databaseName,
-            InMemoryDatabaseRoot databaseRoot,
-            Action<InMemoryDbContextOptionsBuilder> inMemoryOptionsAction = null)
-        {
-            builder.Services.AddSingleton<OrchestrationDbContextExtensions, InMemoryOrchestrationDbContextExtensions>();
+    public static IEFCoreOrchestrationBuilder UseInMemoryDatabase(
+        this IEFCoreOrchestrationBuilder builder,
+        string databaseName,
+        InMemoryDatabaseRoot databaseRoot,
+        Action<InMemoryDbContextOptionsBuilder> inMemoryOptionsAction = null)
+    {
+        builder.Services.AddSingleton<OrchestrationDbContextExtensions, InMemoryOrchestrationDbContextExtensions>();
 
-            return builder.ConfigureDbContext(options =>
+        return builder.ConfigureDbContext(options =>
+        {
+            options.UseInMemoryDatabase(databaseName, databaseRoot, inMemoryOptions =>
             {
-                options.UseInMemoryDatabase(databaseName, databaseRoot, inMemoryOptions =>
-                {
-                    inMemoryOptionsAction?.Invoke(inMemoryOptions);
-                });
+                inMemoryOptionsAction?.Invoke(inMemoryOptions);
             });
-        }
+        });
     }
 }

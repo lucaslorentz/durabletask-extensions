@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using DurableTask.Core;
@@ -16,205 +16,204 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 
-namespace LLL.DurableTask.Api.Endpoints
+namespace LLL.DurableTask.Api.Endpoints;
+
+public static class OrchestrationsEndpoints
 {
-    public static class OrchestrationsEndpoints
+    public static IReadOnlyList<IEndpointConventionBuilder> MapOrchestrationEndpoints(
+        this IEndpointRouteBuilder builder,
+        PathString prefix)
     {
-        public static IReadOnlyList<IEndpointConventionBuilder> MapOrchestrationEndpoints(
-            this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder builder,
-            PathString prefix)
+        var endpoints = new List<IEndpointConventionBuilder>();
+
+        endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations", async context =>
         {
-            var endpoints = new List<IEndpointConventionBuilder>();
+            var orchestrationServiceSearchClient = context.RequestServices.GetRequiredService<IOrchestrationServiceQueryClient>();
 
-            endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations", async context =>
+            var query = context.ParseQuery<ExtendedOrchestrationQuery>();
+
+            var result = await orchestrationServiceSearchClient.GetOrchestrationWithQueryAsync(query, context.RequestAborted);
+
+            await context.RespondJson(result);
+        }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata
+        {
+            Id = "OrchestrationsList"
+        }));
+
+        endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations", async context =>
+        {
+            var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
+            var linkGenerator = context.RequestServices.GetRequiredService<LinkGenerator>();
+
+            var request = await context.ParseBody<CreateOrchestrationRequest>();
+
+            var validationResults = new List<ValidationResult>();
+            if (!Validator.TryValidateObject(request, new ValidationContext(request), validationResults))
             {
-                var orchestrationServiceSearchClient = context.RequestServices.GetRequiredService<IOrchestrationServiceQueryClient>();
+                await context.RespondJson(validationResults, 400);
+                return;
+            }
 
-                var query = context.ParseQuery<ExtendedOrchestrationQuery>();
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+                request.Name,
+                request.Version ?? string.Empty,
+                request.InstanceId,
+                request.Input,
+                request.Tags);
 
-                var result = await orchestrationServiceSearchClient.GetOrchestrationWithQueryAsync(query, context.RequestAborted);
-
-                await context.RespondJson(result);
-            }).RequireAuthorization(DurableTaskPolicy.Read).WithMetadata(new DurableTaskEndpointMetadata
+            var typedHeaders = context.Response.GetTypedHeaders();
+            typedHeaders.Location = new Uri(linkGenerator.GetUriByName("DurableTaskApi_OrchestrationsGet", new
             {
-                Id = "OrchestrationsList"
-            }));
+                instanceId = instance.InstanceId
+            }, context.Request.Scheme, context.Request.Host, context.Request.PathBase));
 
-            endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations", async context =>
+            await context.RespondJson(instance, 201);
+        }).RequireAuthorization(DurableTaskPolicy.Create).WithMetadata(new DurableTaskEndpointMetadata
+        {
+            Id = "OrchestrationsCreate"
+        }));
+
+        endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}", async context =>
+        {
+            var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
+
+            var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+
+            var state = await taskHubClient.GetOrchestrationStateAsync(instanceId);
+
+            if (state == null)
             {
-                var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
-                var linkGenerator = context.RequestServices.GetRequiredService<LinkGenerator>();
+                context.Response.StatusCode = 404;
+                return;
+            }
 
-                var request = await context.ParseBody<CreateOrchestrationRequest>();
+            await context.RespondJson(state);
+        }).RequireAuthorization(DurableTaskPolicy.Read)
+        .WithMetadata(new EndpointNameMetadata("DurableTaskApi_OrchestrationsGet"))
+        .WithMetadata(new DurableTaskEndpointMetadata
+        {
+            Id = "OrchestrationsGet"
+        }));
 
-                var validationResults = new List<ValidationResult>();
-                if (!Validator.TryValidateObject(request, new ValidationContext(request), validationResults))
-                {
-                    await context.RespondJson(validationResults, 400);
-                    return;
-                }
+        endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}/{executionId}", async context =>
+        {
+            var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
 
-                var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
-                    request.Name,
-                    request.Version ?? string.Empty,
-                    request.InstanceId,
-                    request.Input,
-                    request.Tags);
+            var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+            var executionId = Uri.UnescapeDataString(context.Request.RouteValues["executionId"].ToString());
 
-                var typedHeaders = context.Response.GetTypedHeaders();
-                typedHeaders.Location = new Uri(linkGenerator.GetUriByName("DurableTaskApi_OrchestrationsGet", new
-                {
-                    instanceId = instance.InstanceId
-                }, context.Request.Scheme, context.Request.Host, context.Request.PathBase));
+            var state = await taskHubClient.GetOrchestrationStateAsync(instanceId, executionId);
 
-                await context.RespondJson(instance, 201);
-            }).RequireAuthorization(DurableTaskPolicy.Create).WithMetadata(new DurableTaskEndpointMetadata
+            if (state == null)
             {
-                Id = "OrchestrationsCreate"
-            }));
+                context.Response.StatusCode = 404;
+                return;
+            }
 
-            endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}", async context =>
+            await context.RespondJson(state);
+        }).RequireAuthorization(DurableTaskPolicy.Read)
+        .WithMetadata(new EndpointNameMetadata("DurableTaskApi_OrchestrationsGetExecution"))
+        .WithMetadata(new DurableTaskEndpointMetadata
+        {
+            Id = "OrchestrationsGetExecution"
+        }));
+
+        endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}/{executionId}/history", async context =>
+        {
+            var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
+
+            var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+            var executionId = Uri.UnescapeDataString(context.Request.RouteValues["executionId"].ToString());
+
+            var orchestrationInstance = new OrchestrationInstance
             {
-                var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
+                InstanceId = instanceId,
+                ExecutionId = executionId
+            };
 
-                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+            var history = await taskHubClient.GetOrchestrationHistoryAsync(orchestrationInstance);
 
-                var state = await taskHubClient.GetOrchestrationStateAsync(instanceId);
+            var events = new TypelessJsonDataConverter().Deserialize<HistoryEvent[]>(history);
 
-                if (state == null)
-                {
-                    context.Response.StatusCode = 404;
-                    return;
-                }
+            await context.RespondJson(events);
+        }).RequireAuthorization(DurableTaskPolicy.ReadHistory).WithMetadata(new DurableTaskEndpointMetadata
+        {
+            Id = "OrchestrationsGetExecutionHistory"
+        }));
 
-                await context.RespondJson(state);
-            }).RequireAuthorization(DurableTaskPolicy.Read)
-            .WithMetadata(new EndpointNameMetadata("DurableTaskApi_OrchestrationsGet"))
-            .WithMetadata(new DurableTaskEndpointMetadata
+        endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/terminate", async context =>
+        {
+            var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
+
+            var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+
+            var orchestrationInstance = new OrchestrationInstance
             {
-                Id = "OrchestrationsGet"
-            }));
+                InstanceId = instanceId
+            };
 
-            endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}/{executionId}", async context =>
+            var request = await context.ParseBody<TerminateRequest>();
+
+            await taskHubClient.TerminateInstanceAsync(orchestrationInstance, request.Reason);
+
+            await context.RespondJson(new { });
+        }).RequireAuthorization(DurableTaskPolicy.Terminate).WithMetadata(new DurableTaskEndpointMetadata
+        {
+            Id = "OrchestrationsTerminate"
+        }));
+
+        endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/rewind", async context =>
+        {
+            var orchestrationServiceRewindClient = context.RequestServices.GetRequiredService<IOrchestrationServiceRewindClient>();
+
+            var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+
+            var request = await context.ParseBody<RewindRequest>();
+
+            await orchestrationServiceRewindClient.RewindTaskOrchestrationAsync(instanceId, request.Reason);
+
+            await context.RespondJson(new { });
+        }).RequireAuthorization(DurableTaskPolicy.Rewind).WithMetadata(new DurableTaskEndpointMetadata
+        {
+            Id = "OrchestrationsRewind"
+        }));
+
+        endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/raiseevent/{eventName}", async context =>
+        {
+            var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
+
+            var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
+            var eventName = Uri.UnescapeDataString(context.Request.RouteValues["eventName"].ToString());
+
+            var orchestrationInstance = new OrchestrationInstance
             {
-                var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
+                InstanceId = instanceId
+            };
 
-                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
-                var executionId = Uri.UnescapeDataString(context.Request.RouteValues["executionId"].ToString());
+            var eventData = await context.ParseBody<JToken>();
 
-                var state = await taskHubClient.GetOrchestrationStateAsync(instanceId, executionId);
+            await taskHubClient.RaiseEventAsync(orchestrationInstance, eventName, eventData);
 
-                if (state == null)
-                {
-                    context.Response.StatusCode = 404;
-                    return;
-                }
+            await context.RespondJson(new { });
+        }).RequireAuthorization(DurableTaskPolicy.RaiseEvent).WithMetadata(new DurableTaskEndpointMetadata
+        {
+            Id = "OrchestrationsRaiseEvent"
+        }));
 
-                await context.RespondJson(state);
-            }).RequireAuthorization(DurableTaskPolicy.Read)
-            .WithMetadata(new EndpointNameMetadata("DurableTaskApi_OrchestrationsGetExecution"))
-            .WithMetadata(new DurableTaskEndpointMetadata
-            {
-                Id = "OrchestrationsGetExecution"
-            }));
+        endpoints.Add(builder.MapDelete(prefix + "/v1/orchestrations/{instanceId}", async context =>
+        {
+            var orchestrationServicePurgeClient = context.RequestServices.GetRequiredService<IOrchestrationServicePurgeClient>();
 
-            endpoints.Add(builder.MapGet(prefix + "/v1/orchestrations/{instanceId}/{executionId}/history", async context =>
-            {
-                var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
+            var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
 
-                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
-                var executionId = Uri.UnescapeDataString(context.Request.RouteValues["executionId"].ToString());
+            var result = await orchestrationServicePurgeClient.PurgeInstanceStateAsync(instanceId);
 
-                var orchestrationInstance = new OrchestrationInstance
-                {
-                    InstanceId = instanceId,
-                    ExecutionId = executionId
-                };
+            await context.RespondJson(new { });
+        }).RequireAuthorization(DurableTaskPolicy.Purge).WithMetadata(new DurableTaskEndpointMetadata
+        {
+            Id = "OrchestrationsPurgeInstance"
+        }));
 
-                var history = await taskHubClient.GetOrchestrationHistoryAsync(orchestrationInstance);
-
-                var events = new TypelessJsonDataConverter().Deserialize<HistoryEvent[]>(history);
-
-                await context.RespondJson(events);
-            }).RequireAuthorization(DurableTaskPolicy.ReadHistory).WithMetadata(new DurableTaskEndpointMetadata
-            {
-                Id = "OrchestrationsGetExecutionHistory"
-            }));
-
-            endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/terminate", async context =>
-            {
-                var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
-
-                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
-
-                var orchestrationInstance = new OrchestrationInstance
-                {
-                    InstanceId = instanceId
-                };
-
-                var request = await context.ParseBody<TerminateRequest>();
-
-                await taskHubClient.TerminateInstanceAsync(orchestrationInstance, request.Reason);
-
-                await context.RespondJson(new { });
-            }).RequireAuthorization(DurableTaskPolicy.Terminate).WithMetadata(new DurableTaskEndpointMetadata
-            {
-                Id = "OrchestrationsTerminate"
-            }));
-
-            endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/rewind", async context =>
-            {
-                var orchestrationServiceRewindClient = context.RequestServices.GetRequiredService<IOrchestrationServiceRewindClient>();
-
-                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
-
-                var request = await context.ParseBody<RewindRequest>();
-
-                await orchestrationServiceRewindClient.RewindTaskOrchestrationAsync(instanceId, request.Reason);
-
-                await context.RespondJson(new { });
-            }).RequireAuthorization(DurableTaskPolicy.Rewind).WithMetadata(new DurableTaskEndpointMetadata
-            {
-                Id = "OrchestrationsRewind"
-            }));
-
-            endpoints.Add(builder.MapPost(prefix + "/v1/orchestrations/{instanceId}/raiseevent/{eventName}", async context =>
-            {
-                var taskHubClient = context.RequestServices.GetRequiredService<TaskHubClient>();
-
-                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
-                var eventName = Uri.UnescapeDataString(context.Request.RouteValues["eventName"].ToString());
-
-                var orchestrationInstance = new OrchestrationInstance
-                {
-                    InstanceId = instanceId
-                };
-
-                var eventData = await context.ParseBody<JToken>();
-
-                await taskHubClient.RaiseEventAsync(orchestrationInstance, eventName, eventData);
-
-                await context.RespondJson(new { });
-            }).RequireAuthorization(DurableTaskPolicy.RaiseEvent).WithMetadata(new DurableTaskEndpointMetadata
-            {
-                Id = "OrchestrationsRaiseEvent"
-            }));
-
-            endpoints.Add(builder.MapDelete(prefix + "/v1/orchestrations/{instanceId}", async context =>
-            {
-                var orchestrationServicePurgeClient = context.RequestServices.GetRequiredService<IOrchestrationServicePurgeClient>();
-
-                var instanceId = Uri.UnescapeDataString(context.Request.RouteValues["instanceId"].ToString());
-
-                var result = await orchestrationServicePurgeClient.PurgeInstanceStateAsync(instanceId);
-
-                await context.RespondJson(new { });
-            }).RequireAuthorization(DurableTaskPolicy.Purge).WithMetadata(new DurableTaskEndpointMetadata
-            {
-                Id = "OrchestrationsPurgeInstance"
-            }));
-
-            return endpoints;
-        }
+        return endpoints;
     }
 }

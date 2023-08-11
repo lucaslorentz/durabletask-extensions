@@ -1,9 +1,8 @@
-﻿namespace BpmnWorker.Scripting
-{
-    public interface IScriptEngineFactory
-    {
-        string Language { get; }
+﻿namespace BpmnWorker.Scripting;
 
-        IScriptEngine Create();
-    }
+public interface IScriptEngineFactory
+{
+    string Language { get; }
+
+    IScriptEngine Create();
 }

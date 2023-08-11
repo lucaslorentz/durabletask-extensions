@@ -4,35 +4,34 @@ using DurableTask.Core.History;
 using LLL.DurableTask.EFCore.Entities;
 using Microsoft.Extensions.Options;
 
-namespace LLL.DurableTask.EFCore.Mappers
+namespace LLL.DurableTask.EFCore.Mappers;
+
+public class InstanceMapper
 {
-    public class InstanceMapper
+    private readonly EFCoreOrchestrationOptions _options;
+
+    public InstanceMapper(IOptions<EFCoreOrchestrationOptions> options)
     {
-        private readonly EFCoreOrchestrationOptions _options;
+        _options = options.Value;
+    }
 
-        public InstanceMapper(IOptions<EFCoreOrchestrationOptions> options)
+    public Instance CreateInstance(ExecutionStartedEvent executionStartedEvent)
+    {
+        var instance = new Instance
         {
-            _options = options.Value;
-        }
+            InstanceId = executionStartedEvent.OrchestrationInstance.InstanceId,
+            LastExecutionId = executionStartedEvent.OrchestrationInstance.ExecutionId,
+            LastQueue = QueueMapper.ToQueue(executionStartedEvent.Name, executionStartedEvent.Version),
+            LockedUntil = DateTime.UtcNow
+        };
+        return instance;
+    }
 
-        public Instance CreateInstance(ExecutionStartedEvent executionStartedEvent)
-        {
-            var instance = new Instance
-            {
-                InstanceId = executionStartedEvent.OrchestrationInstance.InstanceId,
-                LastExecutionId = executionStartedEvent.OrchestrationInstance.ExecutionId,
-                LastQueue = QueueMapper.ToQueue(executionStartedEvent.Name, executionStartedEvent.Version),
-                LockedUntil = DateTime.UtcNow
-            };
-            return instance;
-        }
-
-        public void UpdateInstance(
-            Instance instance,
-            OrchestrationRuntimeState runtimeState)
-        {
-            instance.LastExecutionId = runtimeState.OrchestrationInstance.ExecutionId;
-            instance.LastQueue = QueueMapper.ToQueue(runtimeState.Name, runtimeState.Version);
-        }
+    public void UpdateInstance(
+        Instance instance,
+        OrchestrationRuntimeState runtimeState)
+    {
+        instance.LastExecutionId = runtimeState.OrchestrationInstance.ExecutionId;
+        instance.LastQueue = QueueMapper.ToQueue(runtimeState.Name, runtimeState.Version);
     }
 }

@@ -8,177 +8,176 @@ using DurableTask.Core;
 using LLL.DurableTask.Core;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace LLL.DurableTask.Worker.Services
+namespace LLL.DurableTask.Worker.Services;
+
+public class WorkerOrchestrationService : IOrchestrationService
 {
-    public class WorkerOrchestrationService : IOrchestrationService
+    private readonly IOrchestrationService _innerOrchestrationService;
+    private readonly IDistributedOrchestrationService _innerDistributedOrchestrationService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly INameVersionInfo[] _orchestrations;
+    private readonly INameVersionInfo[] _activities;
+    private readonly bool _hasAllOrchestrations;
+    private readonly bool _hasAllActivities;
+
+    public static ConcurrentDictionary<string, IServiceScope> OrchestrationsServiceScopes { get; } = new ConcurrentDictionary<string, IServiceScope>();
+
+    public int TaskOrchestrationDispatcherCount => _orchestrations.Length == 0
+        ? 0
+        : _innerOrchestrationService.TaskOrchestrationDispatcherCount;
+    public int TaskActivityDispatcherCount => _activities.Length == 0
+        ? 0
+        : _innerOrchestrationService.TaskActivityDispatcherCount;
+
+    public WorkerOrchestrationService(
+        IOrchestrationService innerOrchestrationService,
+        IDistributedOrchestrationService innerDistributedOrchestrationService,
+        IServiceScopeFactory serviceScopeFactory,
+        IEnumerable<ObjectCreator<TaskOrchestration>> orchestrations,
+        IEnumerable<ObjectCreator<TaskActivity>> activities,
+        bool hasAllOrchestrations,
+        bool hasAllActivities)
     {
-        private readonly IOrchestrationService _innerOrchestrationService;
-        private readonly IDistributedOrchestrationService _innerDistributedOrchestrationService;
-        private readonly IServiceScopeFactory _serviceScopeFactory;
-        private readonly INameVersionInfo[] _orchestrations;
-        private readonly INameVersionInfo[] _activities;
-        private readonly bool _hasAllOrchestrations;
-        private readonly bool _hasAllActivities;
+        _innerOrchestrationService = innerOrchestrationService;
+        _innerDistributedOrchestrationService = innerDistributedOrchestrationService;
+        _serviceScopeFactory = serviceScopeFactory;
+        _orchestrations = orchestrations.OfType<INameVersionInfo>().ToArray();
+        _activities = activities.OfType<INameVersionInfo>().ToArray();
+        _hasAllOrchestrations = hasAllOrchestrations;
+        _hasAllActivities = hasAllActivities;
+    }
 
-        public static ConcurrentDictionary<string, IServiceScope> OrchestrationsServiceScopes { get; } = new ConcurrentDictionary<string, IServiceScope>();
+    public async Task<TaskOrchestrationWorkItem> LockNextTaskOrchestrationWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
+    {
+        var workItem = await (_hasAllOrchestrations
+            ? _innerOrchestrationService
+                .LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, cancellationToken)
+            : (_innerDistributedOrchestrationService ?? throw DistributedWorkersNotSupported())
+                .LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, _orchestrations, cancellationToken)
+        );
 
-        public int TaskOrchestrationDispatcherCount => _orchestrations.Length == 0
-            ? 0
-            : _innerOrchestrationService.TaskOrchestrationDispatcherCount;
-        public int TaskActivityDispatcherCount => _activities.Length == 0
-            ? 0
-            : _innerOrchestrationService.TaskActivityDispatcherCount;
-
-        public WorkerOrchestrationService(
-            IOrchestrationService innerOrchestrationService,
-            IDistributedOrchestrationService innerDistributedOrchestrationService,
-            IServiceScopeFactory serviceScopeFactory,
-            IEnumerable<ObjectCreator<TaskOrchestration>> orchestrations,
-            IEnumerable<ObjectCreator<TaskActivity>> activities,
-            bool hasAllOrchestrations,
-            bool hasAllActivities)
+        if (workItem != null)
         {
-            _innerOrchestrationService = innerOrchestrationService;
-            _innerDistributedOrchestrationService = innerDistributedOrchestrationService;
-            _serviceScopeFactory = serviceScopeFactory;
-            _orchestrations = orchestrations.OfType<INameVersionInfo>().ToArray();
-            _activities = activities.OfType<INameVersionInfo>().ToArray();
-            _hasAllOrchestrations = hasAllOrchestrations;
-            _hasAllActivities = hasAllActivities;
+            OrchestrationsServiceScopes.TryAdd(workItem.InstanceId, _serviceScopeFactory.CreateScope());
         }
 
-        public async Task<TaskOrchestrationWorkItem> LockNextTaskOrchestrationWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
-        {
-            var workItem = await (_hasAllOrchestrations
-                ? _innerOrchestrationService
-                    .LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, cancellationToken)
-                : (_innerDistributedOrchestrationService ?? throw DistributedWorkersNotSupported())
-                    .LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, _orchestrations, cancellationToken)
-            );
+        return workItem;
+    }
 
-            if (workItem != null)
-            {
-                OrchestrationsServiceScopes.TryAdd(workItem.InstanceId, _serviceScopeFactory.CreateScope());
-            }
+    public Task AbandonTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem)
+    {
+        if (OrchestrationsServiceScopes.TryRemove(workItem.InstanceId, out var serviceScope))
+            serviceScope.Dispose();
 
-            return workItem;
-        }
+        return _innerOrchestrationService.AbandonTaskOrchestrationWorkItemAsync(workItem);
+    }
 
-        public Task AbandonTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem)
-        {
-            if (OrchestrationsServiceScopes.TryRemove(workItem.InstanceId, out var serviceScope))
-                serviceScope.Dispose();
+    public Task ReleaseTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem)
+    {
+        if (OrchestrationsServiceScopes.TryRemove(workItem.InstanceId, out var serviceScope))
+            serviceScope.Dispose();
 
-            return _innerOrchestrationService.AbandonTaskOrchestrationWorkItemAsync(workItem);
-        }
+        return _innerOrchestrationService.ReleaseTaskOrchestrationWorkItemAsync(workItem);
+    }
 
-        public Task ReleaseTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem)
-        {
-            if (OrchestrationsServiceScopes.TryRemove(workItem.InstanceId, out var serviceScope))
-                serviceScope.Dispose();
+    public int MaxConcurrentTaskOrchestrationWorkItems => _innerOrchestrationService.MaxConcurrentTaskOrchestrationWorkItems;
 
-            return _innerOrchestrationService.ReleaseTaskOrchestrationWorkItemAsync(workItem);
-        }
+    public BehaviorOnContinueAsNew EventBehaviourForContinueAsNew => _innerOrchestrationService.EventBehaviourForContinueAsNew;
 
-        public int MaxConcurrentTaskOrchestrationWorkItems => _innerOrchestrationService.MaxConcurrentTaskOrchestrationWorkItems;
+    public int MaxConcurrentTaskActivityWorkItems => _innerOrchestrationService.MaxConcurrentTaskActivityWorkItems;
 
-        public BehaviorOnContinueAsNew EventBehaviourForContinueAsNew => _innerOrchestrationService.EventBehaviourForContinueAsNew;
+    public Task AbandonTaskActivityWorkItemAsync(TaskActivityWorkItem workItem)
+    {
+        return _innerOrchestrationService.AbandonTaskActivityWorkItemAsync(workItem);
+    }
 
-        public int MaxConcurrentTaskActivityWorkItems => _innerOrchestrationService.MaxConcurrentTaskActivityWorkItems;
+    public Task CompleteTaskActivityWorkItemAsync(TaskActivityWorkItem workItem, TaskMessage responseMessage)
+    {
+        return _innerOrchestrationService.CompleteTaskActivityWorkItemAsync(workItem, responseMessage);
+    }
 
-        public Task AbandonTaskActivityWorkItemAsync(TaskActivityWorkItem workItem)
-        {
-            return _innerOrchestrationService.AbandonTaskActivityWorkItemAsync(workItem);
-        }
+    public Task CompleteTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem, OrchestrationRuntimeState newOrchestrationRuntimeState, IList<TaskMessage> outboundMessages, IList<TaskMessage> orchestratorMessages, IList<TaskMessage> timerMessages, TaskMessage continuedAsNewMessage, OrchestrationState orchestrationState)
+    {
+        return _innerOrchestrationService.CompleteTaskOrchestrationWorkItemAsync(workItem, newOrchestrationRuntimeState, outboundMessages, orchestratorMessages, timerMessages, continuedAsNewMessage, orchestrationState);
+    }
 
-        public Task CompleteTaskActivityWorkItemAsync(TaskActivityWorkItem workItem, TaskMessage responseMessage)
-        {
-            return _innerOrchestrationService.CompleteTaskActivityWorkItemAsync(workItem, responseMessage);
-        }
+    public Task CreateAsync()
+    {
+        return _innerOrchestrationService.CreateAsync();
+    }
 
-        public Task CompleteTaskOrchestrationWorkItemAsync(TaskOrchestrationWorkItem workItem, OrchestrationRuntimeState newOrchestrationRuntimeState, IList<TaskMessage> outboundMessages, IList<TaskMessage> orchestratorMessages, IList<TaskMessage> timerMessages, TaskMessage continuedAsNewMessage, OrchestrationState orchestrationState)
-        {
-            return _innerOrchestrationService.CompleteTaskOrchestrationWorkItemAsync(workItem, newOrchestrationRuntimeState, outboundMessages, orchestratorMessages, timerMessages, continuedAsNewMessage, orchestrationState);
-        }
+    public Task CreateAsync(bool recreateInstanceStore)
+    {
+        return _innerOrchestrationService.CreateAsync(recreateInstanceStore);
+    }
 
-        public Task CreateAsync()
-        {
-            return _innerOrchestrationService.CreateAsync();
-        }
+    public Task CreateIfNotExistsAsync()
+    {
+        return _innerOrchestrationService.CreateIfNotExistsAsync();
+    }
 
-        public Task CreateAsync(bool recreateInstanceStore)
-        {
-            return _innerOrchestrationService.CreateAsync(recreateInstanceStore);
-        }
+    public Task DeleteAsync()
+    {
+        return _innerOrchestrationService.DeleteAsync();
+    }
 
-        public Task CreateIfNotExistsAsync()
-        {
-            return _innerOrchestrationService.CreateIfNotExistsAsync();
-        }
+    public Task DeleteAsync(bool deleteInstanceStore)
+    {
+        return _innerOrchestrationService.DeleteAsync(deleteInstanceStore);
+    }
 
-        public Task DeleteAsync()
-        {
-            return _innerOrchestrationService.DeleteAsync();
-        }
+    public int GetDelayInSecondsAfterOnFetchException(Exception exception)
+    {
+        return _innerOrchestrationService.GetDelayInSecondsAfterOnFetchException(exception);
+    }
 
-        public Task DeleteAsync(bool deleteInstanceStore)
-        {
-            return _innerOrchestrationService.DeleteAsync(deleteInstanceStore);
-        }
+    public int GetDelayInSecondsAfterOnProcessException(Exception exception)
+    {
+        return _innerOrchestrationService.GetDelayInSecondsAfterOnProcessException(exception);
+    }
 
-        public int GetDelayInSecondsAfterOnFetchException(Exception exception)
-        {
-            return _innerOrchestrationService.GetDelayInSecondsAfterOnFetchException(exception);
-        }
+    public bool IsMaxMessageCountExceeded(int currentMessageCount, OrchestrationRuntimeState runtimeState)
+    {
+        return _innerOrchestrationService.IsMaxMessageCountExceeded(currentMessageCount, runtimeState);
+    }
 
-        public int GetDelayInSecondsAfterOnProcessException(Exception exception)
-        {
-            return _innerOrchestrationService.GetDelayInSecondsAfterOnProcessException(exception);
-        }
+    public async Task<TaskActivityWorkItem> LockNextTaskActivityWorkItem(TimeSpan receiveTimeout, CancellationToken cancellationToken)
+    {
+        return await (_hasAllActivities
+            ? _innerOrchestrationService
+                .LockNextTaskActivityWorkItem(receiveTimeout, cancellationToken)
+            : (_innerDistributedOrchestrationService ?? throw DistributedWorkersNotSupported())
+                .LockNextTaskActivityWorkItem(receiveTimeout, _activities, cancellationToken)
+        );
+    }
 
-        public bool IsMaxMessageCountExceeded(int currentMessageCount, OrchestrationRuntimeState runtimeState)
-        {
-            return _innerOrchestrationService.IsMaxMessageCountExceeded(currentMessageCount, runtimeState);
-        }
+    public Task<TaskActivityWorkItem> RenewTaskActivityWorkItemLockAsync(TaskActivityWorkItem workItem)
+    {
+        return _innerOrchestrationService.RenewTaskActivityWorkItemLockAsync(workItem);
+    }
 
-        public async Task<TaskActivityWorkItem> LockNextTaskActivityWorkItem(TimeSpan receiveTimeout, CancellationToken cancellationToken)
-        {
-            return await (_hasAllActivities
-                ? _innerOrchestrationService
-                    .LockNextTaskActivityWorkItem(receiveTimeout, cancellationToken)
-                : (_innerDistributedOrchestrationService ?? throw DistributedWorkersNotSupported())
-                    .LockNextTaskActivityWorkItem(receiveTimeout, _activities, cancellationToken)
-            );
-        }
+    public Task RenewTaskOrchestrationWorkItemLockAsync(TaskOrchestrationWorkItem workItem)
+    {
+        return _innerOrchestrationService.RenewTaskOrchestrationWorkItemLockAsync(workItem);
+    }
 
-        public Task<TaskActivityWorkItem> RenewTaskActivityWorkItemLockAsync(TaskActivityWorkItem workItem)
-        {
-            return _innerOrchestrationService.RenewTaskActivityWorkItemLockAsync(workItem);
-        }
+    public Task StartAsync()
+    {
+        return _innerOrchestrationService.StartAsync();
+    }
 
-        public Task RenewTaskOrchestrationWorkItemLockAsync(TaskOrchestrationWorkItem workItem)
-        {
-            return _innerOrchestrationService.RenewTaskOrchestrationWorkItemLockAsync(workItem);
-        }
+    public Task StopAsync()
+    {
+        return _innerOrchestrationService.StopAsync();
+    }
 
-        public Task StartAsync()
-        {
-            return _innerOrchestrationService.StartAsync();
-        }
+    public Task StopAsync(bool isForced)
+    {
+        return _innerOrchestrationService.StopAsync(isForced);
+    }
 
-        public Task StopAsync()
-        {
-            return _innerOrchestrationService.StopAsync();
-        }
-
-        public Task StopAsync(bool isForced)
-        {
-            return _innerOrchestrationService.StopAsync(isForced);
-        }
-
-        private Exception DistributedWorkersNotSupported()
-        {
-            return new NotSupportedException("Distributed workers is not supported by storage implementation");
-        }
+    private Exception DistributedWorkersNotSupported()
+    {
+        return new NotSupportedException("Distributed workers is not supported by storage implementation");
     }
 }

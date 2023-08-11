@@ -1,20 +1,19 @@
-using System;
+﻿using System;
 using LLL.DurableTask.Api.DependencyInjection;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Microsoft.Extensions.DependencyInjection;
+
+public static class DurableTaskApiServiceCollectionExtensions
 {
-    public static class DurableTaskApiServiceCollectionExtensions
+    public static IServiceCollection AddDurableTaskApi(
+        this IServiceCollection services,
+        Action<DurableTaskApiOptions> configure = null)
     {
-        public static IServiceCollection AddDurableTaskApi(
-            this IServiceCollection services,
-            Action<DurableTaskApiOptions> configure = null)
-        {
-            services.AddOptions<DurableTaskApiOptions>();
+        services.AddOptions<DurableTaskApiOptions>();
 
-            if (configure != null)
-                services.Configure<DurableTaskApiOptions>(configure);
+        if (configure != null)
+            services.Configure<DurableTaskApiOptions>(configure);
 
-            return services;
-        }
+        return services;
     }
 }

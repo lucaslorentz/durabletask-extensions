@@ -5,27 +5,26 @@ using LLL.DurableTask.EFCore.PostgreSQL;
 using Microsoft.EntityFrameworkCore;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
 
-namespace Microsoft.Extensions.DependencyInjection
-{
-    public static class PostgreSqlEFCoreOrchestrationBuilderExtensions
-    {
-        public static IEFCoreOrchestrationBuilder UseNpgsql(
-            this IEFCoreOrchestrationBuilder builder,
-            string connectionString,
-            Action<NpgsqlDbContextOptionsBuilder> mysqlOptionsAction = null)
-        {
-            builder.Services.AddSingleton<OrchestrationDbContextExtensions, PostgreOrchestrationDbContextExtensions>();
+namespace Microsoft.Extensions.DependencyInjection;
 
-            return builder.ConfigureDbContext(options =>
+public static class PostgreSqlEFCoreOrchestrationBuilderExtensions
+{
+    public static IEFCoreOrchestrationBuilder UseNpgsql(
+        this IEFCoreOrchestrationBuilder builder,
+        string connectionString,
+        Action<NpgsqlDbContextOptionsBuilder> mysqlOptionsAction = null)
+    {
+        builder.Services.AddSingleton<OrchestrationDbContextExtensions, PostgreOrchestrationDbContextExtensions>();
+
+        return builder.ConfigureDbContext(options =>
+        {
+            options.UseNpgsql(connectionString, npgsqlOptions =>
             {
-                options.UseNpgsql(connectionString, npgsqlOptions =>
-                {
-                    npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-                    var assemblyName = typeof(PostgreSqlEFCoreOrchestrationBuilderExtensions).Assembly.GetName().Name;
-                    npgsqlOptions.MigrationsAssembly(assemblyName);
-                    mysqlOptionsAction?.Invoke(npgsqlOptions);
-                });
+                npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                var assemblyName = typeof(PostgreSqlEFCoreOrchestrationBuilderExtensions).Assembly.GetName().Name;
+                npgsqlOptions.MigrationsAssembly(assemblyName);
+                mysqlOptionsAction?.Invoke(npgsqlOptions);
             });
-        }
+        });
     }
 }

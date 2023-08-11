@@ -1,7 +1,6 @@
-﻿namespace LLL.DurableTask.Api.DependencyInjection
+﻿namespace LLL.DurableTask.Api.DependencyInjection;
+
+public class DurableTaskApiOptions
 {
-    public class DurableTaskApiOptions
-    {
-        public bool DisableAuthorization { get; set; }
-    }
+    public bool DisableAuthorization { get; set; }
 }

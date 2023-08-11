@@ -39,7 +39,15 @@ indent_size = 2
 [*.{cs,vb}]
 
 # IDE0055: Fix formatting
+csharp_style_namespace_declarations = file_scoped:warning
 dotnet_diagnostic.IDE0055.severity = warning
+dotnet_diagnostic.IDE0005.severity = warning # remove unecessary usings
+dotnet_diagnostic.IDE0007.severity = warning # use var instead of explicit type
+dotnet_diagnostic.IDE0044.severity = warning # make field readonly
+dotnet_diagnostic.IDE0059.severity = warning # unecessary assignment
+dotnet_diagnostic.IDE0063.severity = warning # using statement can be simplified
+dotnet_diagnostic.IDE0090.severity = warning # new expression can be simplified
+dotnet_diagnostic.CA1825.severity = warning # avoid unecessary zero array allocation
 
 # Sort using and Import directives with System.* appearing first
 dotnet_sort_system_directives_first = true

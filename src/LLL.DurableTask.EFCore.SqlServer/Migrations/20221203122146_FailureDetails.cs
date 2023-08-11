@@ -2,28 +2,27 @@
 
 #nullable disable
 
-namespace LLL.DurableTask.EFCore.SqlServer.Migrations
+namespace LLL.DurableTask.EFCore.SqlServer.Migrations;
+
+/// <inheritdoc />
+public partial class FailureDetails : Migration
 {
     /// <inheritdoc />
-    public partial class FailureDetails : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AddColumn<string>(
-                name: "FailureDetails",
-                table: "Executions",
-                type: "nvarchar(max)",
-                maxLength: 2147483647,
-                nullable: true);
-        }
+        migrationBuilder.AddColumn<string>(
+            name: "FailureDetails",
+            table: "Executions",
+            type: "nvarchar(max)",
+            maxLength: 2147483647,
+            nullable: true);
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "FailureDetails",
-                table: "Executions");
-        }
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DropColumn(
+            name: "FailureDetails",
+            table: "Executions");
     }
 }

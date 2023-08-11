@@ -1,14 +1,13 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace StoragesBenchmark
+namespace StoragesBenchmark;
+
+public class InMemoryEFCoreBenchmark : OrchestrationBenchmark
 {
-    public class InMemoryEFCoreBenchmark : OrchestrationBenchmark
+    protected override void ConfigureStorage(IServiceCollection services)
     {
-        protected override void ConfigureStorage(IServiceCollection services)
-        {
-            services.AddDurableTaskEFCoreStorage()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString());
-        }
+        services.AddDurableTaskEFCoreStorage()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString());
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
@@ -11,96 +11,95 @@ using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace LLL.DurableTask.Tests.Api
+namespace LLL.DurableTask.Tests.Api;
+
+public class GetOrchestrationTests : ApiTestBase
 {
-    public class GetOrchestrationTests : ApiTestBase
+    public GetOrchestrationTests(ITestOutputHelper output) : base(output)
     {
-        public GetOrchestrationTests(ITestOutputHelper output) : base(output)
-        {
-        }
+    }
 
-        [Trait("Category", "Integration")]
-        [Fact]
-        public async Task GetOrchestration_ShouldReturnOrchestration()
-        {
-            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+    [Trait("Category", "Integration")]
+    [Fact]
+    public async Task GetOrchestration_ShouldReturnOrchestration()
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
 
-            var orchestrationInstance = await taskHubClient.CreateOrchestrationInstanceAsync(
-                "SomeName",
-                "SomeVersion",
-                "SomeInstanceId",
-                JObject.FromObject(new { key = "value" }),
-                new Dictionary<string, string>
-                {
-                    ["Tag"] = "Value"
-                }
-            );
-
-            using var httpClient = _host.GetTestClient();
-
-            var httpResponse = await httpClient.GetAsync($"/api/v1/orchestrations/{orchestrationInstance.InstanceId}");
-            httpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-            httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
-
-            var state = JsonConvert.DeserializeObject<OrchestrationState>(await httpResponse.Content.ReadAsStringAsync());
-            state.Should().NotBeNull();
-            state.OrchestrationInstance.Should().BeEquivalentTo(orchestrationInstance);
-            state.Name.Should().Be("SomeName");
-            state.Version.Should().Be("SomeVersion");
-            state.Input.Should().Be("{\"key\":\"value\"}");
-            state.Tags.Should().BeEquivalentTo(new Dictionary<string, string>
+        var orchestrationInstance = await taskHubClient.CreateOrchestrationInstanceAsync(
+            "SomeName",
+            "SomeVersion",
+            "SomeInstanceId",
+            JObject.FromObject(new { key = "value" }),
+            new Dictionary<string, string>
             {
                 ["Tag"] = "Value"
-            });
-            state.ParentInstance.Should().BeNull();
-            state.Output.Should().BeNull();
-            state.OrchestrationStatus.Should().Be(OrchestrationStatus.Running);
-            state.Status.Should().BeNull();
-            state.CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-            state.LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-            state.CompletedTime.Year.Should().Be(9999);
-        }
+            }
+        );
 
-        [Trait("Category", "Integration")]
-        [Fact]
-        public async Task GetOrchestrationExecution_ShouldReturnOrchestration()
+        using var httpClient = _host.GetTestClient();
+
+        var httpResponse = await httpClient.GetAsync($"/api/v1/orchestrations/{orchestrationInstance.InstanceId}");
+        httpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
+
+        var state = JsonConvert.DeserializeObject<OrchestrationState>(await httpResponse.Content.ReadAsStringAsync());
+        state.Should().NotBeNull();
+        state.OrchestrationInstance.Should().BeEquivalentTo(orchestrationInstance);
+        state.Name.Should().Be("SomeName");
+        state.Version.Should().Be("SomeVersion");
+        state.Input.Should().Be("{\"key\":\"value\"}");
+        state.Tags.Should().BeEquivalentTo(new Dictionary<string, string>
         {
-            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+            ["Tag"] = "Value"
+        });
+        state.ParentInstance.Should().BeNull();
+        state.Output.Should().BeNull();
+        state.OrchestrationStatus.Should().Be(OrchestrationStatus.Running);
+        state.Status.Should().BeNull();
+        state.CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        state.LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        state.CompletedTime.Year.Should().Be(9999);
+    }
 
-            var orchestrationInstance = await taskHubClient.CreateOrchestrationInstanceAsync(
-                "SomeName",
-                "SomeVersion",
-                "SomeInstanceId",
-                JObject.FromObject(new { key = "value" }),
-                new Dictionary<string, string>
-                {
-                    ["Tag"] = "Value"
-                }
-            );
+    [Trait("Category", "Integration")]
+    [Fact]
+    public async Task GetOrchestrationExecution_ShouldReturnOrchestration()
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
 
-            using var httpClient = _host.GetTestClient();
-
-            var httpResponse = await httpClient.GetAsync($"/api/v1/orchestrations/{orchestrationInstance.InstanceId}/{orchestrationInstance.ExecutionId}");
-            httpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-            httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
-
-            var state = JsonConvert.DeserializeObject<OrchestrationState>(await httpResponse.Content.ReadAsStringAsync());
-            state.Should().NotBeNull();
-            state.OrchestrationInstance.Should().BeEquivalentTo(orchestrationInstance);
-            state.Name.Should().Be("SomeName");
-            state.Version.Should().Be("SomeVersion");
-            state.Input.Should().Be("{\"key\":\"value\"}");
-            state.Tags.Should().BeEquivalentTo(new Dictionary<string, string>
+        var orchestrationInstance = await taskHubClient.CreateOrchestrationInstanceAsync(
+            "SomeName",
+            "SomeVersion",
+            "SomeInstanceId",
+            JObject.FromObject(new { key = "value" }),
+            new Dictionary<string, string>
             {
                 ["Tag"] = "Value"
-            });
-            state.ParentInstance.Should().BeNull();
-            state.Output.Should().BeNull();
-            state.OrchestrationStatus.Should().Be(OrchestrationStatus.Running);
-            state.Status.Should().BeNull();
-            state.CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-            state.LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-            state.CompletedTime.Year.Should().Be(9999);
-        }
+            }
+        );
+
+        using var httpClient = _host.GetTestClient();
+
+        var httpResponse = await httpClient.GetAsync($"/api/v1/orchestrations/{orchestrationInstance.InstanceId}/{orchestrationInstance.ExecutionId}");
+        httpResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        httpResponse.Content.Headers.ContentType.MediaType.Should().Be("application/json");
+
+        var state = JsonConvert.DeserializeObject<OrchestrationState>(await httpResponse.Content.ReadAsStringAsync());
+        state.Should().NotBeNull();
+        state.OrchestrationInstance.Should().BeEquivalentTo(orchestrationInstance);
+        state.Name.Should().Be("SomeName");
+        state.Version.Should().Be("SomeVersion");
+        state.Input.Should().Be("{\"key\":\"value\"}");
+        state.Tags.Should().BeEquivalentTo(new Dictionary<string, string>
+        {
+            ["Tag"] = "Value"
+        });
+        state.ParentInstance.Should().BeNull();
+        state.Output.Should().BeNull();
+        state.OrchestrationStatus.Should().Be(OrchestrationStatus.Running);
+        state.Status.Should().BeNull();
+        state.CreatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        state.LastUpdatedTime.Should().BeBefore(DateTime.UtcNow).And.BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        state.CompletedTime.Year.Should().Be(9999);
     }
 }

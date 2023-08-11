@@ -1,0 +1,18 @@
+{
+   "tasks": [
+     {
+       "name": "Run dotnet format",
+       "command": "dotnet",
+       "args": [
+         "dotnet",
+         "format",
+         "--severity",
+         "warn",
+         "--include",
+         "${staged}"
+       ],
+       "include": ["**/*.cs"]
+     }
+   ]
+ }
+ 

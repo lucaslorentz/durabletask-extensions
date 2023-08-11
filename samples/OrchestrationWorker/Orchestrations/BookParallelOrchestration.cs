@@ -2,77 +2,75 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using DurableTask.Core;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
 using static OrchestrationWorker.Orchestrations.BookParallelOrchestration;
 
-namespace OrchestrationWorker.Orchestrations
+namespace OrchestrationWorker.Orchestrations;
+
+[Orchestration(Name = "BookParallel", Version = "v1")]
+public class BookParallelOrchestration : OrchestrationBase<BookParallelResult, BookParallelInput>
 {
-    [Orchestration(Name = "BookParallel", Version = "v1")]
-    public class BookParallelOrchestration : OrchestrationBase<BookParallelResult, BookParallelInput>
+    public override async Task<BookParallelResult> Execute(BookParallelInput input)
     {
-        public override async Task<BookParallelResult> Execute(BookParallelInput input)
-        {
-            var compensations = new List<Func<Task>>();
+        var compensations = new List<Func<Task>>();
 
-            try
+        try
+        {
+            var tasks = new List<Task>();
+            tasks.Add(new Func<Task>(async () =>
             {
-                var tasks = new List<Task>();
-                tasks.Add(new Func<Task>(async () =>
+                var bookCarResult = await Context.ScheduleTask<BookItemResult>("BookCar", "v1");
+                compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelCar", "v1", new
                 {
-                    var bookCarResult = await Context.ScheduleTask<BookItemResult>("BookCar", "v1");
-                    compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelCar", "v1", new
-                    {
-                        BookingId = bookCarResult.BookingId
-                    }));
-                })());
+                    bookCarResult.BookingId
+                }));
+            })());
 
-                tasks.Add(new Func<Task>(async () =>
-                {
-                    var bookHotelResult = await Context.ScheduleTask<BookItemResult>("BookHotel", "v1");
-                    compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelHotel", "v1", new
-                    {
-                        BookingId = bookHotelResult.BookingId
-                    }));
-                })());
-
-                tasks.Add(new Func<Task>(async () =>
-                {
-                    var bookFlightResult = await Context.ScheduleTask<BookItemResult>("BookFlight", "v1");
-                    compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelFlight", "v1", new
-                    {
-                        BookingId = bookFlightResult.BookingId
-                    }));
-                })());
-
-                await Task.WhenAll(tasks);
-
-                throw new Exception("Something failed");
-            }
-            catch
+            tasks.Add(new Func<Task>(async () =>
             {
-                await Task.WhenAll(compensations.Select(c => c()));
-            }
+                var bookHotelResult = await Context.ScheduleTask<BookItemResult>("BookHotel", "v1");
+                compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelHotel", "v1", new
+                {
+                    bookHotelResult.BookingId
+                }));
+            })());
 
-            return new BookParallelResult();
+            tasks.Add(new Func<Task>(async () =>
+            {
+                var bookFlightResult = await Context.ScheduleTask<BookItemResult>("BookFlight", "v1");
+                compensations.Add(() => Context.ScheduleTask<CancelItemResult>("CancelFlight", "v1", new
+                {
+                    bookFlightResult.BookingId
+                }));
+            })());
+
+            await Task.WhenAll(tasks);
+
+            throw new Exception("Something failed");
         }
-
-        public class BookParallelInput
+        catch
         {
+            await Task.WhenAll(compensations.Select(c => c()));
         }
 
-        public class BookParallelResult
-        {
-        }
+        return new BookParallelResult();
+    }
 
-        public class BookItemResult
-        {
-            public Guid BookingId { get; set; }
-        }
+    public class BookParallelInput
+    {
+    }
 
-        public class CancelItemResult
-        {
-        }
+    public class BookParallelResult
+    {
+    }
+
+    public class BookItemResult
+    {
+        public Guid BookingId { get; set; }
+    }
+
+    public class CancelItemResult
+    {
     }
 }

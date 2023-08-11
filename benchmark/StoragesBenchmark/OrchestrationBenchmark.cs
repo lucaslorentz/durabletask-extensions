@@ -12,93 +12,92 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using IHost = Microsoft.Extensions.Hosting.IHost;
 
-namespace StoragesBenchmark
+namespace StoragesBenchmark;
+
+[SimpleJob(RunStrategy.Monitoring, iterationCount: 5)]
+
+public abstract class OrchestrationBenchmark
 {
-    [SimpleJob(RunStrategy.Monitoring, iterationCount: 5)]
+    [Params(100)]
+    public int NumberOfOrchestrations;
 
-    public abstract class OrchestrationBenchmark
+    [Params(5)]
+    public int NumberOfActivities;
+
+    protected IHost _host;
+    protected IConfiguration _configuration;
+
+    [GlobalSetup]
+    public async Task Setup()
     {
-        [Params(100)]
-        public int NumberOfOrchestrations;
+        _configuration = new ConfigurationBuilder()
+               .AddJsonFile("appsettings.json", false)
+               .AddJsonFile("appsettings.private.json", true)
+               .AddEnvironmentVariables()
+               .Build();
 
-        [Params(5)]
-        public int NumberOfActivities;
+        _host = await Host.CreateDefaultBuilder()
+            .ConfigureServices(services =>
+            {
+                ConfigureStorage(services);
 
-        protected IHost _host;
-        protected IConfiguration _configuration;
+                services.AddDurableTaskClient();
 
-        [GlobalSetup]
-        public async Task Setup()
-        {
-            _configuration = new ConfigurationBuilder()
-                   .AddJsonFile("appsettings.json", false)
-                   .AddJsonFile("appsettings.private.json", true)
-                   .AddEnvironmentVariables()
-                   .Build();
-
-            _host = await Host.CreateDefaultBuilder()
-                .ConfigureServices(services =>
+                services.AddDurableTaskWorker(builder =>
                 {
-                    ConfigureStorage(services);
+                    ConfigureWorker(builder);
+                });
+            }).StartAsync();
+    }
 
-                    services.AddDurableTaskClient();
+    [GlobalCleanup]
+    public async Task Cleanup()
+    {
+        await _host.StopAsync();
+        _host.Dispose();
+    }
 
-                    services.AddDurableTaskWorker(builder =>
-                    {
-                        ConfigureWorker(builder);
-                    });
-                }).StartAsync();
+    protected abstract void ConfigureStorage(IServiceCollection services);
+
+    protected virtual void ConfigureWorker(IDurableTaskWorkerBuilder builder)
+    {
+        builder.AddAnnotatedFrom(typeof(Orchestrations));
+    }
+
+    [Benchmark]
+    public async Task RunOrchestrations()
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+
+        var instances = new List<OrchestrationInstance>();
+
+        for (var i = 0; i < NumberOfOrchestrations; i++)
+        {
+            var instance = await taskHubClient.CreateOrchestrationInstanceAsync("RunActivities", "", NumberOfActivities);
+            instances.Add(instance);
         }
 
-        [GlobalCleanup]
-        public async Task Cleanup()
+        foreach (var instance in instances)
         {
-            await _host.StopAsync();
-            _host.Dispose();
+            var state = await taskHubClient.WaitForOrchestrationAsync(instance, TimeSpan.FromMinutes(30));
+            if (state == null || state.OrchestrationStatus != OrchestrationStatus.Completed)
+                throw new Exception("Orchestration did not complete");
+        }
+    }
+
+    public class Orchestrations
+    {
+        [Orchestration(Name = "RunActivities")]
+        public async Task Run(OrchestrationContext context, int numberOfActivities)
+        {
+            var tasks = Enumerable.Range(0, numberOfActivities).Select(e => context.ScheduleTask<Guid>("EmptyActivity", ""));
+            await Task.WhenAll(tasks);
         }
 
-        protected abstract void ConfigureStorage(IServiceCollection services);
-
-        protected virtual void ConfigureWorker(IDurableTaskWorkerBuilder builder)
+        [Activity(Name = "EmptyActivity")]
+        public Guid EmptyActivity()
         {
-            builder.AddAnnotatedFrom(typeof(Orchestrations));
-        }
-
-        [Benchmark]
-        public async Task RunOrchestrations()
-        {
-            var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
-
-            var instances = new List<OrchestrationInstance>();
-
-            for (var i = 0; i < NumberOfOrchestrations; i++)
-            {
-                var instance = await taskHubClient.CreateOrchestrationInstanceAsync("RunActivities", "", NumberOfActivities);
-                instances.Add(instance);
-            }
-
-            foreach (var instance in instances)
-            {
-                var state = await taskHubClient.WaitForOrchestrationAsync(instance, TimeSpan.FromMinutes(30));
-                if (state == null || state.OrchestrationStatus != OrchestrationStatus.Completed)
-                    throw new Exception("Orchestration did not complete");
-            }
-        }
-
-        public class Orchestrations
-        {
-            [Orchestration(Name = "RunActivities")]
-            public async Task Run(OrchestrationContext context, int numberOfActivities)
-            {
-                var tasks = Enumerable.Range(0, numberOfActivities).Select(e => context.ScheduleTask<Guid>("EmptyActivity", ""));
-                await Task.WhenAll(tasks);
-            }
-
-            [Activity(Name = "EmptyActivity")]
-            public Guid EmptyActivity()
-            {
-                return Guid.NewGuid();
-            }
+            return Guid.NewGuid();
         }
     }
 }

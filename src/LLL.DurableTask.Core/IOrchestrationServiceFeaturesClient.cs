@@ -1,9 +1,8 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace LLL.DurableTask.Core
+namespace LLL.DurableTask.Core;
+
+public interface IOrchestrationServiceFeaturesClient
 {
-    public interface IOrchestrationServiceFeaturesClient
-    {
-        Task<OrchestrationFeature[]> GetFeatures();
-    }
+    Task<OrchestrationFeature[]> GetFeatures();
 }

@@ -1,14 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace LLL.DurableTask.Server.Configuration
-{
-    public class TaskHubServerBuilder : ITaskHubServerBuilder
-    {
-        public IServiceCollection Services { get; }
+namespace LLL.DurableTask.Server.Configuration;
 
-        public TaskHubServerBuilder(IServiceCollection services)
-        {
-            Services = services;
-        }
+public class TaskHubServerBuilder : ITaskHubServerBuilder
+{
+    public IServiceCollection Services { get; }
+
+    public TaskHubServerBuilder(IServiceCollection services)
+    {
+        Services = services;
     }
 }
