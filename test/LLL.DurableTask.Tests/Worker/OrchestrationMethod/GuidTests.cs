@@ -11,9 +11,9 @@ using Xunit.Abstractions;
 
 namespace LLL.DurableTask.Tests.Worker.OrchestrationMethod
 {
-    public class GuidGenerationTests : WorkerTestBase
+    public class GuidTests : WorkerTestBase
     {
-        public GuidGenerationTests(ITestOutputHelper output)
+        public GuidTests(ITestOutputHelper output)
             : base(output)
         {
         }
@@ -43,14 +43,12 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationMethod
             result1.Output.Should().NotBe(result2.Output);
         }
 
-        public class Orchestrations
+        public static class Orchestrations
         {
             [Orchestration(Name = "GenerateGuid")]
-            public Guid GenerateGuid(
-                OrchestrationContext context,
-                OrchestrationGuidGenerator guidGenerator)
+            public static Guid GenerateGuid(ExtendedOrchestrationContext context)
             {
-                return guidGenerator.NewGuid();
+                return context.NewGuid();
             }
         }
     }

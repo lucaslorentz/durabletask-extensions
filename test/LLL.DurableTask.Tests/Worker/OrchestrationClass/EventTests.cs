@@ -12,9 +12,9 @@ using Xunit.Abstractions;
 
 namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
 {
-    public class EventReceiverTests : WorkerTestBase
+    public class EventTests : WorkerTestBase
     {
-        public EventReceiverTests(ITestOutputHelper output)
+        public EventTests(ITestOutputHelper output)
             : base(output)
         {
         }
@@ -65,9 +65,9 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
         {
             public override async Task<object> Execute(object input)
             {
-                var eventA = await EventReceiver.WaitForEventAsync<EventA>("EventA");
-                var eventB = await EventReceiver.WaitForEventAsync<EventB>("EventB");
-                var eventC = await EventReceiver.WaitForEventAsync<object>("EventC", TimeSpan.FromSeconds(1), null);
+                var eventA = await Context.WaitForEventAsync<EventA>("EventA");
+                var eventB = await Context.WaitForEventAsync<EventB>("EventB");
+                var eventC = await Context.WaitForEventAsync<object>("EventC", TimeSpan.FromSeconds(1), null);
 
                 var result = new
                 {
@@ -85,13 +85,13 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationClass
         {
             public override async Task<object> Execute(object input)
             {
-                List<EventA> eventsA = new List<EventA>();
-                List<EventB> eventsB = new List<EventB>();
+                var eventsA = new List<EventA>();
+                var eventsB = new List<EventB>();
 
-                using (EventReceiver.AddListener<EventA>("EventA", eventsA.Add))
-                using (EventReceiver.AddListener<EventB>("EventB", eventsB.Add))
+                using (Context.AddEventListener<EventA>("EventA", eventsA.Add))
+                using (Context.AddEventListener<EventB>("EventB", eventsB.Add))
                 {
-                    await EventReceiver.WaitForEventAsync<object>("Stop");
+                    await Context.WaitForEventAsync<object>("Stop");
                 }
 
                 var result = new

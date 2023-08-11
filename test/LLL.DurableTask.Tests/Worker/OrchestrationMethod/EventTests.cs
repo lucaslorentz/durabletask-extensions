@@ -12,9 +12,9 @@ using Xunit.Abstractions;
 
 namespace LLL.DurableTask.Tests.Worker.OrchestrationMethod
 {
-    public class EventReceiverTests : WorkerTestBase
+    public class EventTests : WorkerTestBase
     {
-        public EventReceiverTests(ITestOutputHelper output)
+        public EventTests(ITestOutputHelper output)
             : base(output)
         {
         }
@@ -62,11 +62,11 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationMethod
         public class Orchestrations
         {
             [Orchestration(Name = "WaitForEvent")]
-            public async Task<object> RunWaitForEvent(OrchestrationContext context, OrchestrationEventReceiver eventReceiver)
+            public static async Task<object> RunWaitForEvent(ExtendedOrchestrationContext context)
             {
-                var eventA = await eventReceiver.WaitForEventAsync<EventA>("EventA");
-                var eventB = await eventReceiver.WaitForEventAsync<EventB>("EventB");
-                var eventC = await eventReceiver.WaitForEventAsync<object>("EventC", TimeSpan.FromSeconds(1), null);
+                var eventA = await context.WaitForEventAsync<EventA>("EventA");
+                var eventB = await context.WaitForEventAsync<EventB>("EventB");
+                var eventC = await context.WaitForEventAsync<object>("EventC", TimeSpan.FromSeconds(1), null);
 
                 var result = new
                 {
@@ -79,15 +79,15 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationMethod
             }
 
             [Orchestration(Name = "AddEventListener")]
-            public async Task<object> RunAddEventListener(OrchestrationContext context, OrchestrationEventReceiver eventReceiver)
+            public static async Task<object> RunAddEventListener(ExtendedOrchestrationContext context)
             {
-                List<EventA> eventsA = new List<EventA>();
-                List<EventB> eventsB = new List<EventB>();
+                var eventsA = new List<EventA>();
+                var eventsB = new List<EventB>();
 
-                using (eventReceiver.AddListener<EventA>("EventA", eventsA.Add))
-                using (eventReceiver.AddListener<EventB>("EventB", eventsB.Add))
+                using (context.AddEventListener<EventA>("EventA", eventsA.Add))
+                using (context.AddEventListener<EventB>("EventB", eventsB.Add))
                 {
-                    await eventReceiver.WaitForEventAsync<object>("Stop");
+                    await context.WaitForEventAsync<object>("Stop");
                 }
 
                 var result = new

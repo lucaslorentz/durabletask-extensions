@@ -11,9 +11,9 @@ using Xunit.Abstractions;
 
 namespace LLL.DurableTask.Tests.Worker.OrchestrationMethod
 {
-    public class StatusPublisherTests : WorkerTestBase
+    public class CustomStatusTests : WorkerTestBase
     {
-        public StatusPublisherTests(ITestOutputHelper output)
+        public CustomStatusTests(ITestOutputHelper output)
             : base(output)
         {
         }
@@ -40,17 +40,11 @@ namespace LLL.DurableTask.Tests.Worker.OrchestrationMethod
         public static class Orchestrations
         {
             [Orchestration(Name = "PublishStatus")]
-            public static async Task PublishStatus(OrchestrationContext context, OrchestrationStatusPublisher statusPublisher)
+            public static async Task PublishStatus(ExtendedOrchestrationContext context)
             {
-                statusPublisher.Status = new Status { Message = "Status A" };
-                var statusB = await context.ScheduleTask<Status>("GetStatusB", string.Empty);
-                statusPublisher.Status = statusB;
-            }
-
-            [Activity(Name = "GetStatusB")]
-            public static Status GetStatusB()
-            {
-                return new Status { Message = "Status B" };
+                context.SetStatusProvider(() => new Status { Message = "Status A" });
+                await context.CreateTimer<object>(context.CurrentUtcDateTime, null);
+                context.SetStatusProvider(() => new Status { Message = "Status B" });
             }
 
             public class Status
