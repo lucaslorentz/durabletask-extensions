@@ -1,9 +1,6 @@
-﻿using System;
+﻿namespace LLL.DurableTask.Api.Metadata;
 
-namespace LLL.DurableTask.Api.Metadata
+public class DurableTaskEndpointMetadata
 {
-    public class DurableTaskEndpointMetadata
-    {
-        public string Id { get; set; }
-    }
+    public string Id { get; set; }
 }

@@ -2,27 +2,26 @@
 using DurableTask.AzureStorage;
 using LLL.DurableTask.Core;
 
-namespace LLL.DurableTaskExtensions.AzureStorage
+namespace LLL.DurableTaskExtensions.AzureStorage;
+
+public class AzureStorageOrchestrationServiceFeaturesClient : IOrchestrationServiceFeaturesClient
 {
-    public class AzureStorageOrchestrationServiceFeaturesClient : IOrchestrationServiceFeaturesClient
+    private readonly AzureStorageOrchestrationService _azureStorageOrchestrationService;
+
+    public AzureStorageOrchestrationServiceFeaturesClient(
+        AzureStorageOrchestrationService azureStorageOrchestrationService)
     {
-        private readonly AzureStorageOrchestrationService _azureStorageOrchestrationService;
+        _azureStorageOrchestrationService = azureStorageOrchestrationService;
+    }
 
-        public AzureStorageOrchestrationServiceFeaturesClient(
-            AzureStorageOrchestrationService azureStorageOrchestrationService)
+    public Task<OrchestrationFeature[]> GetFeatures()
+    {
+        return Task.FromResult(new OrchestrationFeature[]
         {
-            _azureStorageOrchestrationService = azureStorageOrchestrationService;
-        }
-
-        public Task<OrchestrationFeature[]> GetFeatures()
-        {
-            return Task.FromResult(new OrchestrationFeature[]
-            {
-                OrchestrationFeature.SearchByInstanceId,
-                OrchestrationFeature.SearchByCreatedTime,
-                OrchestrationFeature.SearchByStatus,
-                OrchestrationFeature.Rewind
-            });
-        }
+            OrchestrationFeature.SearchByInstanceId,
+            OrchestrationFeature.SearchByCreatedTime,
+            OrchestrationFeature.SearchByStatus,
+            OrchestrationFeature.Rewind
+        });
     }
 }

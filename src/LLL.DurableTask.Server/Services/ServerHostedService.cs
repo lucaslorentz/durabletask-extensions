@@ -3,26 +3,25 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Extensions.Hosting;
 
-namespace LLL.DurableTask.Server.Services
+namespace LLL.DurableTask.Server.Services;
+
+public class ServerHostedService : IHostedService
 {
-    public class ServerHostedService : IHostedService
+    private readonly IOrchestrationService _orchestrationService;
+
+    public ServerHostedService(IOrchestrationService orchestrationService)
     {
-        private readonly IOrchestrationService _orchestrationService;
+        _orchestrationService = orchestrationService;
+    }
 
-        public ServerHostedService(IOrchestrationService orchestrationService)
-        {
-            _orchestrationService = orchestrationService;
-        }
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        await _orchestrationService.CreateIfNotExistsAsync();
+        await _orchestrationService.StartAsync();
+    }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
-        {
-            await _orchestrationService.CreateIfNotExistsAsync();
-            await _orchestrationService.StartAsync();
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            return _orchestrationService.StopAsync();
-        }
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return _orchestrationService.StopAsync();
     }
 }

@@ -2,26 +2,25 @@
 
 #nullable disable
 
-namespace LLL.DurableTask.EFCore.SqlServer.Migrations
+namespace LLL.DurableTask.EFCore.SqlServer.Migrations;
+
+/// <inheritdoc />
+public partial class IndexCompletedTime : Migration
 {
     /// <inheritdoc />
-    public partial class IndexCompletedTime : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.CreateIndex(
-                name: "IX_Executions_CompletedTime",
-                table: "Executions",
-                column: "CompletedTime");
-        }
+        migrationBuilder.CreateIndex(
+            name: "IX_Executions_CompletedTime",
+            table: "Executions",
+            column: "CompletedTime");
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropIndex(
-                name: "IX_Executions_CompletedTime",
-                table: "Executions");
-        }
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DropIndex(
+            name: "IX_Executions_CompletedTime",
+            table: "Executions");
     }
 }

@@ -3,28 +3,27 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Ui
+namespace Ui;
+
+public class Startup
 {
-    public class Startup
+    public Startup(IConfiguration configuration)
     {
-        public Startup(IConfiguration configuration)
-        {
-            Configuration = configuration;
-        }
+        Configuration = configuration;
+    }
 
-        public IConfiguration Configuration { get; }
+    public IConfiguration Configuration { get; }
 
-        public void ConfigureServices(IServiceCollection services)
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddDurableTaskUi(options =>
         {
-            services.AddDurableTaskUi(options =>
-            {
-                options.ApiBaseUrl = "https://localhost:5003/api";
-            });
-        }
+            options.ApiBaseUrl = "https://localhost:5003/api";
+        });
+    }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-        {
-            app.UseDurableTaskUi();
-        }
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        app.UseDurableTaskUi();
     }
 }

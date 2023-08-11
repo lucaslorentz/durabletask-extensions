@@ -2,12 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace LLL.DurableTask.EFCore.DependencyInjection
-{
-    public interface IEFCoreOrchestrationBuilder
-    {
-        IServiceCollection Services { get; }
+namespace LLL.DurableTask.EFCore.DependencyInjection;
 
-        IEFCoreOrchestrationBuilder ConfigureDbContext(Action<DbContextOptionsBuilder> options);
-    }
+public interface IEFCoreOrchestrationBuilder
+{
+    IServiceCollection Services { get; }
+
+    IEFCoreOrchestrationBuilder ConfigureDbContext(Action<DbContextOptionsBuilder> options);
 }

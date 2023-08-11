@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace BpmnWorker.Providers
+namespace BpmnWorker.Providers;
+
+public interface IBPMNProvider
 {
-    public interface IBPMNProvider
-    {
-        public Task<byte[]> GetBPMN(string name);
-    }
+    public Task<byte[]> GetBPMN(string name);
 }

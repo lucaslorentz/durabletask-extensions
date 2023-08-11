@@ -5,24 +5,23 @@ using DurableTask.Core.Middleware;
 using LLL.DurableTask.Worker.Orchestrations;
 using LLL.DurableTask.Worker.Services;
 
-namespace LLL.DurableTask.Worker.Middlewares
+namespace LLL.DurableTask.Worker.Middlewares;
+
+public class ServiceProviderOrchestrationMiddleware
 {
-    public class ServiceProviderOrchestrationMiddleware
+    public async Task Execute(DispatchMiddlewareContext context, Func<Task> next)
     {
-        public async Task Execute(DispatchMiddlewareContext context, Func<Task> next)
+        var orchestrationInstance = context.GetProperty<OrchestrationInstance>();
+
+        var serviceScope = WorkerOrchestrationService.OrchestrationsServiceScopes[orchestrationInstance.InstanceId];
+
+        context.SetProperty(serviceScope.ServiceProvider);
+
+        if (context.GetProperty<TaskOrchestration>() is ServiceProviderTaskOrchestration initializable)
         {
-            var orchestrationInstance = context.GetProperty<OrchestrationInstance>();
-
-            var serviceScope = WorkerOrchestrationService.OrchestrationsServiceScopes[orchestrationInstance.InstanceId];
-
-            context.SetProperty(serviceScope.ServiceProvider);
-
-            if (context.GetProperty<TaskOrchestration>() is ServiceProviderTaskOrchestration initializable)
-            {
-                initializable.Initialize(serviceScope.ServiceProvider);
-            }
-
-            await next();
+            initializable.Initialize(serviceScope.ServiceProvider);
         }
+
+        await next();
     }
 }

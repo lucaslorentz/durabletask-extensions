@@ -6,29 +6,28 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Extensions.DependencyInjection
-{
-    public static class MySqlEFCoreOrchestrationBuilderExtensions
-    {
-        public static IEFCoreOrchestrationBuilder UseMySql(
-            this IEFCoreOrchestrationBuilder builder,
-            string connectionString,
-            ServerVersion serverVersion,
-            Action<MySqlDbContextOptionsBuilder> mysqlOptionsAction = null)
-        {
-            builder.Services.AddSingleton<OrchestrationDbContextExtensions, MySqlOrchestrationDbContextExtensions>();
+namespace Microsoft.Extensions.DependencyInjection;
 
-            return builder.ConfigureDbContext(options =>
+public static class MySqlEFCoreOrchestrationBuilderExtensions
+{
+    public static IEFCoreOrchestrationBuilder UseMySql(
+        this IEFCoreOrchestrationBuilder builder,
+        string connectionString,
+        ServerVersion serverVersion,
+        Action<MySqlDbContextOptionsBuilder> mysqlOptionsAction = null)
+    {
+        builder.Services.AddSingleton<OrchestrationDbContextExtensions, MySqlOrchestrationDbContextExtensions>();
+
+        return builder.ConfigureDbContext(options =>
+        {
+            options.AddInterceptors(new StraightJoinCommandInterceptor());
+            options.UseMySql(connectionString, serverVersion, mysqlOptions =>
             {
-                options.AddInterceptors(new StraightJoinCommandInterceptor());
-                options.UseMySql(connectionString, serverVersion, mysqlOptions =>
-                {
-                    mysqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-                    var assemblyName = typeof(MySqlEFCoreOrchestrationBuilderExtensions).Assembly.GetName().Name;
-                    mysqlOptions.MigrationsAssembly(assemblyName);
-                    mysqlOptionsAction?.Invoke(mysqlOptions);
-                });
+                mysqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                var assemblyName = typeof(MySqlEFCoreOrchestrationBuilderExtensions).Assembly.GetName().Name;
+                mysqlOptions.MigrationsAssembly(assemblyName);
+                mysqlOptionsAction?.Invoke(mysqlOptions);
             });
-        }
+        });
     }
 }

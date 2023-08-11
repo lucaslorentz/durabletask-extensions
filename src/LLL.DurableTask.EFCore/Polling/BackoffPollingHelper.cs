@@ -3,40 +3,39 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LLL.DurableTask.EFCore.Polling
+namespace LLL.DurableTask.EFCore.Polling;
+
+public static class BackoffPollingHelper
 {
-    public static class BackoffPollingHelper
+    public static async Task<T> PollAsync<T>(
+        Func<Task<T>> valueProvider,
+        Func<T, bool> shouldAcceptValue,
+        TimeSpan timeout,
+        PollingIntervalOptions interval,
+        CancellationToken cancellationToken)
     {
-        public static async Task<T> PollAsync<T>(
-            Func<Task<T>> valueProvider,
-            Func<T, bool> shouldAcceptValue,
-            TimeSpan timeout,
-            PollingIntervalOptions interval,
-            CancellationToken cancellationToken)
+        T value;
+
+        var stopwatch = Stopwatch.StartNew();
+        var count = 0;
+        do
         {
-            T value;
+            cancellationToken.ThrowIfCancellationRequested();
 
-            var stopwatch = Stopwatch.StartNew();
-            var count = 0;
-            do
-            {
-                cancellationToken.ThrowIfCancellationRequested();
+            value = await valueProvider();
 
-                value = await valueProvider();
+            if (shouldAcceptValue(value)
+                || stopwatch.Elapsed >= timeout)
+                break;
 
-                if (shouldAcceptValue(value)
-                    || stopwatch.Elapsed >= timeout)
-                    break;
+            await Task.Delay(CalculateDelay(interval, count++));
+        } while (stopwatch.Elapsed < timeout);
 
-                await Task.Delay(CalculateDelay(interval, count++));
-            } while (stopwatch.Elapsed < timeout);
+        return value;
+    }
 
-            return value;
-        }
-
-        private static int CalculateDelay(PollingIntervalOptions interval, int count)
-        {
-            return (int)Math.Min(interval.Initial * Math.Pow(interval.Factor, count), interval.Max);
-        }
+    private static int CalculateDelay(PollingIntervalOptions interval, int count)
+    {
+        return (int)Math.Min(interval.Initial * Math.Pow(interval.Factor, count), interval.Max);
     }
 }

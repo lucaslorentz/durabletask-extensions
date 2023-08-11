@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace BpmnWorker.Scripting
+namespace BpmnWorker.Scripting;
+
+public interface IScriptEngine
 {
-    public interface IScriptEngine
-    {
-        Task<T> Execute<T>(string script, IDictionary<string, object> variables);
-    }
+    Task<T> Execute<T>(string script, IDictionary<string, object> variables);
 }

@@ -1,9 +1,8 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace LLL.DurableTask.Core
+namespace LLL.DurableTask.Core;
+
+public interface IOrchestrationServiceRewindClient
 {
-    public interface IOrchestrationServiceRewindClient
-    {
-        Task RewindTaskOrchestrationAsync(string instanceId, string reason);
-    }
+    Task RewindTaskOrchestrationAsync(string instanceId, string reason);
 }

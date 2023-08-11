@@ -2,16 +2,15 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LLL.DurableTask.Tests.Utils
-{
-    class ResponseVersionHandler : DelegatingHandler
-    {
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            var response = await base.SendAsync(request, cancellationToken);
-            response.Version = request.Version;
+namespace LLL.DurableTask.Tests.Utils;
 
-            return response;
-        }
+class ResponseVersionHandler : DelegatingHandler
+{
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var response = await base.SendAsync(request, cancellationToken);
+        response.Version = request.Version;
+
+        return response;
     }
 }

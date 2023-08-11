@@ -6,27 +6,26 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Extensions.DependencyInjection
-{
-    public static class SqlServerEFCoreOrchestrationBuilderExtensions
-    {
-        public static IEFCoreOrchestrationBuilder UseSqlServer(
-            this IEFCoreOrchestrationBuilder builder,
-            string connectionString,
-            Action<SqlServerDbContextOptionsBuilder> mysqlOptionsAction = null)
-        {
-            builder.Services.AddSingleton<OrchestrationDbContextExtensions, SqlServerOrchestrationDbContextExtensions>();
+namespace Microsoft.Extensions.DependencyInjection;
 
-            return builder.ConfigureDbContext(options =>
+public static class SqlServerEFCoreOrchestrationBuilderExtensions
+{
+    public static IEFCoreOrchestrationBuilder UseSqlServer(
+        this IEFCoreOrchestrationBuilder builder,
+        string connectionString,
+        Action<SqlServerDbContextOptionsBuilder> mysqlOptionsAction = null)
+    {
+        builder.Services.AddSingleton<OrchestrationDbContextExtensions, SqlServerOrchestrationDbContextExtensions>();
+
+        return builder.ConfigureDbContext(options =>
+        {
+            options.UseSqlServer(connectionString, sqlServerOptions =>
             {
-                options.UseSqlServer(connectionString, sqlServerOptions =>
-                {
-                    sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-                    var assemblyName = typeof(SqlServerEFCoreOrchestrationBuilderExtensions).Assembly.GetName().Name;
-                    sqlServerOptions.MigrationsAssembly(assemblyName);
-                    mysqlOptionsAction?.Invoke(sqlServerOptions);
-                });
+                sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                var assemblyName = typeof(SqlServerEFCoreOrchestrationBuilderExtensions).Assembly.GetName().Name;
+                sqlServerOptions.MigrationsAssembly(assemblyName);
+                mysqlOptionsAction?.Invoke(sqlServerOptions);
             });
-        }
+        });
     }
 }

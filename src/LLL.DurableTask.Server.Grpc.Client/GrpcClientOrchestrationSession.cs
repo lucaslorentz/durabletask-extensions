@@ -9,161 +9,160 @@ using Microsoft.Extensions.Logging;
 using TaskOrchestrationStream = Grpc.Core.AsyncDuplexStreamingCall<DurableTaskGrpc.TaskOrchestrationRequest, DurableTaskGrpc.TaskOrchestrationResponse>;
 using TaskOrchestrationWorkItem = DurableTask.Core.TaskOrchestrationWorkItem;
 
-namespace LLL.DurableTask.Server.Client
+namespace LLL.DurableTask.Server.Client;
+
+public class GrpcClientOrchestrationSession : IOrchestrationSession
 {
-    public class GrpcClientOrchestrationSession : IOrchestrationSession
+    private static readonly TimeSpan _renewResponseTimeout = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan _completeResponseTimeout = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan _fetchResponseTimeout = TimeSpan.FromHours(1);
+    private static readonly TimeSpan _releaseResponseTimeout = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan _abandonResponseTimeout = TimeSpan.FromSeconds(20);
+
+    private readonly GrpcClientOrchestrationServiceOptions _options;
+    private readonly TaskOrchestrationStream _stream;
+    private readonly ILogger _logger;
+
+    public GrpcClientOrchestrationSession(
+        GrpcClientOrchestrationServiceOptions options,
+        TaskOrchestrationStream stream,
+        ILogger logger)
     {
-        private static readonly TimeSpan _renewResponseTimeout = TimeSpan.FromSeconds(20);
-        private static readonly TimeSpan _completeResponseTimeout = TimeSpan.FromSeconds(20);
-        private static readonly TimeSpan _fetchResponseTimeout = TimeSpan.FromHours(1);
-        private static readonly TimeSpan _releaseResponseTimeout = TimeSpan.FromSeconds(20);
-        private static readonly TimeSpan _abandonResponseTimeout = TimeSpan.FromSeconds(20);
+        _options = options;
+        _stream = stream;
+        _logger = logger;
+    }
 
-        private readonly GrpcClientOrchestrationServiceOptions _options;
-        private readonly TaskOrchestrationStream _stream;
-        private readonly ILogger _logger;
-
-        public GrpcClientOrchestrationSession(
-            GrpcClientOrchestrationServiceOptions options,
-            TaskOrchestrationStream stream,
-            ILogger logger)
+    public async Task Renew(TaskOrchestrationWorkItem workItem)
+    {
+        var request = new TaskOrchestrationRequest
         {
-            _options = options;
-            _stream = stream;
-            _logger = logger;
-        }
+            RenewRequest = new RenewTaskOrchestrationWorkItemLockRequest()
+        };
 
-        public async Task Renew(TaskOrchestrationWorkItem workItem)
+        await _stream.RequestStream.WriteAsync(request);
+
+        var cts = new CancellationTokenSource(_renewResponseTimeout);
+
+        if (!await _stream.ResponseStream.MoveNext(cts.Token))
+            throw new Exception("Session aborted");
+
+        if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.RenewResponse)
+            throw new Exception("Unexpected response");
+
+        var renewResponse = _stream.ResponseStream.Current.RenewResponse;
+        workItem.LockedUntilUtc = renewResponse.LockedUntilUtc.ToDateTime();
+    }
+
+    public async Task Complete(
+        TaskOrchestrationWorkItem workItem,
+        OrchestrationRuntimeState newOrchestrationRuntimeState,
+        IList<TaskMessage> outboundMessages,
+        IList<TaskMessage> orchestratorMessages,
+        IList<TaskMessage> timerMessages,
+        TaskMessage continuedAsNewMessage,
+        OrchestrationState orchestrationState)
+    {
+        var request = new TaskOrchestrationRequest
         {
-            var request = new TaskOrchestrationRequest
+            CompleteRequest = new CompleteTaskOrchestrationWorkItemRequest
             {
-                RenewRequest = new RenewTaskOrchestrationWorkItemLockRequest()
-            };
+                NewEvents = { workItem.OrchestrationRuntimeState.NewEvents.Select(_options.DataConverter.Serialize) },
+                NewStatus = workItem.OrchestrationRuntimeState.Status,
+                NewOrchestrationEvents = { newOrchestrationRuntimeState == workItem.OrchestrationRuntimeState
+                    ? Enumerable.Empty<string>()
+                    : newOrchestrationRuntimeState.NewEvents.Select(_options.DataConverter.Serialize) },
+                NewOrchestrationStatus = newOrchestrationRuntimeState == workItem.OrchestrationRuntimeState
+                    ? null
+                    : newOrchestrationRuntimeState.Status,
+                OutboundMessages = { outboundMessages.Select(_options.DataConverter.Serialize) },
+                OrchestratorMessages = { orchestratorMessages.Select(_options.DataConverter.Serialize) },
+                TimerMessages = { timerMessages.Select(_options.DataConverter.Serialize) },
+                ContinuedAsNewMessage = continuedAsNewMessage == null
+                    ? string.Empty
+                    : _options.DataConverter.Serialize(continuedAsNewMessage),
+                OrchestrationState = _options.DataConverter.Serialize(orchestrationState)
+            }
+        };
 
-            await _stream.RequestStream.WriteAsync(request);
+        await _stream.RequestStream.WriteAsync(request);
 
-            var cts = new CancellationTokenSource(_renewResponseTimeout);
+        var cts = new CancellationTokenSource(_completeResponseTimeout);
 
-            if (!await _stream.ResponseStream.MoveNext(cts.Token))
-                throw new Exception("Session aborted");
+        if (!await _stream.ResponseStream.MoveNext(cts.Token))
+            throw new Exception("Session aborted");
 
-            if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.RenewResponse)
-                throw new Exception("Unexpected response");
+        if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.CompleteResponse)
+            throw new Exception("Unexpected response");
+    }
 
-            var renewResponse = _stream.ResponseStream.Current.RenewResponse;
-            workItem.LockedUntilUtc = renewResponse.LockedUntilUtc.ToDateTime();
-        }
-
-        public async Task Complete(
-            TaskOrchestrationWorkItem workItem,
-            OrchestrationRuntimeState newOrchestrationRuntimeState,
-            IList<TaskMessage> outboundMessages,
-            IList<TaskMessage> orchestratorMessages,
-            IList<TaskMessage> timerMessages,
-            TaskMessage continuedAsNewMessage,
-            OrchestrationState orchestrationState)
+    public async Task<IList<TaskMessage>> FetchNewOrchestrationMessagesAsync(
+        TaskOrchestrationWorkItem workItem)
+    {
+        var request = new TaskOrchestrationRequest
         {
-            var request = new TaskOrchestrationRequest
-            {
-                CompleteRequest = new CompleteTaskOrchestrationWorkItemRequest
-                {
-                    NewEvents = { workItem.OrchestrationRuntimeState.NewEvents.Select(_options.DataConverter.Serialize) },
-                    NewStatus = workItem.OrchestrationRuntimeState.Status,
-                    NewOrchestrationEvents = { newOrchestrationRuntimeState == workItem.OrchestrationRuntimeState
-                        ? Enumerable.Empty<string>()
-                        : newOrchestrationRuntimeState.NewEvents.Select(_options.DataConverter.Serialize) },
-                    NewOrchestrationStatus = newOrchestrationRuntimeState == workItem.OrchestrationRuntimeState
-                        ? null
-                        : newOrchestrationRuntimeState.Status,
-                    OutboundMessages = { outboundMessages.Select(_options.DataConverter.Serialize) },
-                    OrchestratorMessages = { orchestratorMessages.Select(_options.DataConverter.Serialize) },
-                    TimerMessages = { timerMessages.Select(_options.DataConverter.Serialize) },
-                    ContinuedAsNewMessage = continuedAsNewMessage == null
-                        ? string.Empty
-                        : _options.DataConverter.Serialize(continuedAsNewMessage),
-                    OrchestrationState = _options.DataConverter.Serialize(orchestrationState)
-                }
-            };
+            FetchRequest = new FetchNewOrchestrationMessagesRequest()
+        };
 
-            await _stream.RequestStream.WriteAsync(request);
+        await _stream.RequestStream.WriteAsync(request);
 
-            var cts = new CancellationTokenSource(_completeResponseTimeout);
+        var cts = new CancellationTokenSource(_fetchResponseTimeout);
 
-            if (!await _stream.ResponseStream.MoveNext(cts.Token))
-                throw new Exception("Session aborted");
+        if (!await _stream.ResponseStream.MoveNext(cts.Token))
+            throw new Exception("Session aborted");
 
-            if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.CompleteResponse)
-                throw new Exception("Unexpected response");
-        }
+        if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.FetchResponse)
+            throw new Exception("Unexpected response");
 
-        public async Task<IList<TaskMessage>> FetchNewOrchestrationMessagesAsync(
-            TaskOrchestrationWorkItem workItem)
+        var fetchResponse = _stream.ResponseStream.Current.FetchResponse;
+        if (fetchResponse.NewMessages == null)
+            return null;
+
+        return fetchResponse.NewMessages.Messages
+            .Select(x => _options.DataConverter.Deserialize<TaskMessage>(x))
+            .ToArray();
+    }
+
+    public async Task Abandon(TaskOrchestrationWorkItem workItem)
+    {
+        var request = new TaskOrchestrationRequest
         {
-            var request = new TaskOrchestrationRequest
-            {
-                FetchRequest = new FetchNewOrchestrationMessagesRequest()
-            };
+            AbandonRequest = new AbandonTaskOrchestrationWorkItemLockRequest()
+        };
 
-            await _stream.RequestStream.WriteAsync(request);
+        await _stream.RequestStream.WriteAsync(request);
 
-            var cts = new CancellationTokenSource(_fetchResponseTimeout);
+        var cts = new CancellationTokenSource(_abandonResponseTimeout);
 
-            if (!await _stream.ResponseStream.MoveNext(cts.Token))
-                throw new Exception("Session aborted");
+        if (!await _stream.ResponseStream.MoveNext(cts.Token))
+            throw new Exception("Session aborted");
 
-            if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.FetchResponse)
-                throw new Exception("Unexpected response");
+        if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.AbandonResponse)
+            throw new Exception("Unexpected response");
+    }
 
-            var fetchResponse = _stream.ResponseStream.Current.FetchResponse;
-            if (fetchResponse.NewMessages == null)
-                return null;
-
-            return fetchResponse.NewMessages.Messages
-                .Select(x => _options.DataConverter.Deserialize<TaskMessage>(x))
-                .ToArray();
-        }
-
-        public async Task Abandon(TaskOrchestrationWorkItem workItem)
+    public async Task Release(TaskOrchestrationWorkItem workItem)
+    {
+        var request = new TaskOrchestrationRequest
         {
-            var request = new TaskOrchestrationRequest
-            {
-                AbandonRequest = new AbandonTaskOrchestrationWorkItemLockRequest()
-            };
+            ReleaseRequest = new ReleaseTaskOrchestrationWorkItemRequest()
+        };
 
-            await _stream.RequestStream.WriteAsync(request);
+        await _stream.RequestStream.WriteAsync(request);
 
-            var cts = new CancellationTokenSource(_abandonResponseTimeout);
+        var cts = new CancellationTokenSource(_releaseResponseTimeout);
 
-            if (!await _stream.ResponseStream.MoveNext(cts.Token))
-                throw new Exception("Session aborted");
+        if (!await _stream.ResponseStream.MoveNext(cts.Token))
+            throw new Exception("Session aborted");
 
-            if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.AbandonResponse)
-                throw new Exception("Unexpected response");
-        }
+        if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.ReleaseResponse)
+            throw new Exception("Unexpected response");
 
-        public async Task Release(TaskOrchestrationWorkItem workItem)
-        {
-            var request = new TaskOrchestrationRequest
-            {
-                ReleaseRequest = new ReleaseTaskOrchestrationWorkItemRequest()
-            };
+        await _stream.RequestStream.CompleteAsync();
 
-            await _stream.RequestStream.WriteAsync(request);
+        // Last read to close stream
+        await _stream.ResponseStream.MoveNext(cts.Token);
 
-            var cts = new CancellationTokenSource(_releaseResponseTimeout);
-
-            if (!await _stream.ResponseStream.MoveNext(cts.Token))
-                throw new Exception("Session aborted");
-
-            if (_stream.ResponseStream.Current.MessageCase != TaskOrchestrationResponse.MessageOneofCase.ReleaseResponse)
-                throw new Exception("Unexpected response");
-
-            await _stream.RequestStream.CompleteAsync();
-
-            // Last read to close stream
-            await _stream.ResponseStream.MoveNext(cts.Token);
-
-            _stream.Dispose();
-        }
+        _stream.Dispose();
     }
 }

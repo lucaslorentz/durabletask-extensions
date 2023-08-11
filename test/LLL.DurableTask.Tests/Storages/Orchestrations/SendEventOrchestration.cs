@@ -1,30 +1,29 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using DurableTask.Core;
 
-namespace LLL.DurableTask.Tests.Storage.Orchestrations
+namespace LLL.DurableTask.Tests.Storage.Orchestrations;
+
+public class SendEventOrchestration : TaskOrchestration<object, SendEventOrchestration.Input>
 {
-    public class SendEventOrchestration : TaskOrchestration<object, SendEventOrchestration.Input>
+    public class Input
     {
-        public class Input
+        public string TargetInstanceId { get; set; }
+        public string EventName { get; set; }
+        public object EventInput { get; set; }
+    }
+
+    public const string Name = "SendEvent";
+    public const string Version = "v1";
+
+    public override Task<object> RunTask(OrchestrationContext context, Input input)
+    {
+        var orchestrationInstance = new OrchestrationInstance
         {
-            public string TargetInstanceId { get; set; }
-            public string EventName { get; set; }
-            public object EventInput { get; set; }
-        }
+            InstanceId = input.TargetInstanceId
+        };
 
-        public const string Name = "SendEvent";
-        public const string Version = "v1";
+        context.SendEvent(orchestrationInstance, input.EventName, input.EventInput);
 
-        public override Task<object> RunTask(OrchestrationContext context, Input input)
-        {
-            var orchestrationInstance = new OrchestrationInstance
-            {
-                InstanceId = input.TargetInstanceId
-            };
-
-            context.SendEvent(orchestrationInstance, input.EventName, input.EventInput);
-
-            return Task.FromResult(default(object));
-        }
+        return Task.FromResult(default(object));
     }
 }

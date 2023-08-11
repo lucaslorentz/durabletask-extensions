@@ -1,25 +1,24 @@
-using System;
+﻿using System;
 using System.Text;
 using Newtonsoft.Json;
 
-namespace LLL.DurableTask.EFCore
+namespace LLL.DurableTask.EFCore;
+
+public class EFCoreContinuationToken
 {
-    public class EFCoreContinuationToken
+    public DateTime CreatedTime { get; set; }
+    public string InstanceId { get; set; }
+
+    public static EFCoreContinuationToken Parse(string value)
     {
-        public DateTime CreatedTime { get; set; }
-        public string InstanceId { get; set; }
+        if (string.IsNullOrEmpty(value))
+            return null;
 
-        public static EFCoreContinuationToken Parse(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-                return null;
+        return JsonConvert.DeserializeObject<EFCoreContinuationToken>(Encoding.UTF8.GetString(Convert.FromBase64String(value)));
+    }
 
-            return JsonConvert.DeserializeObject<EFCoreContinuationToken>(Encoding.UTF8.GetString(Convert.FromBase64String(value)));
-        }
-
-        public string Serialize()
-        {
-            return Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this)));
-        }
+    public string Serialize()
+    {
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this)));
     }
 }

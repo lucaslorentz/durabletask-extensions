@@ -1,41 +1,39 @@
 ﻿using System;
 using System.Threading.Tasks;
-using DurableTask.Core;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
 using Microsoft.Extensions.Logging;
 
-namespace HotelWorker.Activities
+namespace HotelWorker.Activities;
+
+[Activity(Name = "BookHotel", Version = "v1")]
+public class BookHotelActivity : ActivityBase<BookHotelInput, BookHotelResult>
 {
-    [Activity(Name = "BookHotel", Version = "v1")]
-    public class BookHotelActivity : ActivityBase<BookHotelInput, BookHotelResult>
-    {
-        private readonly ILogger<BookHotelActivity> _logger;
+    private readonly ILogger<BookHotelActivity> _logger;
 
-        public BookHotelActivity(ILogger<BookHotelActivity> logger)
+    public BookHotelActivity(ILogger<BookHotelActivity> logger)
+    {
+        _logger = logger;
+    }
+
+    public override Task<BookHotelResult> ExecuteAsync(BookHotelInput input)
+    {
+        var bookingId = Guid.NewGuid();
+
+        _logger.LogInformation("Booking Hotel {bookingId}", bookingId);
+
+        return Task.FromResult(new BookHotelResult
         {
-            _logger = logger;
-        }
-
-        public override Task<BookHotelResult> ExecuteAsync(BookHotelInput input)
-        {
-            var bookingId = Guid.NewGuid();
-
-            _logger.LogInformation("Booking Hotel {bookingId}", bookingId);
-
-            return Task.FromResult(new BookHotelResult
-            {
-                BookingId = bookingId
-            });
-        }
+            BookingId = bookingId
+        });
     }
+}
 
-    public class BookHotelInput
-    {
-    }
+public class BookHotelInput
+{
+}
 
-    public class BookHotelResult
-    {
-        public Guid BookingId { get; set; }
-    }
+public class BookHotelResult
+{
+    public Guid BookingId { get; set; }
 }

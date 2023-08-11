@@ -4,40 +4,36 @@ using System.Threading.Tasks;
 using Microsoft.ClearScript.V8;
 using Newtonsoft.Json;
 
-namespace BpmnWorker.Scripting
+namespace BpmnWorker.Scripting;
+
+public class JavaScriptScriptEngine : IScriptEngine
 {
-    public class JavaScriptScriptEngine : IScriptEngine
+    public Task<T> Execute<T>(string script, IDictionary<string, object> variables)
     {
-        public Task<T> Execute<T>(string script, IDictionary<string, object> variables)
+        using var engine = new V8ScriptEngine();
+        if (variables != null)
         {
-            using (var engine = new V8ScriptEngine())
+            foreach (var kv in variables)
             {
-                if (variables != null)
+                if (kv.Value != null)
                 {
-                    foreach (var kv in variables)
-                    {
-                        if (kv.Value != null)
-                        {
-                            var inputJson = JsonConvert.SerializeObject(kv.Value);
-                            var inputJs = engine.Script.JSON.parse(inputJson);
-                            engine.Script[kv.Key] = inputJs;
-                        }
-                    }
+                    var inputJson = JsonConvert.SerializeObject(kv.Value);
+                    var inputJs = engine.Script.JSON.parse(inputJson);
+                    engine.Script[kv.Key] = inputJs;
                 }
-
-                engine.AddHostType("Console", typeof(Console));
-
-                var outputJs = engine.Evaluate(script);
-                if (outputJs == null)
-                    return Task.FromResult(default(T));
-
-                var outputJson = engine.Script.JSON.stringify(outputJs) as string;
-                if (outputJson == null)
-                    return Task.FromResult(default(T));
-
-                var output = JsonConvert.DeserializeObject<T>(outputJson);
-                return Task.FromResult(output);
             }
         }
+
+        engine.AddHostType("Console", typeof(Console));
+
+        var outputJs = engine.Evaluate(script);
+        if (outputJs == null)
+            return Task.FromResult(default(T));
+
+        if (engine.Script.JSON.stringify(outputJs) is not string outputJson)
+            return Task.FromResult(default(T));
+
+        var output = JsonConvert.DeserializeObject<T>(outputJson);
+        return Task.FromResult(output);
     }
 }
