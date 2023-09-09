@@ -105,7 +105,7 @@ export function HistoryTable(props: Props) {
                     {row.event.instanceId ? (
                       <Link
                         component={RouterLink}
-                        to={`/orchestrations/${row.event.instanceId}`}
+                        to={`/orchestrations/${encodeURIComponent(row.event.instanceId)}`}
                         underline="hover">
                         {row.event.eventType}
                         {row.id && `: ${row.id}`}
