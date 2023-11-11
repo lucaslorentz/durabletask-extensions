@@ -2,6 +2,8 @@
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using DurableTask.Core;
+using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -131,5 +133,27 @@ public class SqlServerOrchestrationDbContextExtensions : OrchestrationDbContextE
         await dbContext.SaveChangesAsync();
 
         return instance;
+    }
+
+    public override async Task<int> PurgeInstanceHistoryAsync(OrchestrationDbContext dbContext, PurgeInstanceFilter filter)
+    {
+        var limit = filter is PurgeInstanceFilterExtended filterExtended
+            ? filterExtended.Limit
+            : null;
+
+        var parameters = new ParametersCollection();
+
+        return await dbContext.Database.ExecuteSqlRawAsync($@"
+            DELETE FROM Executions
+            WHERE ExecutionId IN(
+                SELECT {(limit != null ? $"TOP ({parameters.Add(limit)})" : null)} Executions.ExecutionId
+                FROM Executions WITH (UPDLOCK, READPAST)
+                    INNER JOIN Instances WITH (UPDLOCK, READPAST) ON Executions.InstanceId = Instances.InstanceId
+                WHERE Executions.CreatedTime > {parameters.Add(filter.CreatedTimeFrom)}
+                {(filter.CreatedTimeTo != null ? $"AND Executions.CreatedTime < {parameters.Add(filter.CreatedTimeTo)}" : "")}
+                {(filter.RuntimeStatus.Any() ? $"AND Executions.Status IN ({string.Join(",", filter.RuntimeStatus.Select(s => parameters.Add(s.ToString())))})" : "")}
+                ORDER BY Executions.CreatedTime
+            );
+        ", parameters);
     }
 }

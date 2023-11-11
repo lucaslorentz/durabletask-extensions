@@ -2,6 +2,7 @@
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using DurableTask.Core.Query;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
@@ -148,12 +149,38 @@ public class MySqlOrchestrationDbContextExtensions : OrchestrationDbContextExten
     {
         var queryable = base.CreateFilteredQueryable(dbContext, query);
 
-        if (query is not ExtendedOrchestrationQuery extendedQuery
+        if (query is not OrchestrationQueryExtended extendedQuery
             || !extendedQuery.Tags.Any())
         {
             queryable = queryable.WithStraightJoin();
         }
 
         return queryable;
+    }
+
+    public override async Task<int> PurgeInstanceHistoryAsync(OrchestrationDbContext dbContext, PurgeInstanceFilter filter)
+    {
+        var limit = filter is PurgeInstanceFilterExtended filterExtended
+            ? filterExtended.Limit
+            : null;
+
+        var parameters = new ParametersCollection();
+
+        return await dbContext.Database.ExecuteSqlRawAsync($@"
+            DELETE FROM Executions
+            WHERE ExecutionId IN(
+                SELECT ExecutionId FROM (
+                    SELECT Executions.ExecutionId
+                    FROM Executions
+                        INNER JOIN Instances ON Executions.InstanceId = Instances.InstanceId
+                    WHERE Executions.CreatedTime > {parameters.Add(filter.CreatedTimeFrom)}
+                    {(filter.CreatedTimeTo != null ? $"AND Executions.CreatedTime < {parameters.Add(filter.CreatedTimeTo)}" : "")}
+                    {(filter.RuntimeStatus.Any() ? $"AND Executions.Status IN ({string.Join(",", filter.RuntimeStatus.Select(s => parameters.Add(s.ToString())))})" : "")}
+                    ORDER BY Executions.CreatedTime
+                    {(limit != null ? $"LIMIT {parameters.Add(limit)}" : null)}
+                    FOR UPDATE SKIP LOCKED
+                ) T
+            );
+        ", parameters);
     }
 }
