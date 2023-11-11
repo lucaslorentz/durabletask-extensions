@@ -167,7 +167,7 @@ public partial class GrpcClientOrchestrationService :
         request.InstanceIdPrefix = query.InstanceIdPrefix;
         request.FetchInputsAndOutputs = query.FetchInputsAndOutputs;
 
-        if (query is ExtendedOrchestrationQuery extendedQuery)
+        if (query is OrchestrationQueryExtended extendedQuery)
         {
             request.NamePrefix = extendedQuery.NamePrefix;
             request.CompletedTimeFrom = ToTimestamp(extendedQuery.CompletedTimeFrom);
@@ -210,6 +210,14 @@ public partial class GrpcClientOrchestrationService :
 
         if (filter.RuntimeStatus != null)
             request.RuntimeStatus.AddRange(filter.RuntimeStatus.Select(s => (int)s));
+
+        if (filter is PurgeInstanceFilterExtended filterExtended)
+        {
+            if (filterExtended.Limit != null)
+            {
+                request.Limit = filterExtended.Limit.Value;
+            }
+        }
 
         var result = await _client.PurgeInstanceHistoryAsync(request);
 

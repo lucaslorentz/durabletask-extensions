@@ -47,7 +47,7 @@ public abstract class OrchestrationDbContextExtensions
         string[] queues,
         TimeSpan lockTimeout);
 
-    public async Task PurgeOrchestrationHistoryAsync(
+    public virtual async Task PurgeOrchestrationHistoryAsync(
         OrchestrationDbContext dbContext,
         DateTime thresholdDateTimeUtc,
         OrchestrationStateTimeRangeFilterType timeRangeFilterType)
@@ -66,20 +66,11 @@ public abstract class OrchestrationDbContextExtensions
         await ExecuteDeleteAsync(dbContext, query);
     }
 
-    public async Task<int> PurgeInstanceHistoryAsync(
+    public virtual async Task<int> PurgeInstanceHistoryAsync(
         OrchestrationDbContext dbContext,
         string instanceId)
     {
         var query = dbContext.Executions.Where(e => e.InstanceId == instanceId);
-
-        return await ExecuteDeleteAsync(dbContext, query);
-    }
-
-    public async Task<int> PurgeInstanceHistoryAsync(OrchestrationDbContext dbContext, PurgeInstanceFilter filter)
-    {
-        var query = dbContext.Executions.Where(e => e.CreatedTime >= filter.CreatedTimeFrom
-            && (filter.CreatedTimeTo == null || e.CreatedTime <= filter.CreatedTimeTo)
-            && (filter.RuntimeStatus == null || filter.RuntimeStatus.Contains(e.Status)));
 
         return await ExecuteDeleteAsync(dbContext, query);
     }
@@ -94,7 +85,7 @@ public abstract class OrchestrationDbContextExtensions
         OrchestrationDbContext dbContext,
         OrchestrationQuery query)
     {
-        var extendedQuery = query as ExtendedOrchestrationQuery;
+        var extendedQuery = query as OrchestrationQueryExtended;
 
         var queryable = dbContext.Executions as IQueryable<Entities.Execution>;
 
@@ -148,5 +139,22 @@ public abstract class OrchestrationDbContextExtensions
         }
 
         return queryable;
+    }
+
+    public virtual async Task<int> PurgeInstanceHistoryAsync(OrchestrationDbContext dbContext, PurgeInstanceFilter filter)
+    {
+        var query = dbContext.Executions.Where(e => e.CreatedTime >= filter.CreatedTimeFrom
+            && (filter.CreatedTimeTo == null || e.CreatedTime <= filter.CreatedTimeTo)
+            && (filter.RuntimeStatus == null || filter.RuntimeStatus.Contains(e.Status)));
+
+        if (filter is PurgeInstanceFilterExtended filterExtended)
+        {
+            if (filterExtended.Limit != null)
+            {
+                query = query.Take(filterExtended.Limit.Value);
+            }
+        }
+
+        return await ExecuteDeleteAsync(dbContext, query);
     }
 }

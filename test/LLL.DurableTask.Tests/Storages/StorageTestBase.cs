@@ -289,7 +289,7 @@ public abstract class StorageTestBase : IAsyncLifetime
 
     [Trait("Category", "Integration")]
     [SkippableFact]
-    public async Task PurgeInstanceState_ShouldPurge()
+    public async Task PurgeInstanceStateWithInstanceId_ShouldPurge()
     {
         var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
         var purgeClient = _host.Services.GetService<IOrchestrationServicePurgeClient>();
@@ -304,6 +304,43 @@ public abstract class StorageTestBase : IAsyncLifetime
         state.Should().NotBeNull();
 
         await purgeClient.PurgeInstanceStateAsync(instance.InstanceId);
+
+        var stateAfterPurge = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
+        stateAfterPurge.Should().BeNull();
+    }
+
+    [Trait("Category", "Integration")]
+    [SkippableFact]
+    public async Task PurgeInstanceStateWithFilter_ShouldPurge()
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+        var purgeClient = _host.Services.GetService<IOrchestrationServicePurgeClient>();
+        Skip.If(purgeClient == null, "Purge instance not supported");
+
+        var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+            EmptyOrchestration.Name,
+            EmptyOrchestration.Version,
+            string.Empty);
+
+        var state = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
+        state.Should().NotBeNull();
+
+        var filter = new PurgeInstanceFilterExtended(DateTime.UnixEpoch, DateTime.UtcNow, new[] {
+            OrchestrationStatus.Pending,
+            OrchestrationStatus.Running,
+            OrchestrationStatus.Completed,
+            OrchestrationStatus.ContinuedAsNew,
+            OrchestrationStatus.Failed,
+            OrchestrationStatus.Canceled,
+            OrchestrationStatus.Terminated,
+            OrchestrationStatus.Suspended,
+        })
+        {
+            Limit = 1000
+        };
+
+        var purgeResult = await purgeClient.PurgeInstanceStateAsync(filter);
+        purgeResult.DeletedInstanceCount.Should().BeGreaterThan(0);
 
         var stateAfterPurge = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
         stateAfterPurge.Should().BeNull();
@@ -326,7 +363,7 @@ public abstract class StorageTestBase : IAsyncLifetime
                 { "key-b", "value-b" }
             });
 
-        var query = new ExtendedOrchestrationQuery
+        var query = new OrchestrationQueryExtended
         {
             Tags = {
                 { "key-a", "value-a" },

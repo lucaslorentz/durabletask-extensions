@@ -131,6 +131,7 @@ message PurgeInstanceHistoryRequest {
     google.protobuf.Timestamp created_time_from = 2;
     google.protobuf.Timestamp created_time_to = 3;
     repeated int32 runtime_status = 4;
+    optional int32 limit = 5;
 }
 
 message PurgeInstanceHistoryResponse {

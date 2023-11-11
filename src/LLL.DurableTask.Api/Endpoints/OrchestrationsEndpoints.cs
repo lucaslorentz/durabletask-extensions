@@ -30,7 +30,7 @@ public static class OrchestrationsEndpoints
         {
             var orchestrationServiceSearchClient = context.RequestServices.GetRequiredService<IOrchestrationServiceQueryClient>();
 
-            var query = context.ParseQuery<ExtendedOrchestrationQuery>();
+            var query = context.ParseQuery<OrchestrationQueryExtended>();
 
             var result = await orchestrationServiceSearchClient.GetOrchestrationWithQueryAsync(query, context.RequestAborted);
 

@@ -4,7 +4,7 @@ using DurableTask.Core.Query;
 
 namespace LLL.DurableTask.Core;
 
-public class ExtendedOrchestrationQuery : OrchestrationQuery
+public class OrchestrationQueryExtended : OrchestrationQuery
 {
     public string NamePrefix { get; set; }
     public DateTime? CompletedTimeFrom { get; set; }

@@ -159,7 +159,7 @@ public class GrpcServerOrchestrationService : OrchestrationServiceBase
 
     public override async Task<GetOrchestrationWithQueryResponse> GetOrchestrationWithQuery(GetOrchestrationWithQueryRequest request, ServerCallContext context)
     {
-        var query = new ExtendedOrchestrationQuery();
+        var query = new OrchestrationQueryExtended();
         query.RuntimeStatus = request.RuntimeStatus.Select(s => (OrchestrationStatus)s).ToArray();
         query.CreatedTimeFrom = request.CreatedTimeFrom?.ToDateTime();
         query.CreatedTimeTo = request.CreatedTimeTo?.ToDateTime();
@@ -202,7 +202,10 @@ public class GrpcServerOrchestrationService : OrchestrationServiceBase
             var createdTimeTo = request.CreatedTimeTo?.ToDateTime();
             var runtimeStatus = request.RuntimeStatus.Select(s => (OrchestrationStatus)s).ToArray();
 
-            var filter = new PurgeInstanceFilter(createdTimeFrom, createdTimeTo, runtimeStatus);
+            var filter = new PurgeInstanceFilterExtended(createdTimeFrom, createdTimeTo, runtimeStatus)
+            {
+                Limit = request.HasLimit ? request.Limit : null
+            };
 
             result = await client.PurgeInstanceStateAsync(filter);
         }
