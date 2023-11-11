@@ -6,8 +6,8 @@
 
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'CarWorker' " />
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.8" />
-    <PackageReference Include="Microsoft.DurableTask.SqlServer" Version="1.1.1" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.10" />
+    <PackageReference Include="Microsoft.DurableTask.SqlServer" Version="1.2.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
   </ItemGroup>
   <ItemGroup>

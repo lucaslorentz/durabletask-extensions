@@ -5,13 +5,13 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { default as React, useCallback, useMemo } from "react";
 import { useDebounce } from "use-debounce";
-import { useApiClient } from "../../hooks/useApiClient";
-import { AutoRefreshButton } from "../../components/RefreshButton";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { Pagination } from "../../components/Pagination";
+import { AutoRefreshButton } from "../../components/RefreshButton";
+import { useApiClient } from "../../hooks/useApiClient";
 import { useLocationState } from "../../hooks/useLocationState";
 import { useOrchestrationsFilter } from "../../hooks/useOrchestrationsFilter";
 import { usePageSize } from "../../hooks/usePageSize";
@@ -55,13 +55,13 @@ export function Orchestrations() {
   const query = useQuery({
     queryKey: ["orchestrations", request],
     queryFn: () => apiClient.listOrchestrations(request),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     refetchInterval: refreshInterval ? refreshInterval * 1000 : undefined,
   });
 
   const firstPageCallback = useCallback(
     () => setContinuationTokenStack([]),
-    [setContinuationTokenStack]
+    [setContinuationTokenStack],
   );
   const previousPageCallback = useCallback(() => {
     const [, ...newStack] = continuationTokenStack;

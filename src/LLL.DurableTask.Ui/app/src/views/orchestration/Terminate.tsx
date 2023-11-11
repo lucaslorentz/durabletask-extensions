@@ -1,13 +1,13 @@
+import { LoadingButton } from "@mui/lab";
 import { Button, Grid } from "@mui/material";
+import { useMutation } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
-import React from "react";
+import React, { useCallback } from "react";
 import * as yup from "yup";
-import { useApiClient } from "../../hooks/useApiClient";
 import { TextField } from "../../form/TextField";
 import { useForm } from "../../form/useForm";
+import { useApiClient } from "../../hooks/useApiClient";
 import { TerminateRequest } from "../../models/ApiModels";
-import { useMutation } from "@tanstack/react-query";
-import { LoadingButton } from "@mui/lab";
 
 type Props = {
   instanceId: string;
@@ -31,9 +31,11 @@ export function Terminate(props: Props) {
     void,
     unknown,
     Parameters<typeof apiClient.terminateOrchestration>
-  >((args) => apiClient.terminateOrchestration(...args));
+  >({
+    mutationFn: (args) => apiClient.terminateOrchestration(...args),
+  });
 
-  async function handleSaveClick() {
+  const handleSaveClick = useCallback(async () => {
     try {
       const request: TerminateRequest = {
         reason: form.value.reason,
@@ -59,7 +61,14 @@ export function Terminate(props: Props) {
         ),
       });
     }
-  }
+  }, [
+    closeSnackbar,
+    enqueueSnackbar,
+    form,
+    instanceId,
+    onTerminate,
+    terminateMutation,
+  ]);
 
   return (
     <div>
@@ -79,7 +88,7 @@ export function Terminate(props: Props) {
               <LoadingButton
                 variant="contained"
                 color="primary"
-                loading={terminateMutation.isLoading}
+                loading={terminateMutation.isPending}
                 onClick={handleSaveClick}
                 disabled={
                   form.pendingValidation || Object.keys(form.errors).length > 0
@@ -91,7 +100,7 @@ export function Terminate(props: Props) {
             <Grid item>
               <Button
                 onClick={() => form.reset()}
-                disabled={terminateMutation.isLoading}
+                disabled={terminateMutation.isPending}
               >
                 Reset
               </Button>

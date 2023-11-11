@@ -1,9 +1,9 @@
 import { action, autorun, makeObservable, observable, runInAction } from "mobx";
 import { Observer } from "mobx-react-lite";
 import React, { useState } from "react";
-import { reach, SchemaOf, ValidationError } from "yup";
+import { Schema, ValidationError, reach } from "yup";
 
-export function useForm<T>(schema: SchemaOf<T>): Form<T> {
+export function useForm<T>(schema: Schema<T>): Form<T> {
   const [form] = useState(() => new Form<T>(schema));
 
   return form;
@@ -12,12 +12,12 @@ export function useForm<T>(schema: SchemaOf<T>): Form<T> {
 export class Form<T> {
   private cache: Map<PropertyKey, Field<any>> = new Map();
 
-  public schema: SchemaOf<T>;
+  public schema: Schema<T>;
   public value: T;
   public errors: Record<string, string>;
   public pendingValidation = true;
 
-  constructor(schema: SchemaOf<T>) {
+  constructor(schema: Schema<T>) {
     this.schema = schema;
     this.value = this.createDefaultValue();
     this.errors = {};
@@ -33,7 +33,7 @@ export class Form<T> {
       () => {
         this.validate();
       },
-      { delay: 200 }
+      { delay: 200 },
     );
   }
 
@@ -98,7 +98,7 @@ export class Form<T> {
       this as Form<any>,
       String(prop),
       prop,
-      this.schema && tryReach(this.schema, String(prop))
+      this.schema && tryReach(this.schema, String(prop)),
     );
 
     this.cache.set(prop, field);
@@ -119,7 +119,7 @@ export class Field<T> {
     public parent: Field<any> | Form<any>,
     public path: string,
     public property: PropertyKey,
-    public schema?: any
+    public schema?: any,
   ) {}
 
   field<P extends keyof T>(prop: P): Field<T[P]> {
@@ -140,7 +140,7 @@ export class Field<T> {
       this,
       newPath,
       prop,
-      this.schema && tryReach(this.schema, String(prop))
+      this.schema && tryReach(this.schema, String(prop)),
     );
 
     this.cache.set(prop, field);
@@ -220,8 +220,8 @@ export class Field<T> {
       this.schema &&
       Boolean(
         this.schema.tests.find(
-          (t: any) => t.name === "required" || t.OPTIONS?.name === "required"
-        )
+          (t: any) => t.name === "required" || t.OPTIONS?.name === "required",
+        ),
       )
     );
   }

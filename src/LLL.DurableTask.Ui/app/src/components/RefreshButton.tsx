@@ -26,10 +26,6 @@ export function AutoRefreshButton(props: Props) {
       <Button onClick={onClick} title="Refresh">
         <Sync />
       </Button>
-      <Button onClick={(e) => setRefreshAnchor(e.currentTarget)}>
-        {refreshInterval ? `${refreshInterval} seconds` : "Off"}
-        <ArrowDropDown />
-      </Button>
       <Menu
         anchorEl={refreshAnchor}
         keepMounted
@@ -57,6 +53,10 @@ export function AutoRefreshButton(props: Props) {
           </MenuItem>
         ))}
       </Menu>
+      <Button onClick={(e) => setRefreshAnchor(e.currentTarget)}>
+        {refreshInterval ? `${refreshInterval} seconds` : "Off"}
+        <ArrowDropDown />
+      </Button>
     </ButtonGroup>
   );
 }

@@ -1,6 +1,6 @@
 import { Button, Grid } from "@mui/material";
 import { useSnackbar } from "notistack";
-import React from "react";
+import React, { useCallback } from "react";
 import * as yup from "yup";
 import { useApiClient } from "../../hooks/useApiClient";
 import { TextField } from "../../form/TextField";
@@ -48,9 +48,11 @@ export function RaiseEvent(props: Props) {
     void,
     unknown,
     Parameters<typeof apiClient.raiseOrchestrationEvent>
-  >((args) => apiClient.raiseOrchestrationEvent(...args));
+  >({
+    mutationFn: (args) => apiClient.raiseOrchestrationEvent(...args),
+  });
 
-  async function handleSaveClick() {
+  const handleSaveClick = useCallback(async () => {
     try {
       const eventName = form.value.eventName;
       const eventData = form.value.eventData
@@ -77,7 +79,14 @@ export function RaiseEvent(props: Props) {
         ),
       });
     }
-  }
+  }, [
+    closeSnackbar,
+    enqueueSnackbar,
+    form,
+    instanceId,
+    onRaiseEvent,
+    raiseEventMutation,
+  ]);
 
   return (
     <div>
@@ -88,8 +97,10 @@ export function RaiseEvent(props: Props) {
         <Grid item xs={12}>
           <CodeEditor
             field={form.field("eventData")}
-            height={200}
-            defaultLanguage="json"
+            editorProps={{
+              height: 200,
+              defaultLanguage: "json",
+            }}
           />
         </Grid>
         {form.render((form) => (
@@ -104,11 +115,11 @@ export function RaiseEvent(props: Props) {
               <LoadingButton
                 variant="contained"
                 color="primary"
-                loading={raiseEventMutation.isLoading}
+                loading={raiseEventMutation.isPending}
                 disabled={
                   form.pendingValidation ||
                   Object.keys(form.errors).length > 0 ||
-                  raiseEventMutation.isLoading
+                  raiseEventMutation.isPending
                 }
                 onClick={handleSaveClick}
               >
@@ -118,7 +129,7 @@ export function RaiseEvent(props: Props) {
             <Grid item>
               <Button
                 onClick={() => form.reset()}
-                disabled={raiseEventMutation.isLoading}
+                disabled={raiseEventMutation.isPending}
               >
                 Reset
               </Button>

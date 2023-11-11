@@ -17,17 +17,21 @@ type Props = { field: Field<any> } & Omit<
 >;
 
 export const CodeEditor = observer((props: Props) => {
+  const { field, editorProps, ...other } = props;
   return (
     <MuiCodeEditor
       fullWidth
       size="small"
-      {...props}
-      required={props.field.required}
-      label={props.field.label}
-      value={props.field.value ?? ""}
-      onChange={(value) => (props.field.value = value)}
-      error={props.field.hasError}
-      helperText={props.field.errorMessage}
+      {...other}
+      required={field.required}
+      label={field.label}
+      value={field.value ?? ""}
+      editorProps={{
+        ...editorProps,
+        onChange: (value) => (field.value = value),
+      }}
+      error={field.hasError}
+      helperText={field.errorMessage}
     />
   );
 });

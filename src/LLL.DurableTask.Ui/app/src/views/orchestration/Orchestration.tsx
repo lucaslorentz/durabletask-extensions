@@ -12,7 +12,7 @@ import {
   Tabs,
   Typography,
 } from "@mui/material";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { useConfirm } from "material-ui-confirm";
 import { useSnackbar } from "notistack";
 import React, { useCallback } from "react";
@@ -73,9 +73,9 @@ export function Orchestration() {
     queryFn: () =>
       apiClient.getOrchestrationHistory(
         instanceId,
-        stateQuery.data!.orchestrationInstance.executionId
+        stateQuery.data!.orchestrationInstance.executionId,
       ),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     enabled:
       Boolean(stateQuery.data?.orchestrationInstance.executionId) &&
       apiClient.isAuthorized("OrchestrationsGetExecutionHistory"),
@@ -85,7 +85,9 @@ export function Orchestration() {
     void,
     unknown,
     Parameters<typeof apiClient.purgeOrchestration>
-  >((args) => apiClient.purgeOrchestration(...args));
+  >({
+    mutationFn: (args) => apiClient.purgeOrchestration(...args),
+  });
 
   const handlePurgeClick = useCallback(() => {
     confirm({
@@ -156,7 +158,7 @@ export function Orchestration() {
               <LoadingButton
                 variant="outlined"
                 startIcon={<DeleteIcon />}
-                loading={purgeMutation.isLoading}
+                loading={purgeMutation.isPending}
                 onClick={handlePurgeClick}
                 size="small"
               >
@@ -246,7 +248,7 @@ export function Orchestration() {
                   {JSON.stringify(
                     { state: stateQuery.data, history: historyQuery.data },
                     null,
-                    2
+                    2,
                   )}
                 </pre>
               </Box>

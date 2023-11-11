@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
-import React from "react";
+import React, { useCallback } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import { CodeEditor } from "../../form/CodeEditor";
@@ -41,7 +41,7 @@ const schema = yup
             key: yup.string().label("Key").required(),
             value: yup.string().label("Value").required(),
           })
-          .required()
+          .required(),
       )
       .default(() => [])
       .defined(),
@@ -58,19 +58,24 @@ export function Create() {
     Awaited<ReturnType<typeof apiClient.createOrchestration>>,
     unknown,
     Parameters<typeof apiClient.createOrchestration>
-  >((args) => apiClient.createOrchestration(...args));
+  >({
+    mutationFn: (args) => apiClient.createOrchestration(...args),
+  });
 
-  async function handleSaveClick() {
+  const handleSaveClick = useCallback(async () => {
     try {
       const request: CreateOrchestrationRequest = {
         name: form.value.name,
         version: form.value.version,
         instanceId: form.value.instanceId,
         input: form.value.input ? JSON.parse(form.value.input) : null,
-        tags: form.value.tags.reduce((previous, current) => {
-          previous[current.key!] = current.value!;
-          return previous;
-        }, {} as Record<string, string>),
+        tags: form.value.tags.reduce(
+          (previous, current) => {
+            previous[current.key!] = current.value!;
+            return previous;
+          },
+          {} as Record<string, string>,
+        ),
       };
 
       const instance = await createMutation.mutateAsync([request]);
@@ -91,7 +96,7 @@ export function Create() {
         ),
       });
     }
-  }
+  }, [closeSnackbar, createMutation, enqueueSnackbar, form, navigate]);
 
   return (
     <div>
@@ -118,8 +123,10 @@ export function Create() {
             <Grid item xs={12}>
               <CodeEditor
                 field={form.field("input")}
-                height={200}
-                defaultLanguage="json"
+                editorProps={{
+                  height: 200,
+                  defaultLanguage: "json",
+                }}
               />
             </Grid>
             {apiClient.hasFeature("Tags") && (
@@ -152,7 +159,7 @@ export function Create() {
                         </IconButton>
                       </Stack>
                     </Grid>
-                  ))
+                  )),
                 )}
               </>
             )}
@@ -168,7 +175,7 @@ export function Create() {
                   <LoadingButton
                     variant="contained"
                     color="primary"
-                    loading={createMutation.isLoading}
+                    loading={createMutation.isPending}
                     onClick={handleSaveClick}
                     disabled={
                       form.pendingValidation ||
@@ -181,7 +188,7 @@ export function Create() {
                 <Grid item>
                   <Button
                     onClick={() => form.reset()}
-                    disabled={createMutation.isLoading}
+                    disabled={createMutation.isPending}
                   >
                     Reset
                   </Button>
