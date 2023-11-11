@@ -5,13 +5,18 @@ import React from "react";
 
 type OmitTextFieldProps = "multiline" | "onChange";
 
-type Props = React.ComponentProps<typeof Editor> &
-  Omit<TextFieldProps, OmitTextFieldProps> & {
-    onChange: (newValue: string, e: Event) => void;
-  };
+type EditorProps = React.ComponentProps<typeof Editor>;
+
+type Props = Omit<TextFieldProps, OmitTextFieldProps> & {
+  editorProps?: EditorProps;
+};
+
+const wrappedEditor = React.forwardRef((props: EditorProps, _ref) => {
+  return <Editor {...props} />;
+});
 
 export function MuiCodeEditor(props: Props) {
-  const { disabled, onChange, ...other } = props;
+  const { disabled, editorProps, ...other } = props;
 
   return (
     <MuiTextField
@@ -20,9 +25,9 @@ export function MuiCodeEditor(props: Props) {
       InputLabelProps={{ shrink: true }}
       disabled={disabled}
       InputProps={{
-        inputComponent: Editor as any,
+        inputComponent: wrappedEditor as any,
         inputProps: {
-          ...(props as any),
+          ...(editorProps as any),
           options: {
             minimap: {
               enabled: false,

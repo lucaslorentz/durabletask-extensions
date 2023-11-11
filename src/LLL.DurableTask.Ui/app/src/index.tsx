@@ -27,7 +27,7 @@ const root = createRoot(container!);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      cacheTime: 0,
+      gcTime: 0,
       retry: 0,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
@@ -60,7 +60,7 @@ root.render(
         </SnackbarProvider>
       </ThemeProvider>
     </StyledEngineProvider>
-  </HashRouter>
+  </HashRouter>,
   // </React.StrictMode>
 );
 
