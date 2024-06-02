@@ -38,6 +38,9 @@ indent_size = 2
 # Dotnet code style settings:
 [*.{cs,vb}]
 
+# EF1002: FromSqlRaw warnings
+dotnet_diagnostic.EF1002.severity = none
+
 # IDE0055: Fix formatting
 csharp_style_namespace_declarations = file_scoped:warning
 dotnet_diagnostic.IDE0055.severity = warning

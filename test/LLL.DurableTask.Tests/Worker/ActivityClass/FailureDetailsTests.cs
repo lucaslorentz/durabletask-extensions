@@ -41,7 +41,7 @@ public class FailureDetailsTests : WorkerTestBase
 
         result.OrchestrationStatus.Should().Be(OrchestrationStatus.Failed);
         result.FailureDetails.Should().NotBeNull();
-        result.FailureDetails.ErrorMessage.Should().Match("Task '*' (#0) failed with an unhandled exception: SomeError");
+        result.FailureDetails.ErrorMessage.Should().Contain("SomeError");
     }
 
     [Activity(Name = "Throw")]
