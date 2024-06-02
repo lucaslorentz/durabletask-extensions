@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ClearScript" Version="7.4.4" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.7.0" />
-    <PackageReference Include="Microsoft.ClearScript.osx-x64" Version="7.4.4" />
-    <PackageReference Include="Microsoft.ClearScript.osx-arm64" Version="7.4.4" />
+    <PackageReference Include="Microsoft.ClearScript" Version="7.4.5" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
+    <PackageReference Include="Microsoft.ClearScript.osx-x64" Version="7.4.5" />
+    <PackageReference Include="Microsoft.ClearScript.osx-arm64" Version="7.4.5" />
   </ItemGroup>
 
   <ItemGroup>

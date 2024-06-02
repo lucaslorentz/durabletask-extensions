@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using LLL.DurableTask.Api.Extensions;
 using LLL.DurableTask.Api.Metadata;
 using LLL.DurableTask.Api.Models;
@@ -47,8 +46,12 @@ public static class EntrypointEndpoint
                 if (policies.Length > 0)
                 {
                     var authorizationService = context.RequestServices.GetRequiredService<IAuthorizationService>();
-                    var authorizeTasks = policies.Select(p => authorizationService.AuthorizeAsync(context.User, p));
-                    authorized = (await Task.WhenAll(authorizeTasks)).All(r => r.Succeeded);
+                    foreach (var policy in policies)
+                    {
+                        var authorizationResult = await authorizationService.AuthorizeAsync(context.User, policy);
+                        if (!authorizationResult.Succeeded)
+                            authorized = false;
+                    }
                 }
 
                 var httpMethodMetadata = endpoint.Metadata.GetMetadata<HttpMethodMetadata>();

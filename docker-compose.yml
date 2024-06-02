@@ -36,7 +36,7 @@ services:
       - SYS_PTRACE
 
   postgres:
-    image: postgres
+    image: postgres:15
     ports:
       - 5432:5432
     environment:

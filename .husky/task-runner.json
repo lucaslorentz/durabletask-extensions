@@ -1,6 +1,6 @@
 {
    "tasks": [
-     {
+      {
        "name": "Run dotnet format",
        "command": "dotnet",
        "args": [
@@ -12,7 +12,6 @@
          "${staged}"
        ],
        "include": ["**/*.cs"]
-     }
+      }
    ]
- }
- 
+}
