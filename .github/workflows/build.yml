@@ -20,27 +20,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.301
+
       - name: Restore
         run: dotnet restore
+
       - name: Build
         run: dotnet build -c Release --no-restore
+
       - name: Docker Compose Up
-        run: docker-compose up -d
+        run: docker compose up -d
+
       - name: Install Minicover
         run: dotnet tool install -g minicover
+
       - name: Instrument
         run: |
           minicover instrument \
             --assemblies "test/**.dll" \
             --exclude-sources "**/obj/**.cs" \
             --exclude-sources "**/Migrations/**"
+
       - name: Test
         run: dotnet test -c Release --no-build
+
       - name: Report coverage
         run: |
           minicover report \
@@ -61,14 +69,17 @@ jobs:
             --branch "$GITHUB_REF"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Uninstrument
         run: minicover uninstrument
+
       - name: Pack
         run: |
           export Version=0.0.1-ci-$GITHUB_RUN_ID
           dotnet pack -c Release --no-restore
+
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: nupkg
           path: ./src/**/*.nupkg
@@ -77,15 +88,19 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.301
+
       - name: Create Release NuGet package
         run: |
           export Version=${GITHUB_REF:11}
           echo Version: $Version
           dotnet pack -c Release
+
       - name: Push to NuGet Feed
         run: dotnet nuget push "./src/**/*.nupkg" --source $NUGET_FEED --skip-duplicate --api-key $NUGET_KEY

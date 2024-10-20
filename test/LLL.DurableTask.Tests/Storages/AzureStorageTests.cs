@@ -1,4 +1,5 @@
-﻿using LLL.DurableTask.Worker.Builder;
+﻿using DurableTask.AzureStorage;
+using LLL.DurableTask.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -27,7 +28,7 @@ public class AzureStorageTests : StorageTestBase
         services.AddDurableTaskAzureStorage(options =>
         {
             options.TaskHubName = "test";
-            options.StorageConnectionString = connectionString;
+            options.StorageAccountClientProvider = new StorageAccountClientProvider(connectionString);
         });
     }
 

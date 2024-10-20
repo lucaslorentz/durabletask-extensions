@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ClearScript" Version="7.4.5" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
     <PackageReference Include="Microsoft.ClearScript.osx-x64" Version="7.4.5" />
     <PackageReference Include="Microsoft.ClearScript.osx-arm64" Version="7.4.5" />
   </ItemGroup>
