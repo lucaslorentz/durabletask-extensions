@@ -1,19 +1,32 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
+﻿var builder = WebApplication.CreateBuilder(args);
 
-namespace Api;
-
-public class Program
+var services = builder.Services;
+services.AddDurableTaskServerStorageGrpc(options =>
 {
-    public static void Main(string[] args)
-    {
-        CreateHostBuilder(args).Build().Run();
-    }
+    options.BaseAddress = new Uri("http://localhost:5000");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+});
 
-    public static IHostBuilder CreateHostBuilder(string[] args) =>
-        Host.CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webBuilder =>
-            {
-                webBuilder.UseStartup<Startup>();
-            });
-}
+services.AddDurableTaskClient();
+
+services.AddDurableTaskApi(options =>
+{
+    options.DisableAuthorization = true;
+});
+
+services.AddCors(c => c.AddDefaultPolicy(p => p
+    .AllowAnyOrigin()
+    .AllowAnyHeader()
+    .WithMethods("GET", "POST", "DELETE")));
+
+var app = builder.Build();
+
+app.UseRouting();
+
+app.UseCors();
+
+app.MapDurableTaskApi();
+
+app.Run();

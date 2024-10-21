@@ -10,12 +10,14 @@ This sample was built to demonstrate a microservices architecture with the follo
 - **CarWorker:** Implements [BookCar](CarWorker/Activities/BookCarActivity.cs) and [CancelCar](CarWorker/Activities/CancelCarActivity.cs) activities.
 - **HotelWorker:** Implements [BookHotel](HotelWorker/Activities/BookHotelActivity.cs) and [CancelHotel](HotelWorker/Activities/CancelHotelActivity.cs) activities.
 - **BPMNWorker:** An experimental BPMN runner built on top of Durable Tasks. There are also [BookParallel](BpmnWorker/Workflows/BookParallel.bpmn) and [BookSequential](BpmnWorker/Workflows/BookSequential.bpmn) BPMN workflows for the given problem.
+- **AppHost:** Aspire.NET host project to orchestrate and run all applications.
 
 ## Runinng the sample
 
 1. Configure a EFCore storage at the [server](Server/Startup.cs#L37)
-2. Simultaneously run all the projects listed above
-3. Open the UI at https://localhost:5002/
+2. Run project AppHost with dotnet run.
+3. Open Aspire Dashboard at https://localhost:17198/
+3. Open the DurableTask UI at https://localhost:5002/
 4. Create the following test orchestrations and watch them be executed
    | Name | Version | InstanceId | Input |
    | --- | --- | --- | --- |

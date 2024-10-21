@@ -1,32 +1,26 @@
-﻿using System.Runtime.InteropServices;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Hosting;
+﻿var builder = WebApplication.CreateBuilder(args);
 
-namespace Server;
+var services = builder.Services;
+services.AddGrpc();
 
-public class Program
+// var mysqlConnectionString = "server=localhost;database=durabletask;user=root;password=root";
+
+services.AddDurableTaskEFCoreStorage()
+    .UseInMemoryDatabase("Sample");
+// .UseNpgsql("Server=localhost;Port=5432;Database=durabletask;User Id=postgres;Password=root");
+// .UseMySql(mysqlConnectionString, ServerVersion.AutoDetect(mysqlConnectionString));
+// .UseSqlServer("server=localhost;database=durabletask;user=sa;password=P1ssw0rd");
+
+services.AddDurableTaskServer(builder =>
 {
-    public static void Main(string[] args)
-    {
-        CreateHostBuilder(args).Build().Run();
-    }
+    builder.AddGrpcEndpoints();
+});
 
-    public static IHostBuilder CreateHostBuilder(string[] args) =>
-        Host.CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webBuilder =>
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    webBuilder.ConfigureKestrel(options =>
-                    {
-                        options.ListenLocalhost(5001, o => o.UseHttps());
+var app = builder.Build();
 
-                        // Setup a HTTP/2 endpoint without TLS.
-                        options.ListenLocalhost(5000, o => o.Protocols =
-                                HttpProtocols.Http2);
-                    });
-                }
-                webBuilder.UseStartup<Startup>();
-            });
-}
+app.UseRouting();
+
+app.MapDurableTaskServerGrpcService();
+
+app.Run();
+
