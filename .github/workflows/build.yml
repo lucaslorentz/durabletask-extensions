@@ -27,6 +27,9 @@ jobs:
         with:
           dotnet-version: 8.0.301
 
+      - name: Install workloads
+        run: dotnet workload restore
+
       - name: Restore
         run: dotnet restore
 
