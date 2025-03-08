@@ -33,6 +33,10 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      # Yarn build in advance to avoid cuncurrency issues due to multi target build
+      - name: Yarn Build
+        run: dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net9.0 -t:YarnBuild --no-restore
+
       - name: Build
         run: dotnet build -c Release --no-restore
 
@@ -50,7 +54,7 @@ jobs:
             --exclude-sources "**/Migrations/**"
 
       - name: Test
-        run: dotnet test -c Release --no-build
+        run: dotnet test -c Release -f:net9.0 --no-build
 
       - name: Report coverage
         run: |
