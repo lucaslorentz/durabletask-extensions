@@ -109,7 +109,7 @@ jobs:
           echo Version: $Version
           dotnet restore
           dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net9.0 -t:YarnBuild --no-restore
-          dotnet pack -c Release
+          dotnet pack -c Release --no-restore
 
       - name: Push to NuGet Feed
         run: dotnet nuget push "./src/**/*.nupkg" --source $NUGET_FEED --skip-duplicate --api-key $NUGET_KEY
