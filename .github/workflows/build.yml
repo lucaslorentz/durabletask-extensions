@@ -107,6 +107,8 @@ jobs:
         run: |
           export Version=${GITHUB_REF:11}
           echo Version: $Version
+          dotnet restore
+          dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net9.0 -t:YarnBuild --no-restore
           dotnet pack -c Release
 
       - name: Push to NuGet Feed
