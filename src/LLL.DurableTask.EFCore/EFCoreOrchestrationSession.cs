@@ -87,6 +87,20 @@ public class EFCoreOrchestrationSession : IOrchestrationSession
                 .ToArray();
         }
 
+        var isRunning = RuntimeState.ExecutionStartedEvent == null
+                        || RuntimeState.OrchestrationStatus is OrchestrationStatus.Running
+                            or OrchestrationStatus.Suspended
+                            or OrchestrationStatus.Pending;
+        if (!isRunning)
+        {
+            foreach (var message in newDbMessages)
+            {
+                dbContext.OrchestrationMessages.Attach(message);
+                dbContext.OrchestrationMessages.Remove(message);
+            }
+            newDbMessages = [];
+        }
+
         Messages.AddRange(newDbMessages);
 
         var deserializedMessages = newDbMessages
