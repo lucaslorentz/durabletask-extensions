@@ -7,7 +7,6 @@ using DurableTask.Core;
 using DurableTask.Core.History;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
-using LLL.DurableTask.EFCore.Extensions;
 using LLL.DurableTask.EFCore.Mappers;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
@@ -135,9 +134,7 @@ public partial class EFCoreOrchestrationService :
                 .Select(e => _options.DataConverter.Deserialize<HistoryEvent>(e.Content))
                 .ToArray();
 
-            var reopenedEvents = deserializedEvents.Reopen(_options.DataConverter);
-
-            var runtimeState = new OrchestrationRuntimeState(reopenedEvents);
+            var runtimeState = new OrchestrationRuntimeState(deserializedEvents);
 
             var session = new EFCoreOrchestrationSession(
                 _options,
@@ -163,7 +160,7 @@ public partial class EFCoreOrchestrationService :
             {
                 InstanceId = instance.InstanceId,
                 LockedUntilUtc = instance.LockedUntil,
-                OrchestrationRuntimeState = runtimeState,
+                OrchestrationRuntimeState = session.RuntimeState,
                 NewMessages = messages,
                 Session = session
             };

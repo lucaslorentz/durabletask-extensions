@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using LLL.DurableTask.EFCore.Entities;
+using LLL.DurableTask.EFCore.Extensions;
 using LLL.DurableTask.EFCore.Polling;
 using Microsoft.EntityFrameworkCore;
 
@@ -87,11 +89,39 @@ public class EFCoreOrchestrationSession : IOrchestrationSession
                 .ToArray();
         }
 
-        Messages.AddRange(newDbMessages);
-
         var deserializedMessages = newDbMessages
             .Select(w => _options.DataConverter.Deserialize<TaskMessage>(w.Message))
             .ToList();
+
+        if (RuntimeState.ExecutionStartedEvent is not null)
+        {
+            if (RuntimeState.OrchestrationStatus is OrchestrationStatus.Completed
+                && deserializedMessages.Any(m => m.Event.EventType == EventType.EventRaised))
+            {
+                // Reopen completed orchestrations after receiving an event raised
+                RuntimeState = new OrchestrationRuntimeState(
+                    RuntimeState.Events.Reopen(_options.DataConverter)
+                );
+            }
+
+            var isRunning = RuntimeState.OrchestrationStatus is OrchestrationStatus.Running
+                    or OrchestrationStatus.Suspended
+                    or OrchestrationStatus.Pending;
+
+            if (!isRunning)
+            {
+                // Discard all messages if not running
+                foreach (var message in newDbMessages)
+                {
+                    dbContext.OrchestrationMessages.Attach(message);
+                    dbContext.OrchestrationMessages.Remove(message);
+                }
+                newDbMessages = [];
+                deserializedMessages = [];
+            }
+        }
+
+        Messages.AddRange(newDbMessages);
 
         return deserializedMessages;
     }

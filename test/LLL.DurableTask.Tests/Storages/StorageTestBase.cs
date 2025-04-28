@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using FluentAssertions;
 using LLL.DurableTask.Core;
+using LLL.DurableTask.Core.Serializing;
 using LLL.DurableTask.EFCore.Polling;
 using LLL.DurableTask.Tests.Storage.Activities;
 using LLL.DurableTask.Tests.Storage.Orchestrations;
@@ -157,6 +159,36 @@ public abstract class StorageTestBase : IAsyncLifetime
         state.Should().NotBeNull();
         state.Output.Should().Be($"\"{input}\"");
         state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
+    }
+
+    [Trait("Category", "Integration")]
+    [SkippableFact]
+    public async Task TimerOrchestration_ShouldTerminateProperly()
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+
+        var input = Guid.NewGuid();
+
+        var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+            TimerOrchestration.Name,
+            TimerOrchestration.Version,
+            input);
+
+        await Task.Delay(TimeSpan.FromSeconds(1));
+
+        await taskHubClient.TerminateInstanceAsync(instance);
+
+        var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
+
+        state.Should().NotBeNull();
+        state.OrchestrationStatus.Should().Be(OrchestrationStatus.Terminated);
+
+        await Task.Delay(TimeSpan.FromSeconds(3));
+
+        var history = await taskHubClient.GetOrchestrationHistoryAsync(instance);
+
+        var events = new TypelessJsonDataConverter().Deserialize<HistoryEvent[]>(history);
+        events.Should().NotContain(x => x.EventType == EventType.TimerFired);
     }
 
     [Trait("Category", "Integration")]
