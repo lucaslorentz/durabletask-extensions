@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>net9.0;net8.0</TargetFrameworks>
+    <!-- EF Core 9 MySql package is pre-release and requires a pre-release package -->
+    <Version Condition="'$(Version)' != '' AND !$(Version.Contains(&quot;-&quot;))">$(Version)-preview</Version>
   </PropertyGroup>
 
   <PropertyGroup>
