@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using AwesomeAssertions;
 using DurableTask.Core;
-using FluentAssertions;
 using LLL.DurableTask.Tests.Worker.TestHelpers;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;

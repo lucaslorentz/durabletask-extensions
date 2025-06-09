@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using AwesomeAssertions;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
-using FluentAssertions;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.Core.Serializing;
 using LLL.DurableTask.EFCore.Polling;

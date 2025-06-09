@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AwesomeAssertions;
 using DurableTask.Core;
-using FluentAssertions;
 using LLL.DurableTask.EFCore;
 using LLL.DurableTask.Tests.Storage.Orchestrations;
 using Microsoft.EntityFrameworkCore;

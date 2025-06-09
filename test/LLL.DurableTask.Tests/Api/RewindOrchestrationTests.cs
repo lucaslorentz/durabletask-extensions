@@ -2,8 +2,8 @@
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using AwesomeAssertions;
 using DurableTask.Core;
-using FluentAssertions;
 using LLL.DurableTask.Api.Models;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;

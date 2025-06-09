@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using FluentAssertions;
+using AwesomeAssertions;
 using LLL.DurableTask.Api.Models;
 using LLL.DurableTask.Core;
 using Microsoft.AspNetCore.TestHost;
