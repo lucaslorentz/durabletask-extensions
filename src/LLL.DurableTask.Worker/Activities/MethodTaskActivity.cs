@@ -87,21 +87,34 @@ public class MethodTaskActivity : TaskActivity
 
     private async Task<string> SerializeResult(object result)
     {
-        if (result is Task task)
+        // Store the original result in a local variable
+        var localResult = result;
+
+        // Check if the result is a non-null Task (could be Task or Task<T>)
+        if (localResult is not null and Task task)
         {
+            // Reset localResult as we will replace it after awaiting the task
+            localResult = null;
+
+            // Await the task to ensure it's completed before accessing its result
+            await task.ConfigureAwait(false);
+
+            // Check if method return type if a generic Task (i.e., Task<T>)
             if (_methodInfo.ReturnType.IsGenericType)
             {
-                result = await (dynamic)task;
-            }
-            else
-            {
-                await task;
-                result = null;
+                // Get the runtime type of the task (might be compiler-generated)
+                var currentType = task.GetType();
+
+                // Get the 'Result' property from the Task<T> type
+                var resultProperty = currentType.GetProperty(nameof(Task<object>.Result));
+                if (resultProperty != null)
+                {
+                    // Retrieve the result from the completed Task<T>
+                    localResult = resultProperty.GetValue(task);
+                }
             }
         }
 
-        var serializedResult = _dataConverter.Serialize(result);
-
-        return serializedResult;
+        return _dataConverter.Serialize(localResult);
     }
 }
