@@ -120,7 +120,7 @@ public partial class EFCoreOrchestrationService :
             using var dbContext = _dbContextFactory.CreateDbContext();
             var instance = await LockNextInstanceAsync(dbContext, orchestrations);
 
-            if (instance == null)
+            if (instance is null)
                 return null;
 
             var execution = await dbContext.Executions
@@ -165,7 +165,7 @@ public partial class EFCoreOrchestrationService :
                 Session = session
             };
         },
-        r => r != null,
+        r => r is not null,
         receiveTimeout,
         _options.PollingInterval,
         stoppableCancellationToken);
@@ -189,7 +189,7 @@ public partial class EFCoreOrchestrationService :
             using var dbContext = _dbContextFactory.CreateDbContext();
             var activityMessage = await LockActivityMessage(dbContext, activities);
 
-            if (activityMessage == null)
+            if (activityMessage is null)
                 return null;
 
             return new TaskActivityWorkItem
@@ -199,7 +199,7 @@ public partial class EFCoreOrchestrationService :
                 LockedUntilUtc = activityMessage.LockedUntil
             };
         },
-        x => x != null,
+        x => x is not null,
         receiveTimeout,
         _options.PollingInterval,
         stoppableCancellationToken);
@@ -333,7 +333,7 @@ public partial class EFCoreOrchestrationService :
                 [orchestrationState.OrchestrationInstance.InstanceId] = orchestrationQueueName
             };
 
-            if (orchestrationState.ParentInstance != null)
+            if (orchestrationState.ParentInstance is not null)
                 knownQueues[orchestrationState.ParentInstance.OrchestrationInstance.InstanceId] = QueueMapper.ToQueue(orchestrationState.ParentInstance.Name, orchestrationState.ParentInstance.Version);
 
             // Write messages
@@ -345,7 +345,7 @@ public partial class EFCoreOrchestrationService :
 
             var allOrchestrationMessages = orchestratorMessages
                 .Concat(timerMessages)
-                .Concat(continuedAsNewMessage != null ? new[] { continuedAsNewMessage } : Enumerable.Empty<TaskMessage>())
+                .Concat(continuedAsNewMessage is not null ? new[] { continuedAsNewMessage } : Enumerable.Empty<TaskMessage>())
                 .ToArray();
 
             await SendTaskOrchestrationMessagesAsync(dbContext, allOrchestrationMessages, knownQueues);
@@ -409,11 +409,11 @@ public partial class EFCoreOrchestrationService :
 
         foreach (var instanceGroup in instancesGroups)
         {
-            if (knownQueues == null || !knownQueues.TryGetValue(instanceGroup.Key, out var queue))
+            if (knownQueues is null || !knownQueues.TryGetValue(instanceGroup.Key, out var queue))
             {
                 var instance = await dbContext.Instances.FindAsync(instanceGroup.Key);
 
-                if (instance == null)
+                if (instance is null)
                     throw new Exception($"Instance {instanceGroup.Key} not found");
 
                 queue = instance.LastQueue;
@@ -434,7 +434,7 @@ public partial class EFCoreOrchestrationService :
     {
         Execution execution;
 
-        if (existingExecution == null)
+        if (existingExecution is null)
         {
             execution = _executionMapper.CreateExecution(runtimeState);
             await dbContext.Executions.AddAsync(execution);
@@ -478,7 +478,7 @@ public partial class EFCoreOrchestrationService :
 
     private async Task<Instance> LockNextInstanceAsync(OrchestrationDbContext dbContext, INameVersionInfo[] orchestrations)
     {
-        if (orchestrations == null)
+        if (orchestrations is null)
             return await _dbContextExtensions.WithinTransaction(dbContext,
                 () => _dbContextExtensions.TryLockNextInstanceAsync(dbContext, _options.OrchestrationLockTimeout));
 
@@ -488,7 +488,7 @@ public partial class EFCoreOrchestrationService :
 
         var instance = await _dbContextExtensions.WithinTransaction(dbContext,
             () => _dbContextExtensions.TryLockNextInstanceAsync(dbContext, queues, _options.OrchestrationLockTimeout));
-        if (instance != null)
+        if (instance is not null)
             return instance;
 
         return null;
@@ -499,7 +499,7 @@ public partial class EFCoreOrchestrationService :
         var lockId = Guid.NewGuid().ToString();
         var lockUntilUtc = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
 
-        if (activities == null)
+        if (activities is null)
             return await _dbContextExtensions.WithinTransaction(dbContext,
                 () => _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, _options.OrchestrationLockTimeout));
 
@@ -509,7 +509,7 @@ public partial class EFCoreOrchestrationService :
 
         var activityMessage = await _dbContextExtensions.WithinTransaction(dbContext,
             () => _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, queues, _options.OrchestrationLockTimeout));
-        if (activityMessage != null)
+        if (activityMessage is not null)
             return activityMessage;
 
         return null;

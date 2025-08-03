@@ -138,7 +138,7 @@ public abstract class StorageTestBase : IAsyncLifetime
 
         state = await BackoffPollingHelper.PollAsync(
             async () => await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout),
-            x => x != null && x.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew,
+            x => x is not null && x.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew,
             FastWaitTimeout,
             new PollingIntervalOptions(10, 1.2, 100),
             CancellationToken.None);
@@ -331,7 +331,7 @@ public abstract class StorageTestBase : IAsyncLifetime
     {
         var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
         var purgeClient = _host.Services.GetService<IOrchestrationServicePurgeClient>();
-        Skip.If(purgeClient == null, "Purge instance not supported");
+        Skip.If(purgeClient is null, "Purge instance not supported");
 
         var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
             EmptyOrchestration.Name,
@@ -353,7 +353,7 @@ public abstract class StorageTestBase : IAsyncLifetime
     {
         var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
         var purgeClient = _host.Services.GetService<IOrchestrationServicePurgeClient>();
-        Skip.If(purgeClient == null, "Purge instance not supported");
+        Skip.If(purgeClient is null, "Purge instance not supported");
 
         var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
             EmptyOrchestration.Name,
@@ -390,7 +390,7 @@ public abstract class StorageTestBase : IAsyncLifetime
     {
         var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
         var queryClient = _host.Services.GetService<IOrchestrationServiceQueryClient>();
-        Skip.If(queryClient == null, "Query client instance not supported");
+        Skip.If(queryClient is null, "Query client instance not supported");
         _ = await taskHubClient.CreateOrchestrationInstanceAsync(
             EmptyOrchestration.Name,
             EmptyOrchestration.Version,

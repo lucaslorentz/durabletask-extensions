@@ -78,7 +78,7 @@ public class GrpcClientOrchestrationSession : IOrchestrationSession
                 OutboundMessages = { outboundMessages.Select(_options.DataConverter.Serialize) },
                 OrchestratorMessages = { orchestratorMessages.Select(_options.DataConverter.Serialize) },
                 TimerMessages = { timerMessages.Select(_options.DataConverter.Serialize) },
-                ContinuedAsNewMessage = continuedAsNewMessage == null
+                ContinuedAsNewMessage = continuedAsNewMessage is null
                     ? string.Empty
                     : _options.DataConverter.Serialize(continuedAsNewMessage),
                 OrchestrationState = _options.DataConverter.Serialize(orchestrationState)
@@ -115,7 +115,7 @@ public class GrpcClientOrchestrationSession : IOrchestrationSession
             throw new Exception("Unexpected response");
 
         var fetchResponse = _stream.ResponseStream.Current.FetchResponse;
-        if (fetchResponse.NewMessages == null)
+        if (fetchResponse.NewMessages is null)
             return null;
 
         return fetchResponse.NewMessages.Messages

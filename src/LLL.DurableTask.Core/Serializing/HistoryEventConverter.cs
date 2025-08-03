@@ -45,7 +45,7 @@ public class HistoryEventConverter : JsonConverter
 
         var eventTypeToken = jObject.GetValue("EventType", StringComparison.OrdinalIgnoreCase);
 
-        if (eventTypeToken == null)
+        if (eventTypeToken is null)
             throw new Exception("Expected EventType field in HistoryEvent");
 
         var eventType = eventTypeToken.ToObject<EventType>();

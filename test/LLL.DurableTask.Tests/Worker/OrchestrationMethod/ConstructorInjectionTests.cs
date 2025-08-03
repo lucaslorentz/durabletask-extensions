@@ -64,7 +64,7 @@ public class ConstructorInjectionTests : WorkerTestBase
         [Orchestration(Name = "Test")]
         public Task<bool> Run()
         {
-            return Task.FromResult(_singleton != null && _scoped != null && _transient != null);
+            return Task.FromResult(_singleton is not null && _scoped is not null && _transient is not null);
         }
     }
     public class SingletonClass { }

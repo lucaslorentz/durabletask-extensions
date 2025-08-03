@@ -52,7 +52,7 @@ public class EFCoreOrchestrationSession : IOrchestrationSession
             await dbContext.SaveChangesAsync();
             return messages;
         },
-        x => x == null || x.Count > 0,
+        x => x is null || x.Count > 0,
         _options.FetchNewMessagesPollingTimeout,
         _options.PollingInterval,
         _stopCancellationToken);
@@ -73,7 +73,7 @@ public class EFCoreOrchestrationSession : IOrchestrationSession
             .ToArrayAsync(cancellationToken);
 
         var messagesToDiscard = newDbMessages
-            .Where(m => m.ExecutionId != null && m.ExecutionId != Instance.LastExecutionId)
+            .Where(m => m.ExecutionId is not null && m.ExecutionId != Instance.LastExecutionId)
             .ToArray();
 
         if (messagesToDiscard.Length > 0)

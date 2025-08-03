@@ -52,7 +52,7 @@ public class MySqlOrchestrationDbContextExtensions : OrchestrationDbContextExten
                 FOR UPDATE SKIP LOCKED
             ", DateTime.UtcNow).WithStraightJoin().ToArrayAsync()).FirstOrDefault();
 
-        if (instance == null)
+        if (instance is null)
             return null;
 
         instance.LockId = Guid.NewGuid().ToString();
@@ -84,7 +84,7 @@ public class MySqlOrchestrationDbContextExtensions : OrchestrationDbContextExten
                 FOR UPDATE SKIP LOCKED
             ", parameters).WithStraightJoin().ToArrayAsync()).FirstOrDefault();
 
-        if (instance == null)
+        if (instance is null)
             return null;
 
         instance.LockId = Guid.NewGuid().ToString();
@@ -106,7 +106,7 @@ public class MySqlOrchestrationDbContextExtensions : OrchestrationDbContextExten
                 FOR UPDATE SKIP LOCKED
             ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
 
-        if (instance == null)
+        if (instance is null)
             return null;
 
         instance.LockId = Guid.NewGuid().ToString();
@@ -133,7 +133,7 @@ public class MySqlOrchestrationDbContextExtensions : OrchestrationDbContextExten
                 FOR UPDATE SKIP LOCKED
             ", parameters).ToArrayAsync()).FirstOrDefault();
 
-        if (instance == null)
+        if (instance is null)
             return null;
 
         instance.LockId = Guid.NewGuid().ToString();
@@ -174,10 +174,10 @@ public class MySqlOrchestrationDbContextExtensions : OrchestrationDbContextExten
                     FROM Executions
                         INNER JOIN Instances ON Executions.InstanceId = Instances.InstanceId
                     WHERE Executions.CreatedTime > {parameters.Add(filter.CreatedTimeFrom)}
-                    {(filter.CreatedTimeTo != null ? $"AND Executions.CreatedTime < {parameters.Add(filter.CreatedTimeTo)}" : "")}
+                    {(filter.CreatedTimeTo is not null ? $"AND Executions.CreatedTime < {parameters.Add(filter.CreatedTimeTo)}" : "")}
                     {(filter.RuntimeStatus.Any() ? $"AND Executions.Status IN ({string.Join(",", filter.RuntimeStatus.Select(s => parameters.Add(s.ToString())))})" : "")}
                     ORDER BY Executions.CreatedTime
-                    {(limit != null ? $"LIMIT {parameters.Add(limit)}" : null)}
+                    {(limit is not null ? $"LIMIT {parameters.Add(limit)}" : null)}
                     FOR UPDATE SKIP LOCKED
                 ) T
             );

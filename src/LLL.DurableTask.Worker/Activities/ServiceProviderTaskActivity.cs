@@ -16,7 +16,7 @@ public class ServiceProviderTaskActivity : TaskActivity
 
     public void Initialize(IServiceProvider serviceProvider)
     {
-        if (Instance == null)
+        if (Instance is null)
             Instance = Factory(serviceProvider);
     }
 

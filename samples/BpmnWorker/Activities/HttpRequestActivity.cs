@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
 using Newtonsoft.Json;
@@ -21,7 +16,7 @@ public class HttpRequestActivity : ActivityBase<HttpRequestActivity.Input, HttpR
             Method = input.Method
         };
 
-        if (input.Headers != null)
+        if (input.Headers is not null)
         {
             foreach (var header in input.Headers)
             {
@@ -29,7 +24,7 @@ public class HttpRequestActivity : ActivityBase<HttpRequestActivity.Input, HttpR
             }
         }
 
-        if (input.Content != null)
+        if (input.Content is not null)
         {
             var json = JsonConvert.SerializeObject(input.Content);
             httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -41,7 +36,7 @@ public class HttpRequestActivity : ActivityBase<HttpRequestActivity.Input, HttpR
         string contentRaw = null;
         object content = null;
 
-        if (httpResponse.Content != null)
+        if (httpResponse.Content is not null)
         {
             contentRaw = await httpResponse.Content.ReadAsStringAsync();
 

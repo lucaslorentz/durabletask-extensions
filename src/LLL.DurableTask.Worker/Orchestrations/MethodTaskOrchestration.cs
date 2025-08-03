@@ -73,7 +73,7 @@ public class MethodTaskOrchestration : TaskOrchestration
             {
                 value = factory();
             }
-            else if (input != null)
+            else if (input is not null)
             {
                 value = _dataConverter.Deserialize(input, p.ParameterType);
             }

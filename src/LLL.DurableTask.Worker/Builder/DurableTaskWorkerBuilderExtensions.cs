@@ -44,14 +44,14 @@ public static class DurableTaskWorkerBuilderExtensions
         Type type)
     {
         var typeOrchestrationAttribute = type.GetCustomAttribute<OrchestrationAttribute>();
-        if (typeOrchestrationAttribute != null)
+        if (typeOrchestrationAttribute is not null)
         {
             builder.AddOrchestration(type, typeOrchestrationAttribute.Name, typeOrchestrationAttribute.Version);
         }
         foreach (var methodInfo in type.GetMethods())
         {
             var orchestrationAttribute = methodInfo.GetCustomAttribute<OrchestrationAttribute>();
-            if (orchestrationAttribute != null)
+            if (orchestrationAttribute is not null)
             {
                 builder.AddOrchestrationMethod(type, methodInfo, orchestrationAttribute.Name, orchestrationAttribute.Version);
             }
@@ -109,14 +109,14 @@ public static class DurableTaskWorkerBuilderExtensions
         Type type)
     {
         var typeActivityAttribute = type.GetCustomAttribute<ActivityAttribute>();
-        if (typeActivityAttribute != null)
+        if (typeActivityAttribute is not null)
         {
             builder.AddActivity(type, typeActivityAttribute.Name, typeActivityAttribute.Version);
         }
         foreach (var methodInfo in type.GetMethods())
         {
             var methodActivityAttribute = methodInfo.GetCustomAttribute<ActivityAttribute>();
-            if (methodActivityAttribute != null)
+            if (methodActivityAttribute is not null)
             {
                 builder.AddActivityMethod(type, methodInfo, methodActivityAttribute.Name, methodActivityAttribute.Version);
             }

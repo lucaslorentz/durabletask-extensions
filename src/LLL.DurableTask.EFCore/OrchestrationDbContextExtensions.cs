@@ -89,30 +89,30 @@ public abstract class OrchestrationDbContextExtensions
 
         var queryable = dbContext.Executions as IQueryable<Entities.Execution>;
 
-        if (extendedQuery != null && !extendedQuery.IncludePreviousExecutions)
+        if (extendedQuery is not null && !extendedQuery.IncludePreviousExecutions)
             queryable = queryable.Join(dbContext.Instances, x => x.ExecutionId, x => x.LastExecutionId, (x, y) => x);
 
         if (!string.IsNullOrEmpty(query.InstanceIdPrefix))
             queryable = queryable.Where(e => e.InstanceId.StartsWith(query.InstanceIdPrefix));
 
-        if (query.CreatedTimeFrom != null)
+        if (query.CreatedTimeFrom is not null)
             queryable = queryable.Where(e => e.CreatedTime >= query.CreatedTimeFrom);
 
-        if (query.CreatedTimeTo != null)
+        if (query.CreatedTimeTo is not null)
             queryable = queryable.Where(e => e.CreatedTime <= query.CreatedTimeTo);
 
-        if (query.RuntimeStatus != null && query.RuntimeStatus.Any())
+        if (query.RuntimeStatus is not null && query.RuntimeStatus.Any())
             queryable = queryable.Where(e => query.RuntimeStatus.Contains(e.Status));
 
-        if (extendedQuery != null)
+        if (extendedQuery is not null)
         {
             if (!string.IsNullOrEmpty(extendedQuery.NamePrefix))
                 queryable = queryable.Where(e => e.Name.StartsWith(extendedQuery.NamePrefix));
 
-            if (extendedQuery.CompletedTimeFrom != null)
+            if (extendedQuery.CompletedTimeFrom is not null)
                 queryable = queryable.Where(e => e.CompletedTime >= extendedQuery.CompletedTimeFrom);
 
-            if (extendedQuery.CompletedTimeTo != null)
+            if (extendedQuery.CompletedTimeTo is not null)
                 queryable = queryable.Where(e => e.CompletedTime <= extendedQuery.CompletedTimeTo);
 
             foreach (var kv in extendedQuery.Tags)
@@ -131,7 +131,7 @@ public abstract class OrchestrationDbContextExtensions
         }
 
         var continuationToken = EFCoreContinuationToken.Parse(query.ContinuationToken);
-        if (continuationToken != null)
+        if (continuationToken is not null)
         {
             queryable = queryable.Where(i =>
                 i.CreatedTime < continuationToken.CreatedTime ||
@@ -149,7 +149,7 @@ public abstract class OrchestrationDbContextExtensions
 
         if (filter is PurgeInstanceFilterExtended filterExtended)
         {
-            if (filterExtended.Limit != null)
+            if (filterExtended.Limit is not null)
             {
                 query = query.Take(filterExtended.Limit.Value);
             }
