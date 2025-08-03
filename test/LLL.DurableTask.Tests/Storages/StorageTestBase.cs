@@ -37,9 +37,15 @@ public abstract class StorageTestBase : IAsyncLifetime
     {
         _output = output;
 
+#if NET9_0
+        var framework = "net9";
+#elif NET8_0
+        var framework = "net8";
+#endif
+
         Configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", false)
-            .AddJsonFile("appsettings.private.json", true)
+            .AddJsonFile($"appsettings.{framework}.json", false)
             .AddEnvironmentVariables()
             .Build();
     }
