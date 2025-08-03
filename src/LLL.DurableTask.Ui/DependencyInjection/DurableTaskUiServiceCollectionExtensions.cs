@@ -10,7 +10,7 @@ public static class DurableTaskServerServiceCollectionExtensions
     {
         services.AddOptions<DurableTaskUiOptions>();
 
-        if (configure != null)
+        if (configure is not null)
             services.Configure<DurableTaskUiOptions>(configure);
 
         return services;

@@ -80,7 +80,7 @@ public abstract class OrchestrationBenchmark
         foreach (var instance in instances)
         {
             var state = await taskHubClient.WaitForOrchestrationAsync(instance, TimeSpan.FromMinutes(30));
-            if (state == null || state.OrchestrationStatus != OrchestrationStatus.Completed)
+            if (state is null || state.OrchestrationStatus != OrchestrationStatus.Completed)
                 throw new Exception("Orchestration did not complete");
         }
     }

@@ -81,7 +81,7 @@ public static class OrchestrationsEndpoints
 
             var state = await taskHubClient.GetOrchestrationStateAsync(instanceId);
 
-            if (state == null)
+            if (state is null)
             {
                 context.Response.StatusCode = 404;
                 return;
@@ -104,7 +104,7 @@ public static class OrchestrationsEndpoints
 
             var state = await taskHubClient.GetOrchestrationStateAsync(instanceId, executionId);
 
-            if (state == null)
+            if (state is null)
             {
                 context.Response.StatusCode = 404;
                 return;

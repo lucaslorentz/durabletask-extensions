@@ -53,7 +53,7 @@ public class GrpcServerOrchestrationService : OrchestrationServiceBase
 
     public override async Task<GetFeaturesResponse> GetFeatures(Empty request, ServerCallContext context)
     {
-        var features = _orchestrationServiceFeaturesClient != null
+        var features = _orchestrationServiceFeaturesClient is not null
             ? await _orchestrationServiceFeaturesClient.GetFeatures()
             : Array.Empty<OrchestrationFeature>();
 
@@ -126,7 +126,7 @@ public class GrpcServerOrchestrationService : OrchestrationServiceBase
 
         var response = new GetOrchestrationStateResponse
         {
-            State = state == null ? null : _options.DataConverter.Serialize(state)
+            State = state is null ? null : _options.DataConverter.Serialize(state)
         };
 
         return response;
@@ -151,7 +151,7 @@ public class GrpcServerOrchestrationService : OrchestrationServiceBase
 
         var response = new WaitForOrchestrationResponse
         {
-            State = state == null ? null : _options.DataConverter.Serialize(state)
+            State = state is null ? null : _options.DataConverter.Serialize(state)
         };
 
         return response;
@@ -251,7 +251,7 @@ public class GrpcServerOrchestrationService : OrchestrationServiceBase
                         {
                             LockResponse = new LockNextTaskOrchestrationWorkItemResponse
                             {
-                                WorkItem = workItem == null ? null : new DurableTaskGrpc.TaskOrchestrationWorkItem
+                                WorkItem = workItem is null ? null : new DurableTaskGrpc.TaskOrchestrationWorkItem
                                 {
                                     InstanceId = workItem.InstanceId,
                                     LockedUntilUtc = Timestamp.FromDateTime(workItem.LockedUntilUtc),
@@ -334,7 +334,7 @@ public class GrpcServerOrchestrationService : OrchestrationServiceBase
                         break;
                     case TaskOrchestrationRequest.MessageOneofCase.FetchRequest:
                         var fetchRequest = message.FetchRequest;
-                        if (workItem.Session == null)
+                        if (workItem.Session is null)
                         {
                             var fetchResponse = new TaskOrchestrationResponse
                             {
@@ -356,7 +356,7 @@ public class GrpcServerOrchestrationService : OrchestrationServiceBase
                             {
                                 FetchResponse = new FetchNewOrchestrationMessagesResponse
                                 {
-                                    NewMessages = newMessages == null ? null : new OrchestrationMessages
+                                    NewMessages = newMessages is null ? null : new OrchestrationMessages
                                     {
                                         Messages = { newMessages.Select(_options.DataConverter.Serialize) }
                                     }
@@ -409,7 +409,7 @@ public class GrpcServerOrchestrationService : OrchestrationServiceBase
 
             var response = new LockNextTaskActivityWorkItemResponse
             {
-                WorkItem = workItem == null ? null : ToGrpcWorkItem(workItem)
+                WorkItem = workItem is null ? null : ToGrpcWorkItem(workItem)
             };
 
             return response;

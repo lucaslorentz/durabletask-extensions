@@ -37,12 +37,12 @@ public partial class EFCoreOrchestrationService :
 
         var instance = await _dbContextExtensions.LockInstanceForUpdate(dbContext, instanceId);
 
-        if (instance != null)
+        if (instance is not null)
         {
             var lastExecution = await dbContext.Executions.FindAsync(instance.LastExecutionId);
 
             // Dedupe dedupeStatuses silently
-            if (dedupeStatuses != null && dedupeStatuses.Contains(lastExecution.Status))
+            if (dedupeStatuses is not null && dedupeStatuses.Contains(lastExecution.Status))
                 return;
 
             // Otherwise, dedupe to avoid multile runnning instances
@@ -52,7 +52,7 @@ public partial class EFCoreOrchestrationService :
 
         var runtimeState = new OrchestrationRuntimeState(new[] { executionStartedEvent });
 
-        if (instance == null)
+        if (instance is null)
         {
             instance = _instanceMapper.CreateInstance(executionStartedEvent);
             await dbContext.Instances.AddAsync(instance);
@@ -100,7 +100,7 @@ public partial class EFCoreOrchestrationService :
     public async Task<IList<OrchestrationState>> GetOrchestrationStateAsync(string instanceId, bool allExecutions)
     {
         var state = await GetOrchestrationStateAsync(instanceId, null);
-        if (state == null)
+        if (state is null)
             return Array.Empty<OrchestrationState>();
 
         return new[] { state };
@@ -114,7 +114,7 @@ public partial class EFCoreOrchestrationService :
             .OrderByDescending(e => e.CreatedTime)
             .FirstOrDefaultAsync();
 
-        if (instance == null)
+        if (instance is null)
             return null;
 
         return _executionMapper.MapToState(instance);
@@ -248,7 +248,7 @@ public partial class EFCoreOrchestrationService :
             .ToArray();
 
         var rewindPoint = findRewindPoint(deserializedEvents);
-        if (rewindPoint == null)
+        if (rewindPoint is null)
         {
             return;
         }
@@ -276,7 +276,7 @@ public partial class EFCoreOrchestrationService :
             [rewindResult.NewRuntimeState.OrchestrationInstance.InstanceId] = orchestrationQueueName
         };
 
-        if (rewindResult.NewRuntimeState.ParentInstance != null)
+        if (rewindResult.NewRuntimeState.ParentInstance is not null)
             knownQueues[rewindResult.NewRuntimeState.ParentInstance.OrchestrationInstance.InstanceId] = QueueMapper.ToQueue(rewindResult.NewRuntimeState.ParentInstance.Name, rewindResult.NewRuntimeState.ParentInstance.Version);
 
         var allOrchestrationMessages = rewindResult.OrchestratorMessages
@@ -292,7 +292,7 @@ public partial class EFCoreOrchestrationService :
         execution = await SaveExecutionAsync(dbContext, rewindResult.NewRuntimeState, execution);
 
         // Rewind parents
-        if (rewindParents && rewindResult.NewRuntimeState.ParentInstance != null)
+        if (rewindParents && rewindResult.NewRuntimeState.ParentInstance is not null)
         {
             await RewindInstanceAsync(dbContext, rewindResult.NewRuntimeState.ParentInstance.OrchestrationInstance.InstanceId, reason, true, historyEvents =>
             {
@@ -306,13 +306,13 @@ public partial class EFCoreOrchestrationService :
     private HistoryEvent FindLastErrorOrCompletionRewindPoint(IList<HistoryEvent> historyEvents)
     {
         var completedEvent = historyEvents.OfType<ExecutionCompletedEvent>().FirstOrDefault();
-        if (completedEvent != null)
+        if (completedEvent is not null)
         {
             if (completedEvent.OrchestrationStatus == OrchestrationStatus.Failed)
             {
                 // For failed executions, rewind to last failed task or suborchestration
                 var lastFailedTask = historyEvents.LastOrDefault(h => h is TaskFailedEvent || h is SubOrchestrationInstanceFailedEvent);
-                if (lastFailedTask != null)
+                if (lastFailedTask is not null)
                     return lastFailedTask;
             }
 
@@ -322,7 +322,7 @@ public partial class EFCoreOrchestrationService :
 
         // For terminated executions, only rewing the termination
         var terminatedEvent = historyEvents.OfType<ExecutionTerminatedEvent>().FirstOrDefault();
-        if (terminatedEvent != null)
+        if (terminatedEvent is not null)
             return terminatedEvent;
 
         return null;

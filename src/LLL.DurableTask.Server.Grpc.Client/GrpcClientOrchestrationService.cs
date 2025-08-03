@@ -153,7 +153,7 @@ public partial class GrpcClientOrchestrationService :
 
             var lockResponse = stream.ResponseStream.Current.LockResponse;
 
-            if (lockResponse.WorkItem == null)
+            if (lockResponse.WorkItem is null)
                 return null;
 
             return new TaskOrchestrationWorkItem
@@ -248,7 +248,7 @@ public partial class GrpcClientOrchestrationService :
 
         var response = await _client.LockNextTaskActivityWorkItemAsync(request, cancellationToken: cancellationToken);
 
-        if (response.WorkItem == null)
+        if (response.WorkItem is null)
             return null;
 
         return ToDurableTaskWorkItem(response.WorkItem);
@@ -313,7 +313,7 @@ public partial class GrpcClientOrchestrationService :
 
     private Timestamp ToTimestamp(DateTime? dateTime)
     {
-        if (dateTime == null)
+        if (dateTime is null)
             return null;
 
         return ToTimestamp(dateTime.Value);

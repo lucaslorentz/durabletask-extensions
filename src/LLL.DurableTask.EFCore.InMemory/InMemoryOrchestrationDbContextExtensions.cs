@@ -29,7 +29,7 @@ public class InMemoryOrchestrationDbContextExtensions : OrchestrationDbContextEx
     {
         var instance = dbContext.Instances.Find(instanceId);
 
-        if (instance == null)
+        if (instance is null)
             return null;
 
         var lockedInstances = _lockedInstanes.GetOrAdd(dbContext, (d) => new HashSet<string>());
@@ -65,7 +65,7 @@ public class InMemoryOrchestrationDbContextExtensions : OrchestrationDbContextEx
                 select b.Instance
             ).FirstOrDefault();
 
-            if (instance == null)
+            if (instance is null)
                 return Task.FromResult(default(Instance));
 
             instance.LockId = Guid.NewGuid().ToString();
@@ -92,7 +92,7 @@ public class InMemoryOrchestrationDbContextExtensions : OrchestrationDbContextEx
                 select b.Instance
             ).FirstOrDefault();
 
-            if (instance == null)
+            if (instance is null)
                 return Task.FromResult(default(Instance));
 
             instance.LockId = Guid.NewGuid().ToString();
@@ -116,7 +116,7 @@ public class InMemoryOrchestrationDbContextExtensions : OrchestrationDbContextEx
                 select message
             ).FirstOrDefault();
 
-            if (activityMessage == null)
+            if (activityMessage is null)
                 return Task.FromResult(default(ActivityMessage));
 
             activityMessage.LockId = Guid.NewGuid().ToString();
@@ -142,7 +142,7 @@ public class InMemoryOrchestrationDbContextExtensions : OrchestrationDbContextEx
                 select message
             ).FirstOrDefault();
 
-            if (activityMessage == null)
+            if (activityMessage is null)
                 return Task.FromResult(default(ActivityMessage));
 
             activityMessage.LockId = Guid.NewGuid().ToString();

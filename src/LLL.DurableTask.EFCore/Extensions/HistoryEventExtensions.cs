@@ -49,7 +49,7 @@ public static class HistoryEventExtensions
             result.HistoryEvents.Add(eventToKeep);
 
             var completionEventToRewind = eventsToRewind.FirstOrDefault(h => h.GetTriggerEventId() == eventToKeep.EventId);
-            if (completionEventToRewind == null)
+            if (completionEventToRewind is null)
                 continue;
 
             switch (eventToKeep)

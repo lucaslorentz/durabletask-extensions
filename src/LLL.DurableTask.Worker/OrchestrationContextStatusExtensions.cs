@@ -8,7 +8,7 @@ public static class OrchestrationContextStatusExtensions
         this ExtendedOrchestrationContext context,
         Func<T> statusProvider)
     {
-        if (statusProvider == null)
+        if (statusProvider is null)
         {
             context.StatusProvider = null;
             return;

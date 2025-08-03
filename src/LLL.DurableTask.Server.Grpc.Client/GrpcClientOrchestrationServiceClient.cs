@@ -38,7 +38,7 @@ public partial class GrpcClientOrchestrationService :
             CreationMessage = _options.DataConverter.Serialize(creationMessage)
         };
 
-        if (dedupeStatuses != null)
+        if (dedupeStatuses is not null)
             request.DedupeStatuses.AddRange(dedupeStatuses.Select(s => (int)s));
 
         await _client.CreateTaskOrchestrationAsync(request);
@@ -153,13 +153,13 @@ public partial class GrpcClientOrchestrationService :
     {
         var request = new GetOrchestrationWithQueryRequest();
 
-        if (query.RuntimeStatus != null)
+        if (query.RuntimeStatus is not null)
             request.RuntimeStatus.AddRange(query.RuntimeStatus.Select(s => (int)s));
 
         request.CreatedTimeFrom = ToTimestamp(query.CreatedTimeFrom);
         request.CreatedTimeTo = ToTimestamp(query.CreatedTimeTo);
 
-        if (query.TaskHubNames != null)
+        if (query.TaskHubNames is not null)
             request.TaskHubNames.AddRange(query.TaskHubNames);
 
         request.PageSize = query.PageSize;
@@ -208,12 +208,12 @@ public partial class GrpcClientOrchestrationService :
             CreatedTimeTo = ToTimestamp(filter.CreatedTimeTo),
         };
 
-        if (filter.RuntimeStatus != null)
+        if (filter.RuntimeStatus is not null)
             request.RuntimeStatus.AddRange(filter.RuntimeStatus.Select(s => (int)s));
 
         if (filter is PurgeInstanceFilterExtended filterExtended)
         {
-            if (filterExtended.Limit != null)
+            if (filterExtended.Limit is not null)
             {
                 request.Limit = filterExtended.Limit.Value;
             }

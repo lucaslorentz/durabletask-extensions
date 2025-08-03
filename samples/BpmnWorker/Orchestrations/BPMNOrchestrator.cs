@@ -1,18 +1,11 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using BpmnWorker.Activities;
 using BpmnWorker.Providers;
 using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Spec.BPMN.MODEL;
 
@@ -218,14 +211,14 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
     private async Task<JObject> PrepareInput(XmlElement element)
     {
         var input = default(JObject);
-        if (element != null)
+        if (element is not null)
         {
             input = new JObject();
             foreach (var inputParameter in element.ChildNodes.OfType<XmlElement>().Where(x => x.LocalName == "inputParameter"))
             {
                 var name = inputParameter.GetAttribute("name");
                 var script = inputParameter.ChildNodes.OfType<XmlElement>().FirstOrDefault(x => x.LocalName == "script");
-                if (script != null)
+                if (script is not null)
                 {
                     var scriptFormat = script.GetAttribute("scriptFormat");
                     var scriptContent = script.InnerText;
@@ -247,14 +240,14 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
 
     private async Task ProcessOutput(XmlElement element, JToken output)
     {
-        if (element == null)
+        if (element is null)
             return;
 
         foreach (var outputParameter in element.ChildNodes.OfType<XmlElement>().Where(x => x.LocalName == "outputParameter"))
         {
             var name = outputParameter.GetAttribute("name");
             var script = outputParameter.ChildNodes.OfType<XmlElement>().FirstOrDefault(x => x.LocalName == "script");
-            if (script != null)
+            if (script is not null)
             {
                 var scriptFormat = script.GetAttribute("scriptFormat");
                 var scriptContent = script.InnerText;
@@ -286,7 +279,7 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
         var output = await Context.ScheduleTask<JToken>("Script", string.Empty, input);
 
         var resultVariable = scriptTask.AnyAttribute.FirstOrDefault(a => a.LocalName == "resultVariable")?.Value;
-        if (resultVariable != null)
+        if (resultVariable is not null)
         {
             _variables[resultVariable] = output;
         }
@@ -357,7 +350,7 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
         TIntermediateCatchEvent intermediateCatchEvent,
         TTimerEventDefinition timerEventDefinition)
     {
-        if (timerEventDefinition.TimeDate != null)
+        if (timerEventDefinition.TimeDate is not null)
         {
             var fireAt = XmlConvert.ToDateTime(timerEventDefinition.TimeDate.Text.First(), XmlDateTimeSerializationMode.Local);
             _logger.LogWarning("Waiting for timer {fireAt}", fireAt);
@@ -366,7 +359,7 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
 
             await VisitFlowNodes(GetParallelOutgoingNodes(intermediateCatchEvent));
         }
-        else if (timerEventDefinition.TimeDuration != null)
+        else if (timerEventDefinition.TimeDuration is not null)
         {
             var duration = XmlConvert.ToTimeSpan(timerEventDefinition.TimeDuration.Text.First());
             var fireAt = Context.CurrentUtcDateTime.Add(duration);
@@ -385,16 +378,16 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
     private TFlowNode GetExclusiveOutgoingNode(TFlowNode flowNode)
     {
         var sequence = FindByIds<TSequenceFlow>(flowNode.Outgoing.Select(x => x.Name))
-            .Where(x => x.ConditionExpression != null)
+            .Where(x => x.ConditionExpression is not null)
             .FirstOrDefault(EvaluateSequence);
 
-        if (sequence != null)
+        if (sequence is not null)
             return FindById<TFlowNode>(sequence.TargetRef);
 
         var defaultSequence = FindByIds<TSequenceFlow>(flowNode.Outgoing.Select(x => x.Name))
-            .FirstOrDefault(x => x.ConditionExpression == null);
+            .FirstOrDefault(x => x.ConditionExpression is null);
 
-        if (defaultSequence == null)
+        if (defaultSequence is null)
             throw new Exception("No applicable exclusive outgoing node");
 
         return FindById<TFlowNode>(defaultSequence.TargetRef);
@@ -403,7 +396,7 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
     private TFlowNode[] GetInclusiveOutgoingNodes(TFlowNode flowNode)
     {
         var sequences = FindByIds<TSequenceFlow>(flowNode.Outgoing.Select(x => x.Name))
-            .Where(x => x.ConditionExpression != null)
+            .Where(x => x.ConditionExpression is not null)
             .Where(EvaluateSequence)
             .ToArray();
 
@@ -411,9 +404,9 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
             return FindByIds<TFlowNode>(sequences.Select(s => s.TargetRef));
 
         var defaultSequence = FindByIds<TSequenceFlow>(flowNode.Outgoing.Select(x => x.Name))
-            .FirstOrDefault(x => x.ConditionExpression == null);
+            .FirstOrDefault(x => x.ConditionExpression is null);
 
-        if (defaultSequence == null)
+        if (defaultSequence is null)
             throw new Exception("No applicable invlusive outgoing node");
 
         return new TFlowNode[] {
@@ -451,7 +444,7 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
     private bool EvaluateSequence(TSequenceFlow sequenceFlow)
     {
         var expression = sequenceFlow.ConditionExpression?.Text?.FirstOrDefault();
-        if (expression == null)
+        if (expression is null)
             return true;
 
         var result = _scriptExecutor.Execute<bool>("javascript", expression, new Dictionary<string, object>
