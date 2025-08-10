@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Serializing;
 using LLL.DurableTask.Core.Serializing;
+using LLL.DurableTask.Worker.Utils;
 using Newtonsoft.Json.Linq;
 
 namespace LLL.DurableTask.Worker.Orchestrations;
@@ -87,21 +88,7 @@ public class MethodTaskActivity : TaskActivity
 
     private async Task<string> SerializeResult(object result)
     {
-        if (result is Task task)
-        {
-            if (_methodInfo.ReturnType.IsGenericType)
-            {
-                result = await (dynamic)task;
-            }
-            else
-            {
-                await task;
-                result = null;
-            }
-        }
-
-        var serializedResult = _dataConverter.Serialize(result);
-
-        return serializedResult;
+        var awaitedResult = await TaskUtils.MaybeAwait(result, _methodInfo.ReturnType);
+        return _dataConverter.Serialize(awaitedResult);
     }
 }
