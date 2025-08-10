@@ -14,7 +14,7 @@ public static class TaskHubServerBuilderExtensions
     {
         builder.Services.AddOptions<GrpcServerOrchestrationServiceOptions>();
 
-        if (configure != null)
+        if (configure is not null)
             builder.Services.Configure<GrpcServerOrchestrationServiceOptions>(configure);
 
         builder.Services.AddSingleton<GrpcServerOrchestrationService>();

@@ -22,7 +22,7 @@ public abstract class OrchestrationBase<TResult, TInput> : TaskOrchestration
 
     public sealed override string GetStatus()
     {
-        if (Context.StatusProvider != null)
+        if (Context.StatusProvider is not null)
             return Context.StatusProvider();
 
         return Context.MessageDataConverter.Serialize(OnGetStatus());

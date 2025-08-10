@@ -33,7 +33,7 @@ public class ExecutionMapper
         execution.Name = runtimeState.Name;
         execution.Version = runtimeState.Version;
         execution.Status = runtimeState.OrchestrationStatus;
-        execution.FailureDetails = runtimeState.FailureDetails != null
+        execution.FailureDetails = runtimeState.FailureDetails is not null
             ? _options.DataConverter.Serialize(runtimeState.FailureDetails)
             : null;
         execution.CreatedTime = runtimeState.CreatedTime;
@@ -44,12 +44,12 @@ public class ExecutionMapper
         execution.Input = runtimeState.Input;
         execution.Output = runtimeState.Output;
         execution.CustomStatus = runtimeState.Status;
-        execution.ParentInstance = runtimeState.ParentInstance != null
+        execution.ParentInstance = runtimeState.ParentInstance is not null
             ? _options.DataConverter.Serialize(runtimeState.ParentInstance)
             : null;
 
         var newTags = new HashSet<Tag>();
-        if (runtimeState.Tags != null)
+        if (runtimeState.Tags is not null)
         {
             var existingTags = execution.Tags.ToLookup(t => t.Name);
             foreach (var keyValue in runtimeState.Tags)

@@ -33,14 +33,14 @@ public static class EntrypointEndpoint
             {
                 var durableTaskEndpointMetadata = endpoint.Metadata.GetMetadata<DurableTaskEndpointMetadata>();
 
-                if (durableTaskEndpointMetadata == null)
+                if (durableTaskEndpointMetadata is null)
                     continue;
 
                 var authorized = true;
 
                 var policies = endpoint.Metadata.OfType<AuthorizeAttribute>()
                     .Select(a => a.Policy)
-                    .Where(p => p != null)
+                    .Where(p => p is not null)
                     .ToArray();
 
                 if (policies.Length > 0)

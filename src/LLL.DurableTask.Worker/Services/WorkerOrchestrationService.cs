@@ -56,7 +56,7 @@ public class WorkerOrchestrationService : IOrchestrationService
                 .LockNextTaskOrchestrationWorkItemAsync(receiveTimeout, _orchestrations, cancellationToken)
         );
 
-        if (workItem != null)
+        if (workItem is not null)
         {
             OrchestrationsServiceScopes.TryAdd(workItem.InstanceId, _serviceScopeFactory.CreateScope());
         }

@@ -11,7 +11,7 @@ public static class DurableTaskApiServiceCollectionExtensions
     {
         services.AddOptions<DurableTaskApiOptions>();
 
-        if (configure != null)
+        if (configure is not null)
             services.Configure<DurableTaskApiOptions>(configure);
 
         return services;

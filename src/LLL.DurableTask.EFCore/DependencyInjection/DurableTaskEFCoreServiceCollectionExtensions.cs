@@ -18,7 +18,7 @@ public static class DurableTaskEFCoreServiceCollectionExtensions
 
         services.AddOptions<EFCoreOrchestrationOptions>();
 
-        if (configure != null)
+        if (configure is not null)
             services.Configure<EFCoreOrchestrationOptions>(configure);
 
         services.AddDbContextFactory<OrchestrationDbContext>(options =>

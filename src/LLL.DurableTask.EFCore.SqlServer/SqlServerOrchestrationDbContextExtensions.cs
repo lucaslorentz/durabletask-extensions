@@ -48,7 +48,7 @@ public class SqlServerOrchestrationDbContextExtensions : OrchestrationDbContextE
                         AND Instances.LockedUntil <= {0}
                 ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
 
-        if (instance == null)
+        if (instance is null)
             return null;
 
         instance.LockId = Guid.NewGuid().ToString();
@@ -78,7 +78,7 @@ public class SqlServerOrchestrationDbContextExtensions : OrchestrationDbContextE
                         AND Instances.LockedUntil <= {utcNowParam}
                 ", parameters).ToArrayAsync()).FirstOrDefault();
 
-        if (instance == null)
+        if (instance is null)
             return null;
 
         instance.LockId = Guid.NewGuid().ToString();
@@ -98,7 +98,7 @@ public class SqlServerOrchestrationDbContextExtensions : OrchestrationDbContextE
                     WHERE LockedUntil <= {0}
                 ", DateTime.UtcNow).ToArrayAsync()).FirstOrDefault();
 
-        if (instance == null)
+        if (instance is null)
             return null;
 
         instance.LockId = Guid.NewGuid().ToString();
@@ -125,7 +125,7 @@ public class SqlServerOrchestrationDbContextExtensions : OrchestrationDbContextE
                     AND LockedUntil <= {utcNowParam}
             ", parameters).ToArrayAsync()).FirstOrDefault();
 
-        if (instance == null)
+        if (instance is null)
             return null;
 
         instance.LockId = Guid.NewGuid().ToString();
@@ -146,11 +146,11 @@ public class SqlServerOrchestrationDbContextExtensions : OrchestrationDbContextE
         return await dbContext.Database.ExecuteSqlRawAsync($@"
             DELETE FROM Executions
             WHERE ExecutionId IN(
-                SELECT {(limit != null ? $"TOP ({parameters.Add(limit)})" : null)} Executions.ExecutionId
+                SELECT {(limit is not null ? $"TOP ({parameters.Add(limit)})" : null)} Executions.ExecutionId
                 FROM Executions WITH (UPDLOCK, READPAST)
                     INNER JOIN Instances WITH (UPDLOCK, READPAST) ON Executions.InstanceId = Instances.InstanceId
                 WHERE Executions.CreatedTime > {parameters.Add(filter.CreatedTimeFrom)}
-                {(filter.CreatedTimeTo != null ? $"AND Executions.CreatedTime < {parameters.Add(filter.CreatedTimeTo)}" : "")}
+                {(filter.CreatedTimeTo is not null ? $"AND Executions.CreatedTime < {parameters.Add(filter.CreatedTimeTo)}" : "")}
                 {(filter.RuntimeStatus.Any() ? $"AND Executions.Status IN ({string.Join(",", filter.RuntimeStatus.Select(s => parameters.Add(s.ToString())))})" : "")}
                 ORDER BY Executions.CreatedTime
             );
