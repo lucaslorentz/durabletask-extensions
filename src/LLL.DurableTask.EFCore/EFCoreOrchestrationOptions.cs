@@ -17,4 +17,5 @@ public class EFCoreOrchestrationOptions
     public TimeSpan ActivtyLockTimeout { get; set; } = TimeSpan.FromMinutes(1);
     public TimeSpan FetchNewMessagesPollingTimeout { get; set; } = TimeSpan.FromSeconds(10);
     public int DelayInSecondsAfterFailure { get; set; } = 5;
+    public bool UseDTFxRewind { get; set; } = true;
 }
