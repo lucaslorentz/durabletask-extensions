@@ -99,25 +99,37 @@ public partial class EFCoreOrchestrationService :
 
     public async Task<IList<OrchestrationState>> GetOrchestrationStateAsync(string instanceId, bool allExecutions)
     {
-        var state = await GetOrchestrationStateAsync(instanceId, null);
-        if (state is null)
-            return Array.Empty<OrchestrationState>();
+        using var dbContext = _dbContextFactory.CreateDbContext();
 
-        return new[] { state };
+        var query = dbContext.Executions
+            .Where(e => e.InstanceId == instanceId);
+
+        if (!allExecutions)
+            query = query.Join(dbContext.Instances, x => x.ExecutionId, x => x.LastExecutionId, (x, y) => x);
+
+        var executions = await query.ToArrayAsync();
+
+        return executions.Select(_executionMapper.MapToState).ToArray();
     }
 
     public async Task<OrchestrationState> GetOrchestrationStateAsync(string instanceId, string executionId)
     {
         using var dbContext = _dbContextFactory.CreateDbContext();
-        var instance = await dbContext.Executions
-            .Where(e => e.InstanceId == instanceId && (executionId == null || e.ExecutionId == executionId))
-            .OrderByDescending(e => e.CreatedTime)
-            .FirstOrDefaultAsync();
 
-        if (instance is null)
+        var query = dbContext.Executions
+            .Where(e => e.InstanceId == instanceId);
+
+        if (executionId is null)
+            query = query.Join(dbContext.Instances, x => x.ExecutionId, x => x.LastExecutionId, (x, y) => x);
+        else
+            query = query.Where(e => e.ExecutionId == executionId);
+
+        var execution = await query.FirstOrDefaultAsync();
+
+        if (execution is null)
             return null;
 
-        return _executionMapper.MapToState(instance);
+        return _executionMapper.MapToState(execution);
     }
 
     public async Task PurgeOrchestrationHistoryAsync(DateTime thresholdDateTimeUtc, OrchestrationStateTimeRangeFilterType timeRangeFilterType)
