@@ -17,6 +17,7 @@ public class HistoryEventConverter : JsonConverter
         //{ EventType.ExecutionFailed, typeof(ExecutionFailedEvent) },
         { EventType.ExecutionStarted, typeof(ExecutionStartedEvent) },
         { EventType.ExecutionTerminated, typeof(ExecutionTerminatedEvent) },
+        { EventType.ExecutionRewound, typeof(ExecutionRewoundEvent) },
         { EventType.GenericEvent, typeof(GenericEvent) },
         { EventType.HistoryState, typeof(HistoryStateEvent) },
         { EventType.OrchestratorCompleted, typeof(OrchestratorCompletedEvent) },
@@ -43,14 +44,23 @@ public class HistoryEventConverter : JsonConverter
     {
         var jObject = JObject.Load(reader);
 
-        var eventTypeToken = jObject.GetValue("EventType", StringComparison.OrdinalIgnoreCase);
+        var eventType = jObject.GetValue("EventType", StringComparison.OrdinalIgnoreCase)
+            ?.ToObject<EventType>()
+            ?? throw new Exception("Expected EventType field in HistoryEvent");
 
-        if (eventTypeToken is null)
-            throw new Exception("Expected EventType field in HistoryEvent");
-
-        var eventType = eventTypeToken.ToObject<EventType>();
+        var eventId = jObject.GetValue("EventId", StringComparison.OrdinalIgnoreCase)
+            ?.ToObject<int>()
+            ?? throw new Exception("Expected EventId field in HistoryEvent");
 
         var type = _typesMap[eventType];
+
+        if (type == typeof(ExecutionRewoundEvent))
+        {
+            // Handles multiple constructors present in ExecutionRewoundEvent
+            var @event = new ExecutionRewoundEvent(eventId);
+            serializer.Populate(jObject.CreateReader(), @event);
+            return @event;
+        }
 
         return jObject.ToObject(type, serializer);
     }

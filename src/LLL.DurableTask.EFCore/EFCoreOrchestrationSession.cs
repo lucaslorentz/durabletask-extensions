@@ -70,60 +70,60 @@ public class EFCoreOrchestrationSession : IOrchestrationSession
             .OrderBy(w => w.AvailableAt)
             .ThenBy(w => w.SequenceNumber)
             .AsNoTracking()
-            .ToArrayAsync(cancellationToken);
-
-        var messagesToDiscard = newDbMessages
-            .Where(m => m.ExecutionId is not null && m.ExecutionId != Instance.LastExecutionId)
-            .ToArray();
-
-        if (messagesToDiscard.Length > 0)
-        {
-            foreach (var message in messagesToDiscard)
-            {
-                dbContext.OrchestrationMessages.Attach(message);
-                dbContext.OrchestrationMessages.Remove(message);
-            }
-
-            newDbMessages = newDbMessages
-                .Except(messagesToDiscard)
-                .ToArray();
-        }
+            .ToListAsync(cancellationToken);
 
         var deserializedMessages = newDbMessages
             .Select(w => _options.DataConverter.Deserialize<TaskMessage>(w.Message))
             .ToList();
 
-        if (RuntimeState.ExecutionStartedEvent is not null)
+        if (RuntimeState.ExecutionStartedEvent is not null
+            && RuntimeState.OrchestrationStatus is OrchestrationStatus.Completed
+            && deserializedMessages.Any(m => m.Event.EventType == EventType.EventRaised))
         {
-            if (RuntimeState.OrchestrationStatus is OrchestrationStatus.Completed
-                && deserializedMessages.Any(m => m.Event.EventType == EventType.EventRaised))
-            {
-                // Reopen completed orchestrations after receiving an event raised
-                RuntimeState = new OrchestrationRuntimeState(
-                    RuntimeState.Events.Reopen(_options.DataConverter)
-                );
-            }
+            // Reopen completed orchestrations after receiving an event raised
+            RuntimeState = new OrchestrationRuntimeState(
+                RuntimeState.Events.Reopen(_options.DataConverter)
+            );
+        }
 
-            var isRunning = RuntimeState.OrchestrationStatus is OrchestrationStatus.Running
-                    or OrchestrationStatus.Suspended
-                    or OrchestrationStatus.Pending;
+        var isRunning = RuntimeState.ExecutionStartedEvent is null
+            || RuntimeState.OrchestrationStatus is OrchestrationStatus.Running
+                or OrchestrationStatus.Suspended
+                or OrchestrationStatus.Pending;
 
-            if (!isRunning)
+        for (var i = newDbMessages.Count - 1; i >= 0; i--)
+        {
+            var dbMessage = newDbMessages[i];
+            var deserializedMessage = deserializedMessages[i];
+
+            if (ShouldDropNewMessage(isRunning, dbMessage, deserializedMessage))
             {
-                // Discard all messages if not running
-                foreach (var message in newDbMessages)
-                {
-                    dbContext.OrchestrationMessages.Attach(message);
-                    dbContext.OrchestrationMessages.Remove(message);
-                }
-                newDbMessages = [];
-                deserializedMessages = [];
+                dbContext.OrchestrationMessages.Attach(dbMessage);
+                dbContext.OrchestrationMessages.Remove(dbMessage);
+                newDbMessages.RemoveAt(i);
+                deserializedMessages.RemoveAt(i);
             }
         }
 
         Messages.AddRange(newDbMessages);
 
         return deserializedMessages;
+    }
+
+    private bool ShouldDropNewMessage(
+        bool isRunning,
+        OrchestrationMessage dbMessage,
+        TaskMessage taskMessage)
+    {
+        // Drop messages to previous executions
+        if (dbMessage.ExecutionId is not null && dbMessage.ExecutionId != Instance.LastExecutionId)
+            return true;
+
+        // When not running, drop anything that is not execution rewound
+        if (!isRunning && taskMessage.Event.EventType != EventType.ExecutionRewound)
+            return true;
+
+        return false;
     }
 
     public void ClearMessages()

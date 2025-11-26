@@ -7,6 +7,7 @@ using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
+using DurableTask.Core.Tracing;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Extensions;
 using LLL.DurableTask.EFCore.Mappers;
@@ -240,9 +241,25 @@ public partial class EFCoreOrchestrationService :
 
     public async Task RewindTaskOrchestrationAsync(string instanceId, string reason)
     {
-        using var dbContext = _dbContextFactory.CreateDbContext();
-        await RewindInstanceAsync(dbContext, instanceId, reason, true, FindLastErrorOrCompletionRewindPoint);
-        await dbContext.SaveChangesAsync();
+        if (_options.UseDTFxRewind)
+        {
+            var taskMessage = new TaskMessage
+            {
+                OrchestrationInstance = new OrchestrationInstance { InstanceId = instanceId },
+                Event = new ExecutionRewoundEvent(-1, reason)
+                {
+                    // Set a dummy trace context to avoid an exception in DTFx
+                    ParentTraceContext = new DistributedTraceContext($"{instanceId}")
+                }
+            };
+            await SendTaskOrchestrationMessageAsync(taskMessage);
+        }
+        else
+        {
+            using var dbContext = _dbContextFactory.CreateDbContext();
+            await RewindInstanceAsync(dbContext, instanceId, reason, true, FindLastErrorOrCompletionRewindPoint);
+            await dbContext.SaveChangesAsync();
+        }
     }
 
     private async Task RewindInstanceAsync(OrchestrationDbContext dbContext, string instanceId, string reason, bool rewindParents, Func<IList<HistoryEvent>, HistoryEvent> findRewindPoint)
