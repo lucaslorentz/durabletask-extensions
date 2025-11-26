@@ -1,8 +1,5 @@
-﻿using System;
-using System.Threading.Tasks;
-using LLL.DurableTask.Worker;
+﻿using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
-using Microsoft.Extensions.Logging;
 
 namespace HotelWorker.Activities;
 

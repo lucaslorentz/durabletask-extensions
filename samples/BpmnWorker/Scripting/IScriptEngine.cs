@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace BpmnWorker.Scripting;
+﻿namespace BpmnWorker.Scripting;
 
 public interface IScriptEngine
 {

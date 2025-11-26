@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>net9.0;net8.0</TargetFrameworks>
-    <!-- EF Core 9 MySql package is pre-release and requires a pre-release package -->
-    <Version Condition="'$(Version)' != '' AND !$(Version.Contains(&quot;-&quot;))">$(Version)-preview</Version>
+    <!-- EF Core 10 MySql will be pre-release and requires a pre-release package -->
+    <!-- <Version Condition="'$(Version)' != '' AND !$(Version.Contains(&quot;-&quot;))">$(Version)-preview</Version> -->
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,7 +19,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-rc.1.efcore.9.0.0" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">

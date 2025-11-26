@@ -37,7 +37,9 @@ public abstract class StorageTestBase : IAsyncLifetime
     {
         _output = output;
 
-#if NET9_0
+#if NET10_0
+        var framework = "net10";
+#elif NET9_0
         var framework = "net9";
 #elif NET8_0
         var framework = "net8";

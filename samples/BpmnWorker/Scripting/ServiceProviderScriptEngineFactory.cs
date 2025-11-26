@@ -1,7 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.DependencyInjection;
-
-namespace BpmnWorker.Scripting;
+﻿namespace BpmnWorker.Scripting;
 
 public class ServiceProviderScriptEngineFactory<T> : ResolveTypeScriptEngineFactory
 {
