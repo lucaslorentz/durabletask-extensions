@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace BpmnWorker.Activities;
+﻿namespace BpmnWorker.Activities;
 
 public interface IScriptExecutor
 {

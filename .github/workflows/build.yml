@@ -30,7 +30,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.200
+          dotnet-version: 10.0.100
 
       - name: Install workloads
         run: dotnet workload restore
@@ -40,7 +40,7 @@ jobs:
 
       # Yarn build in advance to avoid cuncurrency issues due to multi target build
       - name: Yarn Build
-        run: dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net9.0 -t:YarnBuild --no-restore
+        run: dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net10.0 -t:YarnBuild --no-restore
 
       - name: Build
         run: dotnet build -c Release --no-restore
@@ -59,7 +59,7 @@ jobs:
             --exclude-sources "**/Migrations/**"
 
       - name: Test
-        run: dotnet test -c Release -f:net9.0 --no-build
+        run: dotnet test -c Release -f:net10.0 --no-build
 
       - name: Report coverage
         run: |
@@ -106,14 +106,14 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.200
+          dotnet-version: 10.0.100
 
       - name: Create Release NuGet package
         run: |
           export Version=${GITHUB_REF:11}
           echo Version: $Version
           dotnet restore
-          dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net9.0 -t:YarnBuild --no-restore
+          dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net10.0 -t:YarnBuild --no-restore
           dotnet pack -c Release --no-restore
 
       - name: Push to NuGet Feed

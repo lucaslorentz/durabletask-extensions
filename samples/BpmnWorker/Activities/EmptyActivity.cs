@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using LLL.DurableTask.Worker;
+﻿using LLL.DurableTask.Worker;
 using LLL.DurableTask.Worker.Attributes;
 
 namespace BpmnWorker.Activities;

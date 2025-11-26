@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿#if !NET10_0
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -23,3 +24,4 @@ public class MySqlEFCoreTests : EFCoreTestBase
              .UseMySql(connectionString, MySqlServerVersion.AutoDetect(connectionString));
     }
 }
+#endif
