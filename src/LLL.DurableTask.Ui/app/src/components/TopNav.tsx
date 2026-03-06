@@ -42,9 +42,11 @@ export function TopNav() {
   }
 
   const userName = auth.user
-    ? (configuration.userNameClaims ?? ["preferred_username", "name", "sub"])
-        .map((claim) => auth.user!.profile?.[claim])
-        .find(Boolean) ?? "Authenticated"
+    ? String(
+        (configuration.userNameClaims ?? ["preferred_username", "name", "sub"])
+          .map((claim) => auth.user!.profile?.[claim])
+          .find(Boolean) ?? "Authenticated"
+      )
     : undefined;
 
   const pages = [
