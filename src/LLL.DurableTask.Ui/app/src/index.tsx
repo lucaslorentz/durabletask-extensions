@@ -1,7 +1,4 @@
-import {
-  StyledEngineProvider,
-  ThemeProvider,
-} from "@mui/material/styles";
+import { ThemeProvider } from "@mui/material/styles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConfirmProvider } from "material-ui-confirm";
 import { SnackbarProvider } from "notistack";
@@ -32,30 +29,28 @@ const queryClient = new QueryClient({
 root.render(
   <React.StrictMode>
     <HashRouter>
-      <StyledEngineProvider injectFirst>
-        <ThemeProvider theme={customTheme}>
-          <SnackbarProvider
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center",
-            }}
-          >
-            <ConfirmProvider>
-              <ErrorBoundary>
-                <ConfigurationProvider>
-                  <AuthProvider>
-                    <ApiClientProvider>
-                      <QueryClientProvider client={queryClient}>
-                        <App />
-                      </QueryClientProvider>
-                    </ApiClientProvider>
-                  </AuthProvider>
-                </ConfigurationProvider>
-              </ErrorBoundary>
-            </ConfirmProvider>
-          </SnackbarProvider>
-        </ThemeProvider>
-      </StyledEngineProvider>
+      <ThemeProvider theme={customTheme}>
+        <SnackbarProvider
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "center",
+          }}
+        >
+          <ConfirmProvider>
+            <ErrorBoundary>
+              <ConfigurationProvider>
+                <AuthProvider>
+                  <ApiClientProvider>
+                    <QueryClientProvider client={queryClient}>
+                      <App />
+                    </QueryClientProvider>
+                  </ApiClientProvider>
+                </AuthProvider>
+              </ConfigurationProvider>
+            </ErrorBoundary>
+          </ConfirmProvider>
+        </SnackbarProvider>
+      </ThemeProvider>
     </HashRouter>
   </React.StrictMode>,
 );

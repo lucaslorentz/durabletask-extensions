@@ -1,10 +1,6 @@
 import { createTheme } from "@mui/material/styles";
 
-const { breakpoints, spacing } = createTheme();
-
 export const customTheme = createTheme({
-  spacing: spacing,
-  breakpoints: breakpoints,
   typography: {
     fontSize: 13,
     h1: {
