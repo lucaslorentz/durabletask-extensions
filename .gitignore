@@ -288,3 +288,7 @@ __pycache__/
 
 # BenchmarkDotNet
 BenchmarkDotNet.Artifacts
+
+# Playwright screenshots
+*.png
+*.jpeg
