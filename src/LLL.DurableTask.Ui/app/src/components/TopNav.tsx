@@ -19,7 +19,7 @@ import Link from "@mui/material/Link";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import React from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router";
 import { useApiClient } from "../hooks/useApiClient";
 import { useAuth } from "../hooks/useAuth";
 import { useConfiguration } from "../ConfigurationProvider";

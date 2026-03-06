@@ -1,6 +1,6 @@
 import { User, UserManager } from "oidc-client-ts";
 import React, { useContext, useLayoutEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { useConfiguration } from "../ConfigurationProvider";
 
 type Props = {

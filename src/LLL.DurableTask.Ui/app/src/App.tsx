@@ -1,7 +1,7 @@
 import { Box, CircularProgress, Container } from "@mui/material";
 import CssBaseline from "@mui/material/CssBaseline";
 import React, { Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router";
 import { useApiClient } from "./hooks/useApiClient";
 import { AuthorizedGuard } from "./components/AuthorizedGuard";
 import { TopNav } from "./components/TopNav";

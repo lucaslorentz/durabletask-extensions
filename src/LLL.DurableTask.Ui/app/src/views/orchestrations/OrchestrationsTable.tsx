@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@mui/material";
 import { default as React } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router";
 import { useApiClient } from "../../hooks/useApiClient";
 import { OrchestrationsResponse } from "../../models/ApiModels";
 import { formatDateTime } from "../../utils/date-utils";

@@ -7,7 +7,7 @@ import { ConfirmProvider } from "material-ui-confirm";
 import { SnackbarProvider } from "notistack";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { HashRouter } from "react-router-dom";
+import { HashRouter } from "react-router";
 import { App } from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ConfigurationProvider } from "./ConfigurationProvider";

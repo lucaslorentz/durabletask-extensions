@@ -1,6 +1,6 @@
 import { Box, Chip, Link, Table, TableBody, TableCell, TableContainer, TableRow } from "@mui/material";
 import React from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router";
 import { useApiClient } from "../../hooks/useApiClient";
 import { OrchestrationState } from "../../models/ApiModels";
 import { formatDateTime } from "../../utils/date-utils";

@@ -14,7 +14,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 import React, { useCallback } from "react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router";
 import * as yup from "yup";
 import { CodeEditor } from "../../form/CodeEditor";
 import { TextField } from "../../form/TextField";
