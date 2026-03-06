@@ -1,4 +1,4 @@
-import { UserManagerSettings } from "oidc-client";
+import { UserManagerSettings } from "oidc-client-ts";
 
 export interface Configuration {
   apiBaseUrl: string;

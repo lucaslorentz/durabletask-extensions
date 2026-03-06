@@ -1,4 +1,5 @@
 import {
+  Box,
   Chip,
   Link,
   Table,
@@ -8,30 +9,17 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import makeStyles from "@mui/styles/makeStyles";
 import { default as React } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router";
 import { useApiClient } from "../../hooks/useApiClient";
 import { OrchestrationsResponse } from "../../models/ApiModels";
 import { formatDateTime } from "../../utils/date-utils";
-
-const useStyles = makeStyles((theme) => ({
-  chips: {
-    display: "flex",
-    flexWrap: "wrap",
-    margin: theme.spacing(0, 1.5),
-    "& > *": {
-      margin: theme.spacing(0.25),
-    },
-  },
-}));
 
 interface Props {
   result: OrchestrationsResponse | undefined;
 }
 
 export function OrchestrationsTable({ result }: Props) {
-  const classes = useStyles();
   const apiClient = useApiClient();
 
   return (
@@ -87,7 +75,14 @@ export function OrchestrationsTable({ result }: Props) {
               </TableCell>
               {apiClient.hasFeature("Tags") && (
                 <TableCell padding="none">
-                  <div className={classes.chips}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      mx: 1.5,
+                      "& > *": { m: 0.25 },
+                    }}
+                  >
                     {orchestration.tags &&
                       Object.entries(orchestration.tags).map(([key, value]) => (
                         <Chip
@@ -96,7 +91,7 @@ export function OrchestrationsTable({ result }: Props) {
                           label={`${key}: ${value}`}
                         />
                       ))}
-                  </div>
+                  </Box>
                 </TableCell>
               )}
             </TableRow>

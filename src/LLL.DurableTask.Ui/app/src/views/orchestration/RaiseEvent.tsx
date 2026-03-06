@@ -91,10 +91,10 @@ export function RaiseEvent(props: Props) {
   return (
     <div>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <TextField field={form.field("eventName")} />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <CodeEditor
             field={form.field("eventData")}
             editorProps={{
@@ -105,13 +105,12 @@ export function RaiseEvent(props: Props) {
         </Grid>
         {form.render((form) => (
           <Grid
-            item
-            xs={12}
+            size={12}
             container
             spacing={1}
             justifyContent="space-between"
           >
-            <Grid item>
+            <Grid>
               <LoadingButton
                 variant="contained"
                 color="primary"
@@ -126,7 +125,7 @@ export function RaiseEvent(props: Props) {
                 Raise Event
               </LoadingButton>
             </Grid>
-            <Grid item>
+            <Grid>
               <Button
                 onClick={() => form.reset()}
                 disabled={raiseEventMutation.isPending}

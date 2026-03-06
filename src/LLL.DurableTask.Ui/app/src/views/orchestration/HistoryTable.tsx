@@ -9,7 +9,7 @@ import {
   TableRow
 } from "@mui/material";
 import React from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router";
 import { useWindowSize } from "react-use";
 import { useDynamicRefs } from "../../hooks/useDynamicRefs";
 import { HistoryEvent } from "../../models/ApiModels";

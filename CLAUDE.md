@@ -3,7 +3,7 @@
 ## Project Overview
 
 This is a .NET library (NuGet packages) extending Azure Durable Task Framework.
-Multi-target: net10.0, net9.0, net8.0. Frontend: React 18 + MUI 5 + TypeScript.
+Multi-target: net10.0, net9.0, net8.0. Frontend: React 18 + MUI 5 + TypeScript + Vite.
 
 ## Development Workflow
 
@@ -73,8 +73,8 @@ dotnet test
 dotnet test --filter "FullyQualifiedName~InMemory"
 
 # UI frontend (in src/LLL.DurableTask.Ui/app/)
-yarn install
-yarn build
+pnpm install
+pnpm build
 
 # Run all samples via Aspire
 dotnet run --project samples/AppHost/AppHost.csproj

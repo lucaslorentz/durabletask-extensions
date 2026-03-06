@@ -8,7 +8,7 @@ type DynamicRefsResult = [
 export function useDynamicRefs(
   updateOnChange: boolean = false
 ): DynamicRefsResult {
-  const ref = useRef<DynamicRefsResult>();
+  const ref = useRef<DynamicRefsResult>(undefined);
   const [, setState] = useState(0);
   if (ref.current == null) {
     const values: Record<string | number, any> = {};

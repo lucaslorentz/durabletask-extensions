@@ -19,7 +19,7 @@ import Link from "@mui/material/Link";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import React from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router";
 import { useApiClient } from "../hooks/useApiClient";
 import { useAuth } from "../hooks/useAuth";
 import { useConfiguration } from "../ConfigurationProvider";
@@ -42,9 +42,11 @@ export function TopNav() {
   }
 
   const userName = auth.user
-    ? (configuration.userNameClaims ?? ["preferred_username", "name", "sub"])
-        .map((claim) => auth.user!.profile?.[claim])
-        .find(Boolean) ?? "Authenticated"
+    ? String(
+        (configuration.userNameClaims ?? ["preferred_username", "name", "sub"])
+          .map((claim) => auth.user!.profile?.[claim])
+          .find(Boolean) ?? "Authenticated"
+      )
     : undefined;
 
   const pages = [
@@ -88,7 +90,7 @@ export function TopNav() {
             <Box sx={{ mr: 2 }}>{logoLink}</Box>
             <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
               {pages.map((page) => (
-                <Grid key={page.label} item>
+                <Grid key={page.label}>
                   <Button component={RouterLink} to={page.to} color="inherit">
                     {page.label}
                   </Button>

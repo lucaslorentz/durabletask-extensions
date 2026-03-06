@@ -1,4 +1,3 @@
-import axios from "axios";
 import React, { useContext } from "react";
 import { useAsync } from "react-use";
 import { ErrorAlert } from "./components/ErrorAlert";
@@ -20,8 +19,8 @@ export function ConfigurationProvider(props: Props) {
   const { children } = props;
 
   const configAsync = useAsync(async () => {
-    const response = await axios.get<Configuration>("configuration.json");
-    return response.data;
+    const response = await fetch("configuration.json");
+    return response.json() as Promise<Configuration>;
   }, []);
 
   if (configAsync.error) {

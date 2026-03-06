@@ -16,7 +16,7 @@ import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { useConfirm } from "material-ui-confirm";
 import { useSnackbar } from "notistack";
 import React, { useCallback } from "react";
-import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams } from "react-router";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { AutoRefreshButton } from "../../components/RefreshButton";
 import { useApiClient } from "../../hooks/useApiClient";

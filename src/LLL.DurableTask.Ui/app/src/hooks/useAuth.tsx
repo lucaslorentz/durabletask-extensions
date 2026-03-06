@@ -1,6 +1,6 @@
-import { User, UserManager } from "oidc-client";
+import { User, UserManager } from "oidc-client-ts";
 import React, { useContext, useLayoutEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { useConfiguration } from "../ConfigurationProvider";
 
 type Props = {
@@ -93,7 +93,7 @@ export function AuthProvider(props: Props) {
         } else {
           const user = await userManager.signinRedirectCallback();
           if (user.state) {
-            navigate(user.state, {
+            navigate(user.state as string, {
               replace: true,
             });
           }
@@ -133,12 +133,7 @@ export function AuthProvider(props: Props) {
       user: user,
       signIn: async () => {
         await userManager.signinRedirect({
-          state: {
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
-            state: location.state,
-          },
+          state: location.pathname + location.search + location.hash,
         });
         await new Promise((resolve) => setTimeout(resolve, 30000));
       },

@@ -1,7 +1,6 @@
 import { Box, Chip, Link, Table, TableBody, TableCell, TableContainer, TableRow } from "@mui/material";
-import makeStyles from '@mui/styles/makeStyles';
 import React from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router";
 import { useApiClient } from "../../hooks/useApiClient";
 import { OrchestrationState } from "../../models/ApiModels";
 import { formatDateTime } from "../../utils/date-utils";
@@ -11,23 +10,9 @@ type Props = {
   definedExecutionId: boolean;
 };
 
-const useStyles = makeStyles((theme) => ({
-  chips: {
-    display: "flex",
-    flexWrap: "wrap",
-    margin: theme.spacing(0, 1.5),
-    "& > *": {
-      margin: theme.spacing(0.25),
-    },
-  },
-  header: {
-    minWidth: 200,
-    width: 200,
-  },
-}));
+const headerSx = { minWidth: 200, width: 200 } as const;
 
 export function State(props: Props) {
-  const classes = useStyles();
   const apiClient = useApiClient();
   const { state, definedExecutionId } = props;
 
@@ -36,13 +21,13 @@ export function State(props: Props) {
       <Table>
         <TableBody>
           <TableRow>
-            <TableCell variant="head" className={classes.header}>
+            <TableCell variant="head" sx={headerSx}>
               InstanceId
             </TableCell>
             <TableCell>{state.orchestrationInstance.instanceId}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell variant="head" className={classes.header}>
+            <TableCell variant="head" sx={headerSx}>
               ExecutionId
             </TableCell>
             <TableCell>
@@ -64,33 +49,40 @@ export function State(props: Props) {
             </TableCell>
           </TableRow>
           <TableRow>
-            <TableCell variant="head" className={classes.header}>
+            <TableCell variant="head" sx={headerSx}>
               Name
             </TableCell>
             <TableCell>{state.name}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell variant="head" className={classes.header}>
+            <TableCell variant="head" sx={headerSx}>
               Version
             </TableCell>
             <TableCell>{state.version}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell variant="head" className={classes.header}>
+            <TableCell variant="head" sx={headerSx}>
               Tags
             </TableCell>
             <TableCell padding="none">
-              <div className={classes.chips}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  mx: 1.5,
+                  "& > *": { m: 0.25 },
+                }}
+              >
                 {state.tags &&
                   Object.entries(state.tags).map(([key, value]) => (
                     <Chip key={key} size="small" label={`${key}: ${value}`} />
                   ))}
-              </div>
+              </Box>
             </TableCell>
           </TableRow>
           {state.parentInstance && (
             <TableRow>
-              <TableCell variant="head" className={classes.header}>
+              <TableCell variant="head" sx={headerSx}>
                 Parent
               </TableCell>
               <TableCell>
@@ -106,7 +98,7 @@ export function State(props: Props) {
             </TableRow>
           )}
           <TableRow>
-            <TableCell variant="head" className={classes.header}>
+            <TableCell variant="head" sx={headerSx}>
               Status
             </TableCell>
             <TableCell>{state.orchestrationStatus}</TableCell>
@@ -114,31 +106,30 @@ export function State(props: Props) {
           <TableRow>
             <TableCell
               variant="head"
-              className={classes.header}
-              style={{ width: 200 }}
+              sx={headerSx}
             >
               Custom Status
             </TableCell>
-            <TableCell padding="none" style={{ wordBreak: "break-all" }}>
-              <Box padding={2} style={{ maxHeight: 100, overflow: "auto" }}>
+            <TableCell padding="none" sx={{ wordBreak: "break-all" }}>
+              <Box sx={{ p: 2, maxHeight: 100, overflow: "auto" }}>
                 {state.status}
               </Box>
             </TableCell>
           </TableRow>
           <TableRow>
-            <TableCell variant="head" className={classes.header}>
+            <TableCell variant="head" sx={headerSx}>
               Created Time
             </TableCell>
             <TableCell>{formatDateTime(state.createdTime)}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell variant="head" className={classes.header}>
+            <TableCell variant="head" sx={headerSx}>
               Completed Time
             </TableCell>
             <TableCell>{formatDateTime(state.completedTime)}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell variant="head" className={classes.header}>
+            <TableCell variant="head" sx={headerSx}>
               Last Updated Time
             </TableCell>
             <TableCell>{formatDateTime(state.lastUpdatedTime)}</TableCell>

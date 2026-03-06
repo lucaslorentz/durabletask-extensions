@@ -1,4 +1,3 @@
-import axios, { AxiosInstance } from "axios";
 import qs from "qs";
 import {
   CreateOrchestrationRequest,
@@ -16,33 +15,26 @@ import {
 } from "../models/ApiModels";
 
 export class ApiClient {
-  private apiAxios: AxiosInstance;
+  private baseURL = "";
+  private token?: string;
   private features?: Partial<Record<Feature, true>>;
   private endpoints?: Record<Endpoint, EndpointInfo>;
 
-  constructor() {
-    this.apiAxios = axios.create();
-  }
-
   public setToken(token: string | undefined) {
-    if (token) {
-      this.apiAxios.defaults.headers.common.Authorization = `Bearer ${token}`;
-    } else {
-      delete this.apiAxios.defaults.headers.common.Authorization;
-    }
+    this.token = token;
   }
 
   public async initialize(apiBaseUrl: string) {
-    this.apiAxios.defaults.baseURL = apiBaseUrl;
+    this.baseURL = apiBaseUrl;
 
-    var entrypointResponse = await this.apiAxios.get<EntrypointResponse>("/");
+    const entrypoint = await this.get<EntrypointResponse>("/");
 
-    this.features = entrypointResponse.data.features.reduce((c, f) => {
+    this.features = entrypoint.features.reduce((c, f) => {
       c[f] = true;
       return c;
     }, {} as Partial<Record<Feature, true>>);
 
-    this.endpoints = entrypointResponse.data.endpoints;
+    this.endpoints = entrypoint.endpoints;
   }
 
   public hasFeature(feature: Feature): boolean {
@@ -63,7 +55,7 @@ export class ApiClient {
     const query = qs.stringify(request, {
       skipNulls: true,
       arrayFormat: "repeat",
-      filter(prefix, value) {
+      filter(prefix: string, value: unknown) {
         if (prefix && value?.constructor === Object) {
           return JSON.stringify(value);
         } else {
@@ -72,11 +64,7 @@ export class ApiClient {
       },
     });
 
-    var response = await this.apiAxios.get<OrchestrationsResponse>(
-      `/v1/orchestrations?${query}`
-    );
-
-    return response.data;
+    return this.get<OrchestrationsResponse>(`/v1/orchestrations?${query}`);
   }
 
   public async getOrchestrationState(
@@ -89,37 +77,31 @@ export class ApiClient {
       url = `${url}/${executionId}`;
     }
 
-    var response = await this.apiAxios.get<OrchestrationState>(url);
-    return response.data;
+    return this.get<OrchestrationState>(url);
   }
 
   public async getOrchestrationHistory(
     instanceId: string,
     executionId: string
   ): Promise<HistoryEvent[]> {
-    var response = await this.apiAxios.get<HistoryEvent[]>(
+    return this.get<HistoryEvent[]>(
       `/v1/orchestrations/${encodeURIComponent(
         instanceId
       )}/${encodeURIComponent(executionId)}/history`
     );
-    return response.data;
   }
 
   public async createOrchestration(
     request: CreateOrchestrationRequest
   ): Promise<OrchestrationInstance> {
-    const response = await this.apiAxios.post<OrchestrationInstance>(
-      `/v1/orchestrations`,
-      request
-    );
-    return response.data;
+    return this.post<OrchestrationInstance>(`/v1/orchestrations`, request);
   }
 
   public async terminateOrchestration(
     instanceId: string,
     request: TerminateRequest
   ): Promise<void> {
-    await this.apiAxios.post(
+    await this.post(
       `/v1/orchestrations/${encodeURIComponent(instanceId)}/terminate`,
       request
     );
@@ -129,35 +111,68 @@ export class ApiClient {
     instanceId: string,
     request: RewindRequest
   ): Promise<void> {
-    await this.apiAxios.post(
+    await this.post(
       `/v1/orchestrations/${encodeURIComponent(instanceId)}/rewind`,
       request
     );
   }
 
   public async purgeOrchestration(instanceId: string): Promise<void> {
-    await this.apiAxios.delete(
-      `/v1/orchestrations/${encodeURIComponent(instanceId)}`
+    await this.fetch(
+      `/v1/orchestrations/${encodeURIComponent(instanceId)}`,
+      { method: "DELETE" }
     );
   }
 
   public async raiseOrchestrationEvent(
     instanceId: string,
     eventName: string,
-    eventData: any
+    eventData: unknown
   ): Promise<void> {
-    await this.apiAxios.post(
+    await this.post(
       `/v1/orchestrations/${encodeURIComponent(
         instanceId
       )}/raiseevent/${eventName}`,
-      // Manually stringify json because of:
-      // https://github.com/axios/axios/issues/2613
-      JSON.stringify(eventData),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      eventData
     );
+  }
+
+  private async get<T>(path: string): Promise<T> {
+    const response = await this.fetch(path);
+    return response.json();
+  }
+
+  private async post<T = void>(path: string, body?: unknown): Promise<T> {
+    const response = await this.fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const text = await response.text();
+    return text ? JSON.parse(text) : (undefined as T);
+  }
+
+  private async fetch(path: string, init?: RequestInit): Promise<Response> {
+    const headers = new Headers(init?.headers);
+    if (this.token) {
+      headers.set("Authorization", `Bearer ${this.token}`);
+    }
+
+    const response = await fetch(`${this.baseURL}${path}`, {
+      ...init,
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new ApiError(response.status, await response.text());
+    }
+
+    return response;
+  }
+}
+
+export class ApiError extends Error {
+  constructor(public status: number, body: string) {
+    super(`HTTP ${status}: ${body}`);
   }
 }

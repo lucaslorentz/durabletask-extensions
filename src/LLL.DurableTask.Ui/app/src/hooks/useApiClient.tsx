@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { useAsync } from "react-use";
 import { useAuth } from "./useAuth";
-import { ApiClient } from "../clients/ApiClient";
+import { ApiClient, ApiError } from "../clients/ApiClient";
 import { ErrorAlert } from "../components/ErrorAlert";
 import { useConfiguration } from "../ConfigurationProvider";
 
@@ -27,8 +27,8 @@ export function ApiClientProvider(props: Props) {
       apiClient.setToken(auth.user?.access_token);
       await apiClient.initialize(configuration.apiBaseUrl);
       return apiClient;
-    } catch (error: any) {
-      if (error?.response?.status === 401) {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
         await auth.signIn?.();
       }
       throw error;
