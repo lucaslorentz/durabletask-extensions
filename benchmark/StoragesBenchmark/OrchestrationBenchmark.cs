@@ -14,7 +14,7 @@ using IHost = Microsoft.Extensions.Hosting.IHost;
 
 namespace StoragesBenchmark;
 
-[SimpleJob(RunStrategy.Monitoring, iterationCount: 5)]
+[SimpleJob(RunStrategy.Monitoring, warmupCount: 3, iterationCount: 10)]
 
 public abstract class OrchestrationBenchmark
 {

@@ -40,6 +40,47 @@ Temporal is a fork of Cadence backed by a company with the same name and founded
 | &nbsp;&nbsp;[LLL.DurableTask.EFCore.PostgreSQL](src/LLL.DurableTask.EFCore.PostgreSQL) | [![Nuget](https://img.shields.io/nuget/vpre/LLL.DurableTask.EFCore.PostgreSQL)](https://www.nuget.org/packages/LLL.DurableTask.EFCore.PostgreSQL/) | EFCore storage PostgreSQL support. |
 | &nbsp;&nbsp;[LLL.DurableTask.EFCore.SqlServer](src/LLL.DurableTask.EFCore.SqlServer) | [![Nuget](https://img.shields.io/nuget/vpre/LLL.DurableTask.EFCore.SqlServer)](https://www.nuget.org/packages/LLL.DurableTask.EFCore.SqlServer/) | EFCore storage Sql Server support. |
 
+## Comparing Storage Providers
+
+The following table compares the EFCore storage providers from this project.
+
+| Feature | EFCore PostgreSQL | EFCore MySQL | EFCore SQL Server | EFCore InMemory | [Others][ms-compare] |
+| - | - | - | - | - | - |
+| External dependencies | PostgreSQL | MySQL | SQL Server | None | [Compare][ms-compare] |
+| Durable Entities | No | No | No | No | [Compare][ms-compare] |
+| Disconnected environment | Yes | Yes | Yes | Yes | [Compare][ms-compare] |
+| Identity-based connections | Yes¹ | Yes¹ | Yes¹ | N/A | [Compare][ms-compare] |
+| Maximum throughput | Moderate | Moderate | Moderate | Moderate | [Compare][ms-compare] |
+| Maturity | Not battle-tested | Used in production | Not battle-tested | Development only | [Compare][ms-compare] |
+| [Worker specialization][efcore-features] | Supported | Supported | Supported | Supported | No |
+| [Input/output observability][efcore-features] | Yes | Yes | Yes | Yes | No |
+| [Enhanced rewind][efcore-features] | Yes | Yes | Yes | Yes | No |
+| [Orchestration tags][efcore-features] | Yes | Yes | Yes | Yes | No |
+| [Full execution history][efcore-features] | Yes | Yes | Yes | Yes | No |
+| [Reliable event delivery][efcore-features] | Yes | Yes | Yes | Yes | No |
+
+¹ Supported via EFCore database provider configuration (e.g. Azure AD / Entra ID tokens). Not built into this project directly.
+
+[ms-compare]: https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-storage-providers#comparing-storage-providers
+[efcore-features]: src/LLL.DurableTask.EFCore/README.md#features
+
+### Performance Benchmarks
+
+Benchmark running 100 orchestrations with 5 activities each (lower is better):
+
+| Storage Provider | Median | Mean | Std Dev |
+| - | - | - | - |
+| EFCore InMemory | 1.56 s | 1.88 s | 0.51 s |
+| DurableTask SQL Server¹ | 2.33 s | 2.34 s | 0.07 s |
+| EFCore PostgreSQL | 2.75 s | 2.53 s | 0.37 s |
+| EFCore SQL Server | 3.90 s | 3.77 s | 0.54 s |
+| EFCore MySQL | 3.88 s | 3.85 s | 0.26 s |
+| Azure Storage (Azurite)¹ | 8.53 s | 8.40 s | 0.89 s |
+
+¹ Included for reference. [Azure Storage](https://github.com/Azure/durabletask/tree/main/src/DurableTask.AzureStorage) and [DurableTask SQL Server](https://github.com/microsoft/durabletask-mssql) are separate Microsoft packages.
+
+> **Note:** Benchmarks were run locally using Docker containers with [BenchmarkDotNet](https://benchmarkdotnet.org/) on Apple M1 Pro, .NET 9 (3 warmup + 10 iterations). Azure Storage used the Azurite emulator. Results may vary between runs and environments — these numbers are useful for relative comparison, not absolute performance. See [benchmark source](benchmark/StoragesBenchmark) for details.
+
 ### Composability
 
 Our components were designed to be independent and highly composable. See below some possible architectures.
