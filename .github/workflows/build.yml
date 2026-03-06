@@ -35,12 +35,15 @@ jobs:
       - name: Install workloads
         run: dotnet workload restore
 
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Restore
         run: dotnet restore
 
-      # Yarn build in advance to avoid cuncurrency issues due to multi target build
-      - name: Yarn Build
-        run: dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net10.0 -t:YarnBuild --no-restore
+      # pnpm build in advance to avoid concurrency issues due to multi target build
+      - name: UI Build
+        run: dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net10.0 -t:PnpmBuild --no-restore
 
       - name: Build
         run: dotnet build -c Release --no-restore
@@ -108,12 +111,15 @@ jobs:
         with:
           dotnet-version: 10.0.100
 
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Create Release NuGet package
         run: |
           export Version=${GITHUB_REF:11}
           echo Version: $Version
           dotnet restore
-          dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net10.0 -t:YarnBuild --no-restore
+          dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net10.0 -t:PnpmBuild --no-restore
           dotnet pack -c Release --no-restore
 
       - name: Push to NuGet Feed
