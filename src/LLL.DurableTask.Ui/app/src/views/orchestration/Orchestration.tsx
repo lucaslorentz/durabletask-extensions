@@ -22,6 +22,7 @@ import { AutoRefreshButton } from "../../components/RefreshButton";
 import { useApiClient } from "../../hooks/useApiClient";
 import { useQueryState } from "../../hooks/useQueryState";
 import { useRefreshInterval } from "../../hooks/useRefreshInterval";
+import { ExecutionsList } from "./ExecutionsList";
 import { HistoryTable } from "./HistoryTable";
 import { RaiseEvent } from "./RaiseEvent";
 import { Rewind } from "./Rewind";
@@ -36,6 +37,7 @@ type RouteParams = {
 type TabValue =
   | "state"
   | "history"
+  | "executions"
   | "raise_event"
   | "terminate"
   | "rewind"
@@ -189,6 +191,9 @@ export function Orchestration() {
           {apiClient.isAuthorized("OrchestrationsGetExecutionHistory") && (
             <Tab value="history" label="History" />
           )}
+          {apiClient.hasFeature("StatePerExecution") && (
+            <Tab value="executions" label="Executions" />
+          )}
           {apiClient.isAuthorized("OrchestrationsRaiseEvent") && (
             <Tab value="raise_event" label="Raise Event" />
           )}
@@ -213,6 +218,15 @@ export function Orchestration() {
               tab === "history" &&
               historyQuery.data && (
                 <HistoryTable historyEvents={historyQuery.data} />
+              )}
+            {apiClient.hasFeature("StatePerExecution") &&
+              tab === "executions" && (
+                <ExecutionsList
+                  instanceId={instanceId}
+                  currentExecutionId={
+                    stateQuery.data.orchestrationInstance.executionId
+                  }
+                />
               )}
             {apiClient.isAuthorized("OrchestrationsRaiseEvent") &&
               tab === "raise_event" && (
