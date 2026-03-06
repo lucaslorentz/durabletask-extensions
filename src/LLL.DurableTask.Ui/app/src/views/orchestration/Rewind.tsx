@@ -73,18 +73,17 @@ export function Rewind(props: Props) {
   return (
     <div>
       <Grid container spacing={2}>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <TextField field={form.field("reason")} multiline rows={6} />
         </Grid>
         {form.render((form) => (
           <Grid
-            item
-            xs={12}
+            size={12}
             container
             spacing={1}
             justifyContent="space-between"
           >
-            <Grid item>
+            <Grid>
               <LoadingButton
                 variant="contained"
                 color="primary"
@@ -97,7 +96,7 @@ export function Rewind(props: Props) {
                 Rewind
               </LoadingButton>
             </Grid>
-            <Grid item>
+            <Grid>
               <Button
                 onClick={() => form.reset()}
                 disabled={rewindMutation.isPending}

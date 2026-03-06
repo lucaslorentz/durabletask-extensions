@@ -67,7 +67,7 @@ export function OrchestrationsSearch(props: Props) {
       <AccordionDetails>
         <Grid container spacing={2}>
           {apiClient.hasFeature("SearchByInstanceId") && (
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <TextField
                 fullWidth
                 label="InstanceId"
@@ -78,7 +78,7 @@ export function OrchestrationsSearch(props: Props) {
             </Grid>
           )}
           {apiClient.hasFeature("SearchByName") && (
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <TextField
                 fullWidth
                 label="Name"
@@ -90,7 +90,7 @@ export function OrchestrationsSearch(props: Props) {
           )}
           {apiClient.hasFeature("SearchByCreatedTime") && (
             <>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <TextField
                   fullWidth
                   label="Created Time From"
@@ -103,7 +103,7 @@ export function OrchestrationsSearch(props: Props) {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <TextField
                   fullWidth
                   label="Created Time To"
@@ -119,7 +119,7 @@ export function OrchestrationsSearch(props: Props) {
             </>
           )}
           {apiClient.hasFeature("SearchByStatus") && (
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Status</InputLabel>
                 <Select
@@ -150,7 +150,7 @@ export function OrchestrationsSearch(props: Props) {
             </Grid>
           )}
           {apiClient.hasFeature("StatePerExecution") && (
-            <Grid item xs>
+            <Grid size="grow">
               <FormGroup>
                 <FormControlLabel
                   control={
@@ -168,7 +168,7 @@ export function OrchestrationsSearch(props: Props) {
           )}
           {apiClient.hasFeature("Tags") && (
             <>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Button
                   onClick={() => setTags([...tags, { key: "", value: "" }])}
                 >
@@ -176,10 +176,10 @@ export function OrchestrationsSearch(props: Props) {
                 </Button>
               </Grid>
               {tags.map((tag, index) => (
-                <Grid key={index} item xs={12}>
+                <Grid key={index} size={12}>
                   <Stack direction="row" alignItems="start" spacing={1}>
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                           fullWidth
                           size="small"
@@ -194,7 +194,7 @@ export function OrchestrationsSearch(props: Props) {
                           }
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                           fullWidth
                           size="small"

@@ -90,7 +90,7 @@ export function TopNav() {
             <Box sx={{ mr: 2 }}>{logoLink}</Box>
             <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
               {pages.map((page) => (
-                <Grid key={page.label} item>
+                <Grid key={page.label}>
                   <Button component={RouterLink} to={page.to} color="inherit">
                     {page.label}
                   </Button>

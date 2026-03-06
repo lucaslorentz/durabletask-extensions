@@ -111,16 +111,16 @@ export function Create() {
       <Paper variant="outlined">
         <Box padding={2}>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField field={form.field("name")} autoFocus />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField field={form.field("version")} />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField field={form.field("instanceId")} />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <CodeEditor
                 field={form.field("input")}
                 editorProps={{
@@ -131,7 +131,7 @@ export function Create() {
             </Grid>
             {apiClient.hasFeature("Tags") && (
               <>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Button
                     onClick={() =>
                       form.field("tags").push({ key: "", value: "" })
@@ -142,13 +142,13 @@ export function Create() {
                 </Grid>
                 {form.field("tags").render((field) =>
                   field.fields().map((tagField) => (
-                    <Grid key={tagField.path} item xs={12}>
+                    <Grid key={tagField.path} size={12}>
                       <Stack direction="row" alignItems="start" spacing={1}>
                         <Grid container spacing={2}>
-                          <Grid item xs={12} sm={6}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField field={tagField.field("key")} />
                           </Grid>
-                          <Grid item xs={12} sm={6}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField field={tagField.field("value")} />
                           </Grid>
                         </Grid>
@@ -165,13 +165,12 @@ export function Create() {
             )}
             {form.render((form) => (
               <Grid
-                item
-                xs={12}
+                size={12}
                 container
                 spacing={1}
                 justifyContent="space-between"
               >
-                <Grid item>
+                <Grid>
                   <LoadingButton
                     variant="contained"
                     color="primary"
@@ -185,7 +184,7 @@ export function Create() {
                     Create
                   </LoadingButton>
                 </Grid>
-                <Grid item>
+                <Grid>
                   <Button
                     onClick={() => form.reset()}
                     disabled={createMutation.isPending}
