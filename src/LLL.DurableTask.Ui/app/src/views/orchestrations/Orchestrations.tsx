@@ -105,7 +105,7 @@ export function Orchestrations() {
         </Box>
       ) : null}
       <Paper variant="outlined">
-        <OrchestrationsTable result={query.data} />
+        <OrchestrationsTable result={query.data} onAction={query.refetch} />
         <Pagination
           count={query.data?.orchestrationState?.length ?? 0}
           pageSize={pageSize}
