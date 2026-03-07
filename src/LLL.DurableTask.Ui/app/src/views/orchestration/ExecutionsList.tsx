@@ -40,7 +40,7 @@ export function ExecutionsList({ instanceId, currentExecutionId }: Props) {
 
   return (
     <TableContainer>
-      <Table>
+      <Table sx={{ tableLayout: "fixed", wordBreak: "break-word" }}>
         <TableHead>
           <TableRow>
             <TableCell>ExecutionId</TableCell>
