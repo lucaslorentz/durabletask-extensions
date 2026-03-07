@@ -71,10 +71,10 @@ Benchmark running 100 orchestrations with 5 activities each (lower is better):
 | Storage Provider | Median | Mean | Std Dev |
 | - | - | - | - |
 | EFCore InMemory | 1.56 s | 1.88 s | 0.51 s |
-| DurableTask SQL Server¹ | 2.33 s | 2.34 s | 0.07 s |
 | EFCore PostgreSQL | 2.75 s | 2.53 s | 0.37 s |
 | EFCore SQL Server | 3.90 s | 3.77 s | 0.54 s |
 | EFCore MySQL | 3.88 s | 3.85 s | 0.26 s |
+| DurableTask SQL Server¹ | 2.33 s | 2.34 s | 0.07 s |
 | Azure Storage (Azurite)¹ | 8.53 s | 8.40 s | 0.89 s |
 
 ¹ Included for reference. [Azure Storage](https://github.com/Azure/durabletask/tree/main/src/DurableTask.AzureStorage) and [DurableTask SQL Server](https://github.com/microsoft/durabletask-mssql) are separate Microsoft packages.
