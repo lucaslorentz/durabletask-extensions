@@ -1,4 +1,6 @@
 import DeleteIcon from "@mui/icons-material/Delete";
+import ReplayIcon from "@mui/icons-material/Replay";
+import StopIcon from "@mui/icons-material/Stop";
 import { LoadingButton } from "@mui/lab";
 import {
   Box,
@@ -15,9 +17,10 @@ import {
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { useConfirm } from "material-ui-confirm";
 import { useSnackbar } from "notistack";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router";
 import { ErrorAlert } from "../../components/ErrorAlert";
+import { ReasonDialog } from "../../components/ReasonDialog";
 import { AutoRefreshButton } from "../../components/RefreshButton";
 import { useApiClient } from "../../hooks/useApiClient";
 import { useQueryState } from "../../hooks/useQueryState";
@@ -25,23 +28,14 @@ import { useRefreshInterval } from "../../hooks/useRefreshInterval";
 import { ExecutionsList } from "./ExecutionsList";
 import { HistoryTable } from "./HistoryTable";
 import { RaiseEvent } from "./RaiseEvent";
-import { Rewind } from "./Rewind";
 import { State } from "./State";
-import { Terminate } from "./Terminate";
 
 type RouteParams = {
   instanceId: string;
   executionId: string;
 };
 
-type TabValue =
-  | "state"
-  | "history"
-  | "executions"
-  | "raise_event"
-  | "terminate"
-  | "rewind"
-  | "json";
+type TabValue = "state" | "history" | "executions" | "raise_event" | "json";
 
 export function Orchestration() {
   const [tab, setTab] = useQueryState<TabValue>("tab", "state");
@@ -91,29 +85,29 @@ export function Orchestration() {
     mutationFn: (args) => apiClient.purgeOrchestration(...args),
   });
 
-  const handlePurgeClick = useCallback(() => {
-    confirm({
+  const handlePurgeClick = useCallback(async () => {
+    const { confirmed } = await confirm({
       description:
         "This action is irreversible. Do you confirm the purge of this instance?",
-    }).then(async () => {
-      try {
-        await purgeMutation.mutateAsync([instanceId]);
-        enqueueSnackbar("Instance purged", {
-          variant: "success",
-        });
-        navigate(`/orchestrations`);
-      } catch (error) {
-        enqueueSnackbar(String(error), {
-          variant: "error",
-          persist: true,
-          action: (key) => (
-            <Button color="inherit" onClick={() => closeSnackbar(key)}>
-              Dismiss
-            </Button>
-          ),
-        });
-      }
     });
+    if (!confirmed) return;
+    try {
+      await purgeMutation.mutateAsync([instanceId]);
+      enqueueSnackbar("Instance purged", {
+        variant: "success",
+      });
+      navigate(`/orchestrations`);
+    } catch (error) {
+      enqueueSnackbar(String(error), {
+        variant: "error",
+        persist: true,
+        action: (key) => (
+          <Button color="inherit" onClick={() => closeSnackbar(key)}>
+            Dismiss
+          </Button>
+        ),
+      });
+    }
   }, [
     closeSnackbar,
     confirm,
@@ -122,6 +116,11 @@ export function Orchestration() {
     navigate,
     purgeMutation,
   ]);
+
+  const [reasonDialog, setReasonDialog] = useState<{
+    action: string;
+    fn: (reason: string) => Promise<void>;
+  } | null>(null);
 
   return (
     <div>
@@ -154,11 +153,59 @@ export function Orchestration() {
             setRefreshInterval={setRefreshInterval}
           />
         </Box>
-        {apiClient.isAuthorized("OrchestrationsPurgeInstance") &&
-          stateQuery.isSuccess && (
-            <Box>
+        {stateQuery.isSuccess && (
+          <Stack direction="row" spacing={1}>
+            {apiClient.isAuthorized("OrchestrationsTerminate") && (
+              <Button
+                variant="outlined"
+                startIcon={<StopIcon />}
+                size="small"
+                onClick={() =>
+                  setReasonDialog({
+                    action: "Terminate",
+                    fn: async (reason) => {
+                      await apiClient.terminateOrchestration(instanceId, {
+                        reason,
+                      });
+                      enqueueSnackbar("Termination requested", {
+                        variant: "success",
+                      });
+                      stateQuery.refetch();
+                    },
+                  })
+                }
+              >
+                Terminate
+              </Button>
+            )}
+            {apiClient.hasFeature("Rewind") &&
+              apiClient.isAuthorized("OrchestrationsRewind") && (
+                <Button
+                  variant="outlined"
+                  startIcon={<ReplayIcon />}
+                  size="small"
+                  onClick={() =>
+                    setReasonDialog({
+                      action: "Rewind",
+                      fn: async (reason) => {
+                        await apiClient.rewindOrchestration(instanceId, {
+                          reason,
+                        });
+                        enqueueSnackbar("Failures rewound", {
+                          variant: "success",
+                        });
+                        stateQuery.refetch();
+                      },
+                    })
+                  }
+                >
+                  Rewind
+                </Button>
+              )}
+            {apiClient.isAuthorized("OrchestrationsPurgeInstance") && (
               <LoadingButton
                 variant="outlined"
+                color="error"
                 startIcon={<DeleteIcon />}
                 loading={purgeMutation.isPending}
                 onClick={handlePurgeClick}
@@ -166,8 +213,9 @@ export function Orchestration() {
               >
                 Purge
               </LoadingButton>
-            </Box>
-          )}
+            )}
+          </Stack>
+        )}
       </Stack>
       <Box height={4} marginTop={0.5} marginBottom={0.5}>
         {(stateQuery.isFetching || historyQuery.isFetching) && (
@@ -197,13 +245,6 @@ export function Orchestration() {
           {apiClient.isAuthorized("OrchestrationsRaiseEvent") && (
             <Tab value="raise_event" label="Raise Event" />
           )}
-          {apiClient.isAuthorized("OrchestrationsTerminate") && (
-            <Tab value="terminate" label="Terminate" />
-          )}
-          {apiClient.hasFeature("Rewind") &&
-            apiClient.isAuthorized("OrchestrationsRewind") && (
-              <Tab value="rewind" label="Rewind" />
-            )}
           <Tab value="json" label="Json" />
         </Tabs>
         {stateQuery.data ? (
@@ -237,25 +278,6 @@ export function Orchestration() {
                   />
                 </Box>
               )}
-            {apiClient.isAuthorized("OrchestrationsTerminate") &&
-              tab === "terminate" && (
-                <Box padding={2}>
-                  <Terminate
-                    instanceId={instanceId}
-                    onTerminate={stateQuery.refetch}
-                  />
-                </Box>
-              )}
-            {apiClient.hasFeature("Rewind") &&
-              apiClient.isAuthorized("OrchestrationsRewind") &&
-              tab === "rewind" && (
-                <Box padding={2}>
-                  <Rewind
-                    instanceId={instanceId}
-                    onRewind={stateQuery.refetch}
-                  />
-                </Box>
-              )}
             {tab === "json" && (
               <Box padding={2}>
                 <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
@@ -270,6 +292,31 @@ export function Orchestration() {
           </>
         ) : null}
       </Paper>
+      <ReasonDialog
+        open={reasonDialog !== null}
+        title={reasonDialog?.action ?? ""}
+        description={`Provide a reason for the ${reasonDialog?.action.toLowerCase()}.`}
+        onClose={() => setReasonDialog(null)}
+        onConfirm={async (reason) => {
+          const dialog = reasonDialog;
+          setReasonDialog(null);
+          if (dialog) {
+            try {
+              await dialog.fn(reason);
+            } catch (error) {
+              enqueueSnackbar(String(error), {
+                variant: "error",
+                persist: true,
+                action: (key) => (
+                  <Button color="inherit" onClick={() => closeSnackbar(key)}>
+                    Dismiss
+                  </Button>
+                ),
+              });
+            }
+          }
+        }}
+      />
     </div>
   );
 }
