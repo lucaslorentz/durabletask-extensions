@@ -63,12 +63,21 @@
     <Exec WorkingDirectory="$(SpaRoot)" Command="pnpm install --frozen-lockfile" />
   </Target>
 
+  <ItemGroup>
+    <SpaInputFiles Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**;$(SpaRoot)build\**" />
+  </ItemGroup>
+
+  <Target Name="SpaCheckDirty" BeforeTargets="PnpmBuild" Inputs="@(SpaInputFiles)" Outputs="$(BaseIntermediateOutputPath)spa.buildstamp">
+    <RemoveDir Directories="$(SpaRoot)build" />
+  </Target>
+
   <Target Name="PnpmBuild" BeforeTargets="SpaEmbedResources" Condition=" !Exists('$(SpaRoot)build') ">
     <Exec WorkingDirectory="$(SpaRoot)" Command="pnpm build" ContinueOnError="true">
       <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
     </Exec>
     <RemoveDir Directories="$(SpaRoot)build" Condition="'$(ErrorCode)' != '0'" />
     <Error Condition="'$(ErrorCode)' != '0'" Text="Failed to run pnpm build" />
+    <Touch Files="$(BaseIntermediateOutputPath)spa.buildstamp" AlwaysCreate="true" />
   </Target>
 
   <Target Name="SpaEmbedResources" BeforeTargets="PrepareForBuild">
