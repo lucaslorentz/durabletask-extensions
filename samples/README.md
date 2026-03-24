@@ -5,7 +5,7 @@ This sample was built to demonstrate a microservices architecture with the follo
 - **Server:** Connects to storage and exposes it as GRPC endpoints.
 - **Api:** Exposes REST API to manage orchestrations.
 - **UI:** Exposes UI to manage orchestrations.
-- **OrchestrationWorker:** Implements [BookParallel](OrchestrationWorker/Orchestrations/BookParallelOrchestration.cs) and [BookSequential](OrchestrationWorker/Orchestrations/BookSequentialOrchestration.cs) orchestrations for the given problem.
+- **OrchestrationWorker:** Implements [BookParallel](OrchestrationWorker/Orchestrations/BookParallelOrchestration.cs), [BookSequential](OrchestrationWorker/Orchestrations/BookSequentialOrchestration.cs), and [EventDemo](OrchestrationWorker/Orchestrations/EventDemoOrchestration.cs) orchestrations for the given problem.
 - **FlightWorker:** Implements [BookFlight](FlightWorker/Activities/BookFlightActivity.cs) and [CancelFlight](CarWorker/Activities/CancelFlightActivity.cs) activities.
 - **CarWorker:** Implements [BookCar](CarWorker/Activities/BookCarActivity.cs) and [CancelCar](CarWorker/Activities/CancelCarActivity.cs) activities.
 - **HotelWorker:** Implements [BookHotel](HotelWorker/Activities/BookHotelActivity.cs) and [CancelHotel](HotelWorker/Activities/CancelHotelActivity.cs) activities.
@@ -24,6 +24,14 @@ This sample was built to demonstrate a microservices architecture with the follo
    | --- | --- | --- | ---
    | BookParallel | v1 | (Empty) | {}
    | BookSequential | v1 | (Empty) | {}
+   | EventDemo | v1 | (Empty) | { "correlationId": "demo-1" }
    | BPMN | (Empty) | (Empty) | { "name": "BookParallel" }
    | BPMN | (Empty) | (Empty) | { "name": "BookSequential" }
    | BPMN | (Empty) | (Empty) | { "name": "Bonus" }
+
+1. To test external events with `EventDemo`, raise these events to the running instance:
+
+   | Event Name | Event Data
+   | --- | ---
+   | ApprovalRequested | { "approved": true, "approvedBy": "alice", "reason": "looks good" }
+   | AddComment | { "text": "approved from UI" }
