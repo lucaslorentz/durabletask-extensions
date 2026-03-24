@@ -1,6 +1,6 @@
 # LLL.DurableTask.Ui [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Ui)](https://www.nuget.org/packages/LLL.DurableTask.Ui/)
 
-Beautifull UI to manage orchestrations built with React + Material UI.
+Beautiful UI to manage orchestrations built with React + Material UI.
 
 Take a look at the [screenshots](../../readme/screenshots.md). History visualization is my favorite :-)
 
