@@ -14,10 +14,10 @@ This sample was built to demonstrate a microservices architecture with the follo
 
 ## Running the sample
 
-1. Configure a EFCore storage at the [server](Server/Program.cs#L9)
+1. Configure a EFCore storage at the [server](Server/Program.cs#L9).
 1. Run the [AppHost project](AppHost) with `dotnet run` or the [`Sample` launch config](/.vscode/launch.json).
-1. Open Aspire Dashboard at https://localhost:17198/
-1. Open the DurableTask UI at https://localhost:5002/
+1. Open Aspire Dashboard at https://localhost:17198/.
+1. Open the DurableTask UI at https://localhost:5002/.
 1. Create the following test orchestrations and watch them be executed:
 
    | Name | Version | InstanceId | Input
