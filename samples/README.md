@@ -22,8 +22,8 @@ This sample was built to demonstrate a microservices architecture with the follo
 
    | Name | Version | InstanceId | Input
    | --- | --- | --- | ---
-   | BookParallel | v1 | (Empty) | {}
-   | BookSequential | v1 | (Empty) | {}
+   | BookParallel | v1 | (Empty) | { }
+   | BookSequential | v1 | (Empty) | { }
    | EventDemo | v1 | (Empty) | { "correlationId": "demo-1" }
    | RewindDemo | v1 | (Empty) | { "RequestedCarType": "Sports" }
    | BPMN | (Empty) | (Empty) | { "name": "BookParallel" }
