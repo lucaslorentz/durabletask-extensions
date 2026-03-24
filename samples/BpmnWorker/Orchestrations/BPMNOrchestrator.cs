@@ -354,7 +354,7 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
         {
             var fireAt = XmlConvert.ToDateTime(timerEventDefinition.TimeDate.Text.First(), XmlDateTimeSerializationMode.Local);
             _logger.LogWarning("Waiting for timer {fireAt}", fireAt);
-            await Context.CreateTimer(fireAt, CancellationToken.None);
+            await Context.CreateTimer<object>(fireAt, null, CancellationToken.None);
             _logger.LogWarning("Received timer {fireAt}", fireAt);
 
             await VisitFlowNodes(GetParallelOutgoingNodes(intermediateCatchEvent));
@@ -364,7 +364,7 @@ public class BPMNOrchestrator : OrchestrationBase<object, BPMNOrchestratorInput>
             var duration = XmlConvert.ToTimeSpan(timerEventDefinition.TimeDuration.Text.First());
             var fireAt = Context.CurrentUtcDateTime.Add(duration);
             _logger.LogWarning("Waiting for timer {fireAt}", fireAt);
-            await Context.CreateTimer(fireAt, CancellationToken.None);
+            await Context.CreateTimer<object>(fireAt, null, CancellationToken.None);
             _logger.LogWarning("Received timer {fireAt}", fireAt);
 
             await VisitFlowNodes(GetParallelOutgoingNodes(intermediateCatchEvent));
