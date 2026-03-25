@@ -10,6 +10,7 @@
     <Project Path="samples/FlightWorker/FlightWorker.csproj" />
     <Project Path="samples/HotelWorker/HotelWorker.csproj" />
     <Project Path="samples/OrchestrationWorker/OrchestrationWorker.csproj" />
+    <Project Path="samples/SingleService/SingleService.csproj" />
     <Project Path="samples/Server/Server.csproj" />
     <Project Path="samples/Ui/Ui.csproj" />
   </Folder>

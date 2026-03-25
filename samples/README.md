@@ -1,4 +1,6 @@
-# Sample
+# Samples
+
+## Microservices architecture
 
 This sample was built to demonstrate a microservices architecture with the following components:
 
@@ -12,10 +14,10 @@ This sample was built to demonstrate a microservices architecture with the follo
 - **BPMNWorker:** An experimental BPMN runner built on top of Durable Tasks. There are also [BookParallel](BpmnWorker/Workflows/BookParallel.bpmn) and [BookSequential](BpmnWorker/Workflows/BookSequential.bpmn) BPMN workflows for the given problem.
 - **AppHost:** Aspire.NET host project to orchestrate and run all applications.
 
-## Running the sample
+### Running the sample
 
 1. Configure a EFCore storage at the [server](Server/Program.cs#L9).
-1. Run the [AppHost project](AppHost) with `dotnet run` or the [`Sample` launch config](/.vscode/launch.json).
+1. Run the [AppHost project](AppHost) with `dotnet run` or the [`AppHost sample` launch config](/.vscode/launch.json).
 1. Open Aspire Dashboard at https://localhost:17198/.
 1. Open the DurableTask UI at https://localhost:5002/.
 1. Create the following test orchestrations and watch them be executed:
@@ -43,3 +45,18 @@ This sample was built to demonstrate a microservices architecture with the follo
    1. It fails intentionally on the first execution.
    1. Open the instance and click **Rewind**.
    1. The rewound execution succeeds.
+
+## Single service architecture
+
+This sample was built to demonstrate a single service architecture.
+
+- **SingleService:** Implements the Client, Worker (just for an orchestration), API and UI.
+
+### Running the sample
+
+1. Run the [SingleService project](SingleService) with `dotnet run` or the [`SingleService sample` launch config](/.vscode/launch.json).
+1. Create the following test orchestration and watch it being executed:
+
+   | Name | Version | InstanceId | Input
+   | --- | --- | --- | ---
+   | SingleService | (Empty) | (Empty) | { "InputText": "Chadwick" }

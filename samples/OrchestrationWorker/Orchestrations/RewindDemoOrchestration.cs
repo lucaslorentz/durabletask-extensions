@@ -11,7 +11,7 @@ public class RewindDemoOrchestration : OrchestrationBase<RewindDemoResult, Rewin
     {
         var instanceId = Context.OrchestrationInstance.InstanceId;
 
-        if(Context.IsReplaying) // Clear the input to avoid the same failure happening again, maybe don't drive a sports car ;)
+        if (Context.IsReplaying) // Clear the input to avoid the same failure happening again, maybe don't drive a sports car ;)
         {
             input.RequestedCarType = "";
         }
