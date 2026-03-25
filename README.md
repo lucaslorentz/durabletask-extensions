@@ -104,4 +104,4 @@ Our components were designed to be independent and highly composable. See below 
 
 ## Sample
 
-See [samples](samples) for an implementation of the classic book Flight, Car, Hotel with compensation problem using all components from above.
+See [samples](samples) for an implementation of the classic book Flight, Car, Hotel with compensation problem using all components from above, and more.
