@@ -15,6 +15,11 @@ public class BookCarActivity : ActivityBase<BookCarInput, BookCarResult>
 
     public override Task<BookCarResult> ExecuteAsync(BookCarInput input)
     {
+        if (input?.RequestedCarType == "Sports")
+        {
+            throw new Exception("We don't have sports cars available");
+        }
+
         var bookingId = Guid.NewGuid();
 
         _logger.LogInformation("Booking car {bookingId}", bookingId);
@@ -28,6 +33,7 @@ public class BookCarActivity : ActivityBase<BookCarInput, BookCarResult>
 
 public class BookCarInput
 {
+    public string RequestedCarType { get; set; }
 }
 
 public class BookCarResult
