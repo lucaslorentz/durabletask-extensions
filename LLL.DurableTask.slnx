@@ -1,0 +1,39 @@
+<Solution>
+  <Folder Name="/benchmark/">
+    <Project Path="benchmark/StoragesBenchmark/StoragesBenchmark.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Api/Api.csproj" />
+    <Project Path="samples/AppHost/AppHost.csproj" />
+    <Project Path="samples/BpmnWorker/BpmnWorker.csproj" />
+    <Project Path="samples/CarWorker/CarWorker.csproj" />
+    <Project Path="samples/FlightWorker/FlightWorker.csproj" />
+    <Project Path="samples/HotelWorker/HotelWorker.csproj" />
+    <Project Path="samples/OrchestrationWorker/OrchestrationWorker.csproj" />
+    <Project Path="samples/SingleService/SingleService.csproj" />
+    <Project Path="samples/Server/Server.csproj" />
+    <Project Path="samples/Ui/Ui.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/LLL.DurableTask.Api/LLL.DurableTask.Api.csproj" />
+    <Project Path="src/LLL.DurableTask.AzureStorage/LLL.DurableTask.AzureStorage.csproj" />
+    <Project Path="src/LLL.DurableTask.Client/LLL.DurableTask.Client.csproj" />
+    <Project Path="src/LLL.DurableTask.Core/LLL.DurableTask.Core.csproj" />
+    <Project Path="src/LLL.DurableTask.EFCore.InMemory/LLL.DurableTask.EFCore.InMemory.csproj" />
+    <Project Path="src/LLL.DurableTask.EFCore.MySql/LLL.DurableTask.EFCore.MySql.csproj" />
+    <Project Path="src/LLL.DurableTask.EFCore.PostgreSQL/LLL.DurableTask.EFCore.PostgreSQL.csproj" />
+    <Project Path="src/LLL.DurableTask.EFCore.SqlServer/LLL.DurableTask.EFCore.SqlServer.csproj" />
+    <Project Path="src/LLL.DurableTask.EFCore/LLL.DurableTask.EFCore.csproj" />
+    <Project Path="src/LLL.DurableTask.Server.Grpc.Client/LLL.DurableTask.Server.Grpc.Client.csproj" />
+    <Project Path="src/LLL.DurableTask.Server.Grpc/LLL.DurableTask.Server.Grpc.csproj" />
+    <Project Path="src/LLL.DurableTask.Server/LLL.DurableTask.Server.csproj" />
+    <Project Path="src/LLL.DurableTask.Ui/LLL.DurableTask.Ui.csproj" />
+    <Project Path="src/LLL.DurableTask.Worker/LLL.DurableTask.Worker.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/LLL.DurableTask.Tests/LLL.DurableTask.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,8 +1,20 @@
 # LLL.DurableTask.Ui [![Nuget](https://img.shields.io/nuget/v/LLL.DurableTask.Ui)](https://www.nuget.org/packages/LLL.DurableTask.Ui/)
 
-Beautifull UI to manage orchestrations built with React + Material UI.
+Beautiful UI to manage orchestrations built with React + Material UI.
 
 Take a look at the [screenshots](../../readme/screenshots.md). History visualization is my favorite :-)
+
+## Frontend development
+
+The React/Vite frontend for this package lives in the `app` subdirectory.
+
+Run frontend commands from `src/LLL.DurableTask.Ui/app`:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build
+pnpm start
+```
 
 ## Configuration
 

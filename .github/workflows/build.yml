@@ -6,6 +6,7 @@ on:
     tags:
       - '*'
   pull_request:
+  workflow_dispatch:
 env:
   # Stop wasting time caching packages
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
@@ -25,12 +26,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.100
+          dotnet-version: 10.0.201
 
       - name: Install workloads
         run: dotnet workload restore
@@ -94,7 +95,7 @@ jobs:
           dotnet pack -c Release --no-restore
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nupkg
           path: ./src/**/*.nupkg
@@ -104,12 +105,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.100
+          dotnet-version: 10.0.201
 
       - name: Install pnpm
         run: npm install -g pnpm

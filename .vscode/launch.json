@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "AppHost sample",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/samples/AppHost/AppHost.csproj"
+        },
+        {
+            "name": "SingleService sample",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/samples/SingleService/SingleService.csproj"
+        }
+    ]
+}

@@ -2,10 +2,11 @@
 
 ## Introduction
 
-[Durable Task Framework](https://github.com/Azure/durabletask) is an open source framework that provides a foundation for workflow as code in .NET platform.
+[Durable Task Framework (DTFx)](https://github.com/Azure/durabletask) is a community-maintained open-source project that provides a foundation for workflow as code in .NET platform. It is actively used in production by many teams, including engineering teams within Microsoft.
 
 This project aims to extend it with:
-- .NET Dependency Injection and Hosting integration  
+
+- .NET Dependency Injection and Hosting integration
 - Administrative and monitoring UI
 - EFCore storage with support for InMemory, MySQL, PostgreSQL, SQL Server and some [extra features](./src/LLL.DurableTask.EFCore/README.md#features).
 - Storage delegation via GRPC protocol
@@ -18,7 +19,7 @@ Builds on top of Durable Task Framework to deliver a serverless workflow as code
 
 #### [Cadence](https://cadenceworkflow.io/) and [Temporal](https://temporal.io/)
 
-Cadence is a scalable and reliable workflow as code platform built an used by Uber. It is heavily inspired on Durable Functions, but also includes some addicional features like [tasks lists](https://cadenceworkflow.io/docs/concepts/task-lists/) and a [monitoring UI](https://github.com/uber/cadence-web). Cadence features are used as inspiration for this project.
+Cadence is a scalable and reliable workflow as code platform built an used by Uber. It is heavily inspired on Durable Functions, but also includes some additional features like [tasks lists](https://cadenceworkflow.io/docs/concepts/task-lists/) and a [monitoring UI](https://github.com/uber/cadence-web). Cadence features are used as inspiration for this project.
 
 Temporal is a fork of Cadence backed by a company with the same name and founded by the original creators of Cadence. It is under active development and might end up officially supporting .NET clients.
 
@@ -101,6 +102,8 @@ Our components were designed to be independent and highly composable. See below 
 
 ![Diagram](readme/diagrams/architecture_4.png)
 
-## Sample
+## Samples and base documentation
 
-See [samples](samples) for an implementation of the classic book Flight, Car, Hotel with compensation problem using all componentes from above.
+See [samples](samples) for an implementation of the classic book Flight, Car, Hotel with compensation problem using all components from above, and more.
+
+See [Durable Task Framework Documentation](https://github.com/Azure/durabletask/blob/main/docs/README.md) for comprehensive documentation related to the base framework.

@@ -186,7 +186,7 @@ export function OrchestrationsTable({ result, onAction }: Props) {
           </Stack>
         </Toolbar>
       )}
-      <Table>
+      <Table sx={{ tableLayout: "fixed", wordBreak: "break-word" }}>
         <TableHead>
           <TableRow>
             {hasActions && (
