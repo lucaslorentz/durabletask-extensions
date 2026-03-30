@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[Durable Task Framework](https://github.com/Azure/durabletask) is an open source framework that provides a foundation for workflow as code in .NET platform.
+[Durable Task Framework (DTFx)](https://github.com/Azure/durabletask) is a community-maintained open-source project that provides a foundation for workflow as code in .NET platform. It is actively used in production by many teams, including engineering teams within Microsoft.
 
 This project aims to extend it with:
 
@@ -102,6 +102,8 @@ Our components were designed to be independent and highly composable. See below 
 
 ![Diagram](readme/diagrams/architecture_4.png)
 
-## Sample
+## Samples and base documentation
 
 See [samples](samples) for an implementation of the classic book Flight, Car, Hotel with compensation problem using all components from above, and more.
+
+See [Durable Task Framework Documentation](https://github.com/Azure/durabletask/blob/main/docs/README.md) for comprehensive documentation related to the base framework.
