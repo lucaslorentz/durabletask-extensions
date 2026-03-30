@@ -5,7 +5,6 @@
     <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
     <SpaRoot>app\</SpaRoot>
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
-    <DisableBuildInParallel>true</DisableBuildInParallel>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -67,17 +66,19 @@
     <SpaInputFiles Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**;$(SpaRoot)build\**" />
   </ItemGroup>
 
-  <Target Name="SpaCheckDirty" BeforeTargets="PnpmBuild" Inputs="@(SpaInputFiles)" Outputs="$(BaseIntermediateOutputPath)spa.buildstamp">
+  <!--
+    pnpm build runs before DispatchToInnerBuilds (outer build, TargetFramework is empty)
+    to avoid parallel builds across TFMs racing on the shared app/build directory.
+    The !Exists check is a fallback for single-TFM builds (e.g. dotnet build -f net9.0)
+    where DispatchToInnerBuilds is not invoked.
+  -->
+  <Target Name="PnpmBuild" BeforeTargets="DispatchToInnerBuilds;SpaEmbedResources" Condition="'$(TargetFramework)' == '' or !Exists('$(SpaRoot)build/index.html')" Inputs="@(SpaInputFiles)" Outputs="$(SpaRoot)build/index.html">
     <RemoveDir Directories="$(SpaRoot)build" />
-  </Target>
-
-  <Target Name="PnpmBuild" BeforeTargets="SpaEmbedResources" Condition=" !Exists('$(SpaRoot)build') ">
     <Exec WorkingDirectory="$(SpaRoot)" Command="pnpm build" ContinueOnError="true">
       <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
     </Exec>
     <RemoveDir Directories="$(SpaRoot)build" Condition="'$(ErrorCode)' != '0'" />
     <Error Condition="'$(ErrorCode)' != '0'" Text="Failed to run pnpm build" />
-    <Touch Files="$(BaseIntermediateOutputPath)spa.buildstamp" AlwaysCreate="true" />
   </Target>
 
   <Target Name="SpaEmbedResources" BeforeTargets="PrepareForBuild">
