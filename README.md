@@ -102,6 +102,8 @@ Our components were designed to be independent and highly composable. See below 
 
 ![Diagram](readme/diagrams/architecture_4.png)
 
-## Sample
+## Samples and documentation
 
 See [samples](samples) for an implementation of the classic book Flight, Car, Hotel with compensation problem using all components from above, and more.
+
+See [Durable Task Framework Documentation](https://github.com/Azure/durabletask/blob/main/docs/README.md) for comprehensive documentation related to the base framework.
