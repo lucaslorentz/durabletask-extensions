@@ -46,6 +46,14 @@ jobs:
       - name: UI Build
         run: dotnet build -c Release ./src/LLL.DurableTask.Ui -f:net10.0 -t:PnpmBuild --no-restore
 
+      - name: Install Playwright
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: src/LLL.DurableTask.Ui/app
+
+      - name: UI E2E Tests
+        run: pnpm test
+        working-directory: src/LLL.DurableTask.Ui/app
+
       - name: Build
         run: dotnet build -c Release --no-restore
 
