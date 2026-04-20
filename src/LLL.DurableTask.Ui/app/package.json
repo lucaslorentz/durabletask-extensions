@@ -10,7 +10,7 @@
     "@mui/icons-material": "^7.3.10",
     "@mui/lab": "7.0.1-beta.24",
     "@mui/material": "^7.3.10",
-    "@tanstack/react-query": "^5.99.1",
+    "@tanstack/react-query": "^5.99.2",
     "immer": "^11.1.4",
     "material-ui-confirm": "^4.0.0",
     "mobx": "^6.12.3",
