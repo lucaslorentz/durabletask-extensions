@@ -4,11 +4,15 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
       dotnet:
         patterns:
           - "*"
     ignore:
+      - dependency-name: "Microsoft.EntityFrameworkCore.*"
+      - dependency-name: "Microsoft.Extensions.*"
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
@@ -16,6 +20,8 @@ updates:
     directory: /src/LLL.DurableTask.Ui/app
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
       npm:
         patterns:
@@ -28,6 +34,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
       github-actions:
         patterns:
@@ -37,6 +45,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
       docker:
         patterns:
