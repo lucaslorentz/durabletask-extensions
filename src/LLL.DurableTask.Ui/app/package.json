@@ -42,10 +42,5 @@
     "preview": "vite preview",
     "test": "playwright test",
     "test:e2e": "playwright test"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
   }
 }
