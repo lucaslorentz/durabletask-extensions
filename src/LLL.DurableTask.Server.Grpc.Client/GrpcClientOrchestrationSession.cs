@@ -165,4 +165,9 @@ public class GrpcClientOrchestrationSession : IOrchestrationSession
 
         _stream.Dispose();
     }
+
+    public Task EndSessionAsync()
+    {
+        return Task.CompletedTask;
+    }
 }
