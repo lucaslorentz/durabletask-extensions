@@ -130,4 +130,9 @@ public class EFCoreOrchestrationSession : IOrchestrationSession
     {
         Messages.Clear();
     }
+
+    public Task EndSessionAsync()
+    {
+        return Task.CompletedTask;
+    }
 }
