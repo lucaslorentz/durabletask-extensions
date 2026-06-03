@@ -40,6 +40,12 @@ updates:
       github-actions:
         patterns:
           - "*"
+    # Actions are pinned to floating major tags (e.g. @v6), so minor/patch
+    # updates are picked up automatically. Only open PRs for major bumps.
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-patch"]
 
   - package-ecosystem: docker
     directory: /
