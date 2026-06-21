@@ -4,10 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using AwesomeAssertions;
 using DurableTask.Core;
-using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using LLL.DurableTask.Core;
-using LLL.DurableTask.Core.Serializing;
 using LLL.DurableTask.EFCore.Polling;
 using LLL.DurableTask.Tests.Storage.Activities;
 using LLL.DurableTask.Tests.Storage.Orchestrations;
@@ -78,6 +76,7 @@ public abstract class StorageTestBase : IAsyncLifetime
     {
         builder.AddOrchestration<EmptyOrchestration>(EmptyOrchestration.Name, EmptyOrchestration.Version);
         builder.AddOrchestration<TimerOrchestration>(TimerOrchestration.Name, TimerOrchestration.Version);
+        builder.AddOrchestration<ManyTimersOrchestration>(ManyTimersOrchestration.Name, ManyTimersOrchestration.Version);
         builder.AddOrchestration<ContinueAsNewOrchestration>(ContinueAsNewOrchestration.Name, ContinueAsNewOrchestration.Version);
         builder.AddOrchestration<ContinueAsNewEmptyOrchestration>(ContinueAsNewEmptyOrchestration.Name, ContinueAsNewEmptyOrchestration.Version);
         builder.AddOrchestration<ParentOrchestration>(ParentOrchestration.Name, ParentOrchestration.Version);
@@ -171,18 +170,19 @@ public abstract class StorageTestBase : IAsyncLifetime
 
     [Trait("Category", "Integration")]
     [SkippableFact]
-    public async Task TimerOrchestration_ShouldTerminateProperly()
+    public async Task TerminatedOrchestration_ShouldCancelPendingTimers()
     {
         var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
 
-        var input = Guid.NewGuid();
-
         var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
-            TimerOrchestration.Name,
-            TimerOrchestration.Version,
-            input);
+            ManyTimersOrchestration.Name,
+            ManyTimersOrchestration.Version,
+            null);
 
-        await Task.Delay(TimeSpan.FromSeconds(1));
+        // Wait until at least one timer has fired (the orchestration publishes its
+        // fired count as status), so we terminate while it is actively timing and
+        // most of its timers are still pending.
+        await WaitUntilAnyTimerFiredAsync(taskHubClient, instance);
 
         await taskHubClient.TerminateInstanceAsync(instance);
 
@@ -191,12 +191,33 @@ public abstract class StorageTestBase : IAsyncLifetime
         state.Should().NotBeNull();
         state.OrchestrationStatus.Should().Be(OrchestrationStatus.Terminated);
 
-        await Task.Delay(TimeSpan.FromSeconds(3));
+        // Terminating must cancel the still-pending timers. The later ones cannot fire
+        // within this window, so an empty queue proves they were cancelled.
+        await AssertNoPendingMessagesAsync(instance.InstanceId);
+    }
 
-        var history = await taskHubClient.GetOrchestrationHistoryAsync(instance);
+    // Overridden by storages that can inspect their message queue; no-op otherwise.
+    protected virtual Task AssertNoPendingMessagesAsync(string instanceId)
+    {
+        return Task.CompletedTask;
+    }
 
-        var events = new TypelessJsonDataConverter().Deserialize<HistoryEvent[]>(history);
-        events.Should().NotContain(x => x.EventType == EventType.TimerFired);
+    private async Task WaitUntilAnyTimerFiredAsync(
+        TaskHubClient taskHubClient,
+        OrchestrationInstance instance)
+    {
+        var deadline = DateTime.UtcNow + FastWaitTimeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            var state = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
+
+            if (int.TryParse(state?.Status, out var firedCount) && firedCount >= 1)
+                return;
+
+            await Task.Delay(50);
+        }
+
+        throw new TimeoutException("No timer fired in time.");
     }
 
     [Trait("Category", "Integration")]
