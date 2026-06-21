@@ -11,7 +11,7 @@ public class TimerOrchestration : TaskOrchestration<object, object>
 
     public override async Task<object> RunTask(OrchestrationContext context, object input)
     {
-        var output = await context.CreateTimer<object>(DateTime.UtcNow.AddSeconds(2), input);
+        var output = await context.CreateTimer<object>(DateTime.UtcNow.AddSeconds(1), input);
         return output;
     }
 }

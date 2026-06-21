@@ -23,6 +23,27 @@ public abstract class EFCoreTestBase : StorageTestBase
         _output = output;
     }
 
+    protected override async Task AssertNoPendingMessagesAsync(string instanceId)
+    {
+        var dbContextFactory = _host.Services.GetRequiredService<IDbContextFactory<OrchestrationDbContext>>();
+
+        var deadline = DateTime.UtcNow + FastWaitTimeout;
+        while (true)
+        {
+            using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            var pending = await dbContext.OrchestrationMessages
+                .CountAsync(m => m.InstanceId == instanceId);
+
+            if (pending == 0 || DateTime.UtcNow >= deadline)
+            {
+                pending.Should().Be(0, "a terminated orchestration should leave no pending messages");
+                return;
+            }
+
+            await Task.Delay(50);
+        }
+    }
+
     [SkippableFact]
     public async Task TryLockNextInstanceAsync()
     {

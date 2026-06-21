@@ -354,6 +354,23 @@ public partial class EFCoreOrchestrationService :
             dbContext.AttachRange(session.Messages);
             dbContext.OrchestrationMessages.RemoveRange(session.Messages);
 
+            // Cancel the execution's pending timers when it finishes, so they don't
+            // linger in the queue (e.g. an unfired timeout from a Task.WhenAny) or
+            // fire against an already-finished orchestration. ContinuedAsNew/Suspended
+            // are excluded: those executions can still run.
+            var completedRuntimeState = workItem.OrchestrationRuntimeState;
+            if (completedRuntimeState.OrchestrationStatus is OrchestrationStatus.Completed
+                or OrchestrationStatus.Failed
+                or OrchestrationStatus.Terminated
+                or OrchestrationStatus.Canceled)
+            {
+                await CancelPendingTimersAsync(
+                    dbContext,
+                    completedRuntimeState.OrchestrationInstance.InstanceId,
+                    completedRuntimeState.OrchestrationInstance.ExecutionId,
+                    session.Messages.Select(m => m.Id).ToArray());
+            }
+
             // Update instance
             _instanceMapper.UpdateInstance(session.Instance, newOrchestrationRuntimeState);
 
@@ -425,6 +442,28 @@ public partial class EFCoreOrchestrationService :
 
             await dbContext.OrchestrationMessages.AddRangeAsync(orchestrationMessages);
         }
+    }
+
+    private async Task CancelPendingTimersAsync(
+        OrchestrationDbContext dbContext,
+        string instanceId,
+        string executionId,
+        IReadOnlyCollection<Guid> consumedMessageIds)
+    {
+        // Runs under the instance lock (Complete owns the instance), so no skip-locked
+        // is needed. Match timers by event type, not by AvailableAt, so a timer that
+        // became due between the last fetch and now is included too. Exclude the
+        // messages already read/processed in this work item (they are deleted
+        // separately) so the query only returns still-pending messages.
+        var pendingTimers = (await dbContext.OrchestrationMessages
+            .Where(m => m.InstanceId == instanceId
+                && m.ExecutionId == executionId
+                && !consumedMessageIds.Contains(m.Id))
+            .ToListAsync())
+            .Where(m => _options.DataConverter.Deserialize<TaskMessage>(m.Message).Event is TimerFiredEvent)
+            .ToList();
+
+        dbContext.OrchestrationMessages.RemoveRange(pendingTimers);
     }
 
     private async Task<Execution> SaveExecutionAsync(

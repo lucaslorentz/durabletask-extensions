@@ -293,3 +293,7 @@ BenchmarkDotNet.Artifacts
 *.png
 *.jpeg
 playwright-report/
+test-results/
+
+# Language server cache
+*.lscache
