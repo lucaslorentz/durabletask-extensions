@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
+using DurableTask.Core.Settings;
+using DurableTask.Core.Tracing;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
 using LLL.DurableTask.EFCore.Mappers;
@@ -156,7 +158,7 @@ public partial class EFCoreOrchestrationService :
 
             await dbContext.SaveChangesAsync();
 
-            return new TaskOrchestrationWorkItem
+            var workItem = new TaskOrchestrationWorkItem
             {
                 InstanceId = instance.InstanceId,
                 LockedUntilUtc = instance.LockedUntil,
@@ -164,6 +166,10 @@ public partial class EFCoreOrchestrationService :
                 NewMessages = messages,
                 Session = session
             };
+
+            AttachTraceContext(workItem);
+
+            return workItem;
         },
         r => r is not null,
         receiveTimeout,
@@ -552,6 +558,24 @@ public partial class EFCoreOrchestrationService :
             return activityMessage;
 
         return null;
+    }
+
+    // When distributed tracing is enabled, DurableTask.Core's TaskOrchestrationDispatcher
+    // reads CorrelationTraceContext.Current (seeded from workItem.TraceContext) and
+    // dereferences it unconditionally (e.g. ExecutionStartedEvent.Correlation =
+    // CorrelationTraceContext.Current.SerializableTraceContext). A backend that leaves
+    // TraceContext null makes the dispatcher throw a NullReferenceException, which aborts
+    // the work item and retries it forever. Mirror the reference backends by restoring the
+    // trace context from the ExecutionStartedEvent's correlation payload (Restore returns a
+    // valid empty context when there is none). Guarded so the tracing-off path stays
+    // zero-overhead.
+    private static void AttachTraceContext(TaskOrchestrationWorkItem workItem)
+    {
+        if (!CorrelationSettings.Current.EnableDistributedTracing)
+            return;
+
+        var correlation = workItem.OrchestrationRuntimeState?.ExecutionStartedEvent?.Correlation;
+        workItem.TraceContext = TraceContextBase.Restore(correlation);
     }
 
     private static string CreateTaskActivityWorkItemId(Guid id, string lockId, string replyQueue)
