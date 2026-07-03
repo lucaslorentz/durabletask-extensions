@@ -1,5 +1,9 @@
 # Claude Code Instructions
 
+## Language
+
+English for everything: code, commits, PR titles/bodies, issue/PR comments, and docs.
+
 ## Project Overview
 
 This is a .NET library (NuGet packages) extending Azure Durable Task Framework.
