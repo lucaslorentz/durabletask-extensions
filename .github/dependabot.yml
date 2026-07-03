@@ -11,7 +11,7 @@ updates:
         patterns:
           - "*"
     ignore:
-      - dependency-name: "Microsoft.EntityFrameworkCore.*"
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
       - dependency-name: "Microsoft.Extensions.*"
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
