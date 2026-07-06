@@ -11,7 +11,7 @@
     "@mui/lab": "7.0.1-beta.25",
     "@mui/material": "^7.3.11",
     "@tanstack/react-query": "^5.101.2",
-    "immer": "^11.1.8",
+    "immer": "^11.1.11",
     "material-ui-confirm": "^4.0.0",
     "mobx": "^6.16.1",
     "mobx-react-lite": "^4.0.7",
