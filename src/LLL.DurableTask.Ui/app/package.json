@@ -11,7 +11,7 @@
     "@mui/lab": "7.0.1-beta.25",
     "@mui/material": "^7.3.11",
     "@tanstack/react-query": "^5.101.2",
-    "immer": "^11.1.8",
+    "immer": "^11.1.11",
     "material-ui-confirm": "^4.0.0",
     "mobx": "^6.16.1",
     "mobx-react-lite": "^4.0.7",
@@ -27,12 +27,12 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "@types/node": "^25.9.4",
+    "@types/node": "^25.9.5",
     "@types/qs": "^6.15.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
-    "prettier": "3.9.4",
+    "prettier": "3.9.5",
     "typescript": "^5.4.5",
     "vite": "^7.3.6"
   },
