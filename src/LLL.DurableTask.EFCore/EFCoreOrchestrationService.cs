@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using DurableTask.Core.Settings;
-using DurableTask.Core.Tracing;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore.Entities;
 using LLL.DurableTask.EFCore.Mappers;
@@ -278,7 +277,7 @@ public partial class EFCoreOrchestrationService :
         if (activityMessage.LockId != lockId)
             throw new Exception("Lost task activity lock");
 
-        var lockedUntilUTC = DateTime.UtcNow.Add(_options.ActivtyLockTimeout);
+        var lockedUntilUTC = DateTime.UtcNow.Add(_options.ActivityLockTimeout);
         activityMessage.LockedUntil = lockedUntilUTC;
         await dbContext.SaveChangesAsync();
 
@@ -541,19 +540,16 @@ public partial class EFCoreOrchestrationService :
 
     private async Task<ActivityMessage> LockActivityMessage(OrchestrationDbContext dbContext, INameVersionInfo[] activities)
     {
-        var lockId = Guid.NewGuid().ToString();
-        var lockUntilUtc = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
-
         if (activities is null)
             return await _dbContextExtensions.WithinTransaction(dbContext,
-                () => _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, _options.OrchestrationLockTimeout));
+                () => _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, _options.ActivityLockTimeout));
 
         var queues = activities
             .Select(QueueMapper.ToQueue)
             .ToArray();
 
         var activityMessage = await _dbContextExtensions.WithinTransaction(dbContext,
-            () => _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, queues, _options.OrchestrationLockTimeout));
+            () => _dbContextExtensions.TryLockNextActivityMessageAsync(dbContext, queues, _options.ActivityLockTimeout));
         if (activityMessage is not null)
             return activityMessage;
 
