@@ -261,8 +261,13 @@ public partial class EFCoreOrchestrationService :
 
         var activityMessage = await dbContext.ActivityMessages.FindAsync(id);
 
-        if (activityMessage.LockId != lockId)
-            throw new Exception("Lost task activity lock");
+        if (activityMessage is null || activityMessage.LockId != lockId)
+        {
+            // Nothing to abandon: the message was deleted (e.g. instance purged) or
+            // another worker owns it now
+            _logger.LogWarning("Not abandoning task activity {ActivityMessageId}: message no longer exists or its lock was lost", id);
+            return;
+        }
 
         activityMessage.LockId = null;
         activityMessage.LockedUntil = DateTime.UtcNow;
@@ -276,7 +281,7 @@ public partial class EFCoreOrchestrationService :
 
         var activityMessage = await dbContext.ActivityMessages.FindAsync(id);
 
-        if (activityMessage.LockId != lockId)
+        if (activityMessage is null || activityMessage.LockId != lockId)
             throw new Exception("Lost task activity lock");
 
         var lockedUntilUTC = DateTime.UtcNow.Add(_options.ActivityLockTimeout);
@@ -355,7 +360,7 @@ public partial class EFCoreOrchestrationService :
                 .Concat(continuedAsNewMessage is not null ? new[] { continuedAsNewMessage } : Enumerable.Empty<TaskMessage>())
                 .ToArray();
 
-            await SendTaskOrchestrationMessagesAsync(dbContext, allOrchestrationMessages, knownQueues);
+            await SendTaskOrchestrationMessagesAsync(dbContext, allOrchestrationMessages, knownQueues, ignoreMissingInstances: true);
 
             // Remove executed messages
             dbContext.AttachRange(session.Messages);
@@ -407,7 +412,15 @@ public partial class EFCoreOrchestrationService :
             var (id, lockId, orchestrationQueue) = ParseTaskActivityWorkItemId(workItem.Id);
 
             var activityMessage = await dbContext.ActivityMessages
-                .FirstAsync(w => w.Id == id && w.LockId == lockId);
+                .FirstOrDefaultAsync(w => w.Id == id && w.LockId == lockId);
+
+            if (activityMessage is null)
+            {
+                // The message was deleted (e.g. instance purged) or another worker owns it now,
+                // so there is nothing to complete. Throwing would only delay this dispatcher.
+                _logger.LogWarning("Dropping result of task activity {ActivityMessageId}: message no longer exists or its lock was lost", id);
+                return;
+            }
 
             dbContext.ActivityMessages.Remove(activityMessage);
 
@@ -416,7 +429,7 @@ public partial class EFCoreOrchestrationService :
                 [workItem.TaskMessage.OrchestrationInstance.InstanceId] = orchestrationQueue
             };
 
-            await SendTaskOrchestrationMessagesAsync(dbContext, new[] { responseMessage }, knownQueues);
+            await SendTaskOrchestrationMessagesAsync(dbContext, new[] { responseMessage }, knownQueues, ignoreMissingInstances: true);
 
             await dbContext.SaveChangesAsync();
         });
@@ -425,7 +438,8 @@ public partial class EFCoreOrchestrationService :
     private async Task SendTaskOrchestrationMessagesAsync(
         OrchestrationDbContext dbContext,
         TaskMessage[] messages,
-        IDictionary<string, string> knownQueues = null)
+        IDictionary<string, string> knownQueues = null,
+        bool ignoreMissingInstances = false)
     {
         var instancesGroups = messages
             .GroupBy(m => m.OrchestrationInstance.InstanceId)
@@ -438,7 +452,14 @@ public partial class EFCoreOrchestrationService :
                 var instance = await dbContext.Instances.FindAsync(instanceGroup.Key);
 
                 if (instance is null)
-                    throw new Exception($"Instance {instanceGroup.Key} not found");
+                {
+                    if (!ignoreMissingInstances)
+                        throw new Exception($"Instance {instanceGroup.Key} not found");
+
+                    // Failing here would roll back the whole work item and retry it forever
+                    _logger.LogWarning("Dropping {MessageCount} message(s) to instance {InstanceId}: instance not found", instanceGroup.Count(), instanceGroup.Key);
+                    continue;
+                }
 
                 queue = instance.LastQueue;
             }
