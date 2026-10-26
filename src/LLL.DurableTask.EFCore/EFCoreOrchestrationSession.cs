@@ -45,10 +45,21 @@ public class EFCoreOrchestrationSession : IOrchestrationSession
     public async Task<IList<TaskMessage>> FetchNewOrchestrationMessagesAsync(
         TaskOrchestrationWorkItem workItem)
     {
-        return await BackoffPollingHelper.PollAsync(async () =>
+        var newMessages = await BackoffPollingHelper.PollAsync(async () =>
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
             var messages = await FetchNewMessagesAsync(dbContext);
+
+            // The session is about to process a new batch, keep the lock alive for it. DTFx only renews
+            // locks while a batch is being processed, not while the session waits for the next one.
+            // Completing a batch already extends it, so only write when half of it is gone.
+            if (messages.Count > 0
+                && Instance.LockedUntil - DateTime.UtcNow < _options.OrchestrationLockTimeout / 2)
+            {
+                dbContext.Instances.Attach(Instance);
+                Instance.LockedUntil = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
+            }
+
             await dbContext.SaveChangesAsync();
             return messages;
         },
@@ -56,6 +67,11 @@ public class EFCoreOrchestrationSession : IOrchestrationSession
         _options.FetchNewMessagesPollingTimeout,
         _options.PollingInterval,
         _stopCancellationToken);
+
+        if (newMessages is { Count: > 0 })
+            workItem.LockedUntilUtc = Instance.LockedUntil;
+
+        return newMessages;
     }
 
     public async Task<IList<TaskMessage>> FetchNewMessagesAsync(
