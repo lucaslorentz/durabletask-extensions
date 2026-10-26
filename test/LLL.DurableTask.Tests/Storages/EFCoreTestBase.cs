@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AwesomeAssertions;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore;
+using LLL.DurableTask.EFCore.Mappers;
 using LLL.DurableTask.Tests.Storage.Orchestrations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -283,6 +287,122 @@ public abstract class EFCoreTestBase : StorageTestBase
         await taskHubClient.PurgeOrchestrationInstanceHistoryAsync(
             DateTime.UtcNow,
             OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter);
+    }
+
+    private record ActivityNameVersion(string Name, string Version) : INameVersionInfo;
+
+    // Locks an activity message that no worker handles, then deletes it, the way a purge would
+    private async Task<(TaskActivityWorkItem WorkItem, OrchestrationInstance Instance)> LockAndDeleteActivityMessageAsync()
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+        var dbContextFactory = _host.Services.GetRequiredService<IDbContextFactory<OrchestrationDbContext>>();
+        var mapper = _host.Services.GetRequiredService<ActivityMessageMapper>();
+        var service = _host.Services.GetRequiredService<IDistributedOrchestrationService>();
+
+        // Names not registered in the worker, so only this test consumes the activity
+        var instance = await taskHubClient.CreateOrchestrationInstanceAsync("lost-lock-orchestration", "", null);
+
+        var activityMessage = mapper.CreateActivityMessage(new TaskMessage
+        {
+            OrchestrationInstance = instance,
+            Event = new TaskScheduledEvent(0) { Name = "lost-lock-activity", Version = "" }
+        }, "lost-lock-orchestration");
+
+        using (var dbContext = await dbContextFactory.CreateDbContextAsync())
+        {
+            dbContext.ActivityMessages.Add(activityMessage);
+            await dbContext.SaveChangesAsync();
+        }
+
+        var workItem = await service.LockNextTaskActivityWorkItem(
+            TimeSpan.FromSeconds(5),
+            new INameVersionInfo[] { new ActivityNameVersion("lost-lock-activity", "") },
+            CancellationToken.None);
+        workItem.Should().NotBeNull();
+
+        using (var dbContext = await dbContextFactory.CreateDbContextAsync())
+        {
+            dbContext.ActivityMessages.Remove(await dbContext.ActivityMessages.FindAsync(activityMessage.Id));
+            await dbContext.SaveChangesAsync();
+        }
+
+        return (workItem, instance);
+    }
+
+    [SkippableFact]
+    public async Task AbandonTaskActivityWorkItem_WhenMessageWasDeleted_ShouldNotThrow()
+    {
+        var (workItem, _) = await LockAndDeleteActivityMessageAsync();
+        var service = _host.Services.GetRequiredService<IOrchestrationService>();
+
+        await service.Invoking(s => s.AbandonTaskActivityWorkItemAsync(workItem))
+            .Should().NotThrowAsync();
+    }
+
+    [SkippableFact]
+    public async Task CompleteTaskActivityWorkItem_WhenMessageWasDeleted_ShouldNotThrow()
+    {
+        var (workItem, instance) = await LockAndDeleteActivityMessageAsync();
+        var service = _host.Services.GetRequiredService<IOrchestrationService>();
+
+        await service.Invoking(s => s.CompleteTaskActivityWorkItemAsync(workItem, new TaskMessage
+        {
+            OrchestrationInstance = instance,
+            Event = new TaskCompletedEvent(-1, 0, "null")
+        })).Should().NotThrowAsync();
+    }
+
+    [SkippableFact]
+    public async Task RenewTaskActivityWorkItemLock_WhenMessageWasDeleted_ShouldReportLostLock()
+    {
+        var (workItem, _) = await LockAndDeleteActivityMessageAsync();
+        var service = _host.Services.GetRequiredService<IOrchestrationService>();
+
+        var exception = await Record.ExceptionAsync(() => service.RenewTaskActivityWorkItemLockAsync(workItem));
+
+        exception.Should().NotBeNull();
+        exception.Should().NotBeOfType<NullReferenceException>();
+        exception.Message.Should().Contain("Lost task activity lock");
+    }
+
+    [Trait("Category", "Integration")]
+    [SkippableFact]
+    public async Task SendEventToMissingInstance_ShouldNotBlockOrchestrationCompletion()
+    {
+        // The main host does not register SendEventOrchestration, so a second one runs it
+        using var secondHost = await Host.CreateDefaultBuilder()
+            .ConfigureLogging(logging =>
+            {
+                logging.AddFilter(l => l >= LogLevel.Warning).AddXUnit(_output);
+            })
+            .ConfigureServices(services =>
+            {
+                ConfigureStorage(services);
+
+                services.AddDurableTaskClient();
+
+                services.AddDurableTaskWorker(builder =>
+                {
+                    builder.AddOrchestration<SendEventOrchestration>(SendEventOrchestration.Name, SendEventOrchestration.Version);
+                });
+            }).StartAsync();
+
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+
+        var instance = await taskHubClient.CreateOrchestrationInstanceAsync(SendEventOrchestration.Name, SendEventOrchestration.Version, new SendEventOrchestration.Input
+        {
+            TargetInstanceId = Guid.NewGuid().ToString(),
+            EventName = "SetResult",
+            EventInput = "ignored"
+        });
+
+        var state = await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
+
+        state.Should().NotBeNull();
+        state.OrchestrationStatus.Should().Be(OrchestrationStatus.Completed);
+
+        await secondHost.StopAsync();
+        await secondHost.WaitForShutdownAsync();
     }
 
     [Trait("Category", "Integration")]
