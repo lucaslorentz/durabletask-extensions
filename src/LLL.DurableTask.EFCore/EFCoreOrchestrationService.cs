@@ -113,8 +113,9 @@ public partial class EFCoreOrchestrationService :
         INameVersionInfo[] orchestrations,
         CancellationToken cancellationToken)
     {
-        var stoppableCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken, _stopCts.Token).Token;
+        using var stoppableCts = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, _stopCts.Token);
+        var stoppableCancellationToken = stoppableCts.Token;
 
         return await BackoffPollingHelper.PollAsync(async () =>
         {
@@ -186,8 +187,9 @@ public partial class EFCoreOrchestrationService :
         INameVersionInfo[] activities,
         CancellationToken cancellationToken)
     {
-        var stoppableCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken, _stopCts.Token).Token;
+        using var stoppableCts = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, _stopCts.Token);
+        var stoppableCancellationToken = stoppableCts.Token;
 
         return await BackoffPollingHelper.PollAsync(async () =>
         {

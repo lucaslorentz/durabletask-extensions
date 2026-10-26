@@ -179,8 +179,9 @@ public partial class EFCoreOrchestrationService :
             throw new ArgumentException(nameof(instanceId));
         }
 
-        var stoppableCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken, _stopCts.Token).Token;
+        using var stoppableCts = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, _stopCts.Token);
+        var stoppableCancellationToken = stoppableCts.Token;
 
         var state = await BackoffPollingHelper.PollAsync(async () =>
         {
