@@ -28,7 +28,7 @@ public static class BackoffPollingHelper
                 || stopwatch.Elapsed >= timeout)
                 break;
 
-            await Task.Delay(CalculateDelay(interval, count++));
+            await Task.Delay(CalculateDelay(interval, count++), cancellationToken);
         } while (stopwatch.Elapsed < timeout);
 
         return value;
