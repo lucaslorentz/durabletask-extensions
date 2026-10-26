@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AwesomeAssertions;
 using DurableTask.Core;
+using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore;
 using LLL.DurableTask.Tests.Storage.Orchestrations;
 using Microsoft.EntityFrameworkCore;
@@ -282,6 +283,39 @@ public abstract class EFCoreTestBase : StorageTestBase
         await taskHubClient.PurgeOrchestrationInstanceHistoryAsync(
             DateTime.UtcNow,
             OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter);
+    }
+
+    [Trait("Category", "Integration")]
+    [SkippableTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PurgeInstanceStateWithFilter_ShouldIncludeBoundsAndAcceptEmptyStatuses(bool nullStatuses)
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+        var purgeClient = _host.Services.GetRequiredService<IOrchestrationServicePurgeClient>();
+
+        var instance = await taskHubClient.CreateOrchestrationInstanceAsync(
+            EmptyOrchestration.Name,
+            EmptyOrchestration.Version,
+            string.Empty);
+
+        // Wait for completion so the worker is not holding row locks that purge would skip
+        await taskHubClient.WaitForOrchestrationAsync(instance, FastWaitTimeout);
+
+        var state = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
+        state.Should().NotBeNull();
+
+        // Both bounds equal to the stored creation time: only matches if they are inclusive
+        var filter = new PurgeInstanceFilterExtended(
+            state.CreatedTime,
+            state.CreatedTime,
+            nullStatuses ? null : Array.Empty<OrchestrationStatus>());
+
+        var purgeResult = await purgeClient.PurgeInstanceStateAsync(filter);
+        purgeResult.DeletedInstanceCount.Should().BeGreaterThan(0);
+
+        var stateAfterPurge = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
+        stateAfterPurge.Should().BeNull();
     }
 
     [Trait("Category", "Integration")]

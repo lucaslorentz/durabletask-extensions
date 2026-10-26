@@ -173,9 +173,9 @@ public class MySqlOrchestrationDbContextExtensions : OrchestrationDbContextExten
                     SELECT Executions.ExecutionId
                     FROM Executions
                         INNER JOIN Instances ON Executions.InstanceId = Instances.InstanceId
-                    WHERE Executions.CreatedTime > {parameters.Add(filter.CreatedTimeFrom)}
-                    {(filter.CreatedTimeTo is not null ? $"AND Executions.CreatedTime < {parameters.Add(filter.CreatedTimeTo)}" : "")}
-                    {(filter.RuntimeStatus.Any() ? $"AND Executions.Status IN ({string.Join(",", filter.RuntimeStatus.Select(s => parameters.Add(s.ToString())))})" : "")}
+                    WHERE Executions.CreatedTime >= {parameters.Add(filter.CreatedTimeFrom)}
+                    {(filter.CreatedTimeTo is not null ? $"AND Executions.CreatedTime <= {parameters.Add(filter.CreatedTimeTo)}" : "")}
+                    {(filter.RuntimeStatus?.Any() == true ? $"AND Executions.Status IN ({string.Join(",", filter.RuntimeStatus.Select(s => parameters.Add(s.ToString())))})" : "")}
                     ORDER BY Executions.CreatedTime
                     {(limit is not null ? $"LIMIT {parameters.Add(limit)}" : null)}
                     FOR UPDATE SKIP LOCKED
