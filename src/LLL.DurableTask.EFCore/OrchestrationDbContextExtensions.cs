@@ -145,7 +145,7 @@ public abstract class OrchestrationDbContextExtensions
     {
         var query = dbContext.Executions.Where(e => e.CreatedTime >= filter.CreatedTimeFrom
             && (filter.CreatedTimeTo == null || e.CreatedTime <= filter.CreatedTimeTo)
-            && (filter.RuntimeStatus == null || filter.RuntimeStatus.Contains(e.Status)));
+            && (filter.RuntimeStatus == null || !filter.RuntimeStatus.Any() || filter.RuntimeStatus.Contains(e.Status)));
 
         if (filter is PurgeInstanceFilterExtended filterExtended)
         {

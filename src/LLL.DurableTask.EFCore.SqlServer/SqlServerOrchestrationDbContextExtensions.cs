@@ -149,10 +149,10 @@ public class SqlServerOrchestrationDbContextExtensions : OrchestrationDbContextE
                 SELECT {(limit is not null ? $"TOP ({parameters.Add(limit)})" : null)} Executions.ExecutionId
                 FROM Executions WITH (UPDLOCK, READPAST)
                     INNER JOIN Instances WITH (UPDLOCK, READPAST) ON Executions.InstanceId = Instances.InstanceId
-                WHERE Executions.CreatedTime > {parameters.Add(filter.CreatedTimeFrom)}
-                {(filter.CreatedTimeTo is not null ? $"AND Executions.CreatedTime < {parameters.Add(filter.CreatedTimeTo)}" : "")}
-                {(filter.RuntimeStatus.Any() ? $"AND Executions.Status IN ({string.Join(",", filter.RuntimeStatus.Select(s => parameters.Add(s.ToString())))})" : "")}
-                ORDER BY Executions.CreatedTime
+                WHERE Executions.CreatedTime >= {parameters.Add(filter.CreatedTimeFrom)}
+                {(filter.CreatedTimeTo is not null ? $"AND Executions.CreatedTime <= {parameters.Add(filter.CreatedTimeTo)}" : "")}
+                {(filter.RuntimeStatus?.Any() == true ? $"AND Executions.Status IN ({string.Join(",", filter.RuntimeStatus.Select(s => parameters.Add(s.ToString())))})" : "")}
+                {(limit is not null ? "ORDER BY Executions.CreatedTime" : "")}
             );
         ", parameters);
     }
