@@ -14,7 +14,14 @@ public class EFCoreOrchestrationOptions
     public int MaxConcurrentTaskActivityWorkItems { get; set; } = 10;
     public PollingIntervalOptions PollingInterval { get; } = new PollingIntervalOptions(100, 2, 1000);
     public TimeSpan OrchestrationLockTimeout { get; set; } = TimeSpan.FromMinutes(1);
-    public TimeSpan ActivtyLockTimeout { get; set; } = TimeSpan.FromMinutes(1);
+    public TimeSpan ActivityLockTimeout { get; set; } = TimeSpan.FromMinutes(1);
+
+    [Obsolete("Misspelled, use ActivityLockTimeout instead.")]
+    public TimeSpan ActivtyLockTimeout
+    {
+        get => ActivityLockTimeout;
+        set => ActivityLockTimeout = value;
+    }
     public TimeSpan FetchNewMessagesPollingTimeout { get; set; } = TimeSpan.FromSeconds(10);
     public int DelayInSecondsAfterFailure { get; set; } = 5;
     public bool UseDTFxRewind { get; set; } = true;
