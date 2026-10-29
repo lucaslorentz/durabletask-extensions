@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Settings;
 using LLL.DurableTask.Core;
@@ -218,10 +219,18 @@ public partial class EFCoreOrchestrationService :
         var session = workItem.Session as EFCoreOrchestrationSession;
         if (!session.Released)
         {
-            dbContext.Instances.Attach(session.Instance);
-            session.Instance.LockId = null;
-            session.Instance.LockedUntil = DateTime.UtcNow;
-            await dbContext.SaveChangesAsync();
+            // A session that lost its lock must not release the lock of whoever holds the instance now
+            if (await OwnsInstanceLockAsync(session))
+            {
+                dbContext.Instances.Attach(session.Instance);
+                session.Instance.LockId = null;
+                session.Instance.LockedUntil = DateTime.UtcNow;
+                await dbContext.SaveChangesAsync();
+            }
+            else
+            {
+                LogLostInstanceLock(session, nameof(ReleaseTaskOrchestrationWorkItemAsync));
+            }
             session.Released = true;
         }
     }
@@ -233,11 +242,18 @@ public partial class EFCoreOrchestrationService :
         if (session.Released)
             throw new InvalidOperationException("Session was already released");
 
-        dbContext.Instances.Attach(session.Instance);
-        session.Instance.LockId = null;
-        // TODO: Exponential backoff
-        session.Instance.LockedUntil = DateTime.UtcNow.AddMinutes(1);
-        await dbContext.SaveChangesAsync();
+        if (await OwnsInstanceLockAsync(session))
+        {
+            dbContext.Instances.Attach(session.Instance);
+            session.Instance.LockId = null;
+            // TODO: Exponential backoff
+            session.Instance.LockedUntil = DateTime.UtcNow.AddMinutes(1);
+            await dbContext.SaveChangesAsync();
+        }
+        else
+        {
+            LogLostInstanceLock(session, nameof(AbandonTaskOrchestrationWorkItemAsync));
+        }
         session.Released = true;
     }
 
@@ -246,9 +262,12 @@ public partial class EFCoreOrchestrationService :
         using var dbContext = _dbContextFactory.CreateDbContext();
         var session = workItem.Session as EFCoreOrchestrationSession;
 
+        if (!await OwnsInstanceLockAsync(session))
+            throw new SessionAbortedException($"Lost the lock for instance '{session.Instance.InstanceId}' while renewing.");
+
         var lockedUntilUTC = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
         dbContext.Instances.Attach(session.Instance);
-        session.Instance.LockedUntil = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
+        session.Instance.LockedUntil = lockedUntilUTC;
         await dbContext.SaveChangesAsync();
 
         workItem.LockedUntilUtc = lockedUntilUTC;
@@ -320,11 +339,49 @@ public partial class EFCoreOrchestrationService :
         TaskMessage continuedAsNewMessage,
         OrchestrationState orchestrationState)
     {
+        var session = workItem.Session as EFCoreOrchestrationSession;
+
+        try
+        {
+            await CompleteTaskOrchestrationWorkItemCoreAsync(
+                workItem,
+                newOrchestrationRuntimeState,
+                outboundMessages,
+                orchestratorMessages,
+                timerMessages,
+                continuedAsNewMessage,
+                orchestrationState);
+        }
+        catch (DbUpdateException e)
+        {
+            // A write conflict (e.g. duplicate event sequence numbers) while another worker holds the
+            // instance means this session lost its lock: abort it instead of failing the work item
+            if (!await OwnsInstanceLockAsync(session))
+                throw new SessionAbortedException($"Lost the lock for instance '{session.Instance.InstanceId}' during checkpoint.", e);
+
+            throw;
+        }
+    }
+
+    private async Task CompleteTaskOrchestrationWorkItemCoreAsync(
+        TaskOrchestrationWorkItem workItem,
+        OrchestrationRuntimeState newOrchestrationRuntimeState,
+        IList<TaskMessage> outboundMessages,
+        IList<TaskMessage> orchestratorMessages,
+        IList<TaskMessage> timerMessages,
+        TaskMessage continuedAsNewMessage,
+        OrchestrationState orchestrationState)
+    {
         using var dbContext = _dbContextFactory.CreateDbContext();
         var session = workItem.Session as EFCoreOrchestrationSession;
 
         await _dbContextExtensions.WithinTransaction(dbContext, async () =>
         {
+            // Never write on behalf of a session that lost its lock: another worker may be
+            // replaying the same history, and both would write the same sequence numbers
+            if (!await OwnsInstanceLockAsync(session, dbContext))
+                throw new SessionAbortedException($"Lost the lock for instance '{session.Instance.InstanceId}'.");
+
             dbContext.Instances.Attach(session.Instance);
 
             // Create child orchestrations
@@ -386,6 +443,9 @@ public partial class EFCoreOrchestrationService :
             // Update instance
             _instanceMapper.UpdateInstance(session.Instance, newOrchestrationRuntimeState);
 
+            // Extended sessions keep processing batches of the same instance, so keep the lock alive
+            session.Instance.LockedUntil = DateTime.UtcNow.Add(_options.OrchestrationLockTimeout);
+
             // Update current execution
             EnrichNewEventsInput(workItem.OrchestrationRuntimeState, outboundMessages, orchestratorMessages);
             session.Execution = await SaveExecutionAsync(dbContext, workItem.OrchestrationRuntimeState, session.Execution);
@@ -400,8 +460,36 @@ public partial class EFCoreOrchestrationService :
             await dbContext.SaveChangesAsync();
         });
 
+        // Let DTFx know about the extended lock, it uses the value to schedule renewals
+        workItem.LockedUntilUtc = session.Instance.LockedUntil;
+
         session.RuntimeState = newOrchestrationRuntimeState;
         session.ClearMessages();
+    }
+
+    private async Task<bool> OwnsInstanceLockAsync(
+        EFCoreOrchestrationSession session,
+        OrchestrationDbContext dbContext = null)
+    {
+        // Callers that are not in a transaction (or are in a failed one) get their own context
+        using var ownDbContext = dbContext is null ? _dbContextFactory.CreateDbContext() : null;
+        dbContext ??= ownDbContext;
+
+        var currentLockId = await dbContext.Instances
+            .AsNoTracking()
+            .Where(i => i.InstanceId == session.Instance.InstanceId)
+            .Select(i => i.LockId)
+            .FirstOrDefaultAsync();
+
+        return currentLockId is not null && currentLockId == session.Instance.LockId;
+    }
+
+    private void LogLostInstanceLock(EFCoreOrchestrationSession session, string operation)
+    {
+        _logger.LogWarning(
+            "{Operation}: instance {InstanceId} is no longer locked by this session, leaving its lock untouched",
+            operation,
+            session.Instance.InstanceId);
     }
 
     public async Task CompleteTaskActivityWorkItemAsync(TaskActivityWorkItem workItem, TaskMessage responseMessage)

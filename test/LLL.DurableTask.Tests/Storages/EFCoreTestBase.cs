@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AwesomeAssertions;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using LLL.DurableTask.Core;
 using LLL.DurableTask.EFCore;
@@ -14,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -437,6 +439,206 @@ public abstract class EFCoreTestBase : StorageTestBase
         var stateAfterPurge = await taskHubClient.GetOrchestrationStateAsync(instance.InstanceId);
         stateAfterPurge.Should().BeNull();
     }
+
+    [SkippableFact]
+    public async Task CompleteTaskOrchestrationWorkItem_ShouldExtendInstanceLock()
+    {
+        using var _ = UseOrchestrationLockTimeout(TimeSpan.FromSeconds(5));
+        var (workItem, instance) = await LockOrchestrationAsync("extend-lock-orchestration");
+        var lockedUntilBefore = workItem.LockedUntilUtc;
+
+        // An extended session keeps processing the instance well past the original lock
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        await CompleteOrchestrationAsync(workItem, instance, "extend-lock-orchestration");
+
+        var (_, lockedUntilAfter) = await GetInstanceLockAsync(instance.InstanceId);
+        lockedUntilAfter.Should().BeAfter(lockedUntilBefore.AddSeconds(1));
+        workItem.LockedUntilUtc.Should().BeCloseTo(lockedUntilAfter, TimeSpan.FromSeconds(1));
+
+        await ReleaseAndPurgeAsync(workItem);
+    }
+
+    [SkippableFact]
+    public async Task FetchNewOrchestrationMessages_ShouldExtendInstanceLock()
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+
+        using var _ = UseOrchestrationLockTimeout(TimeSpan.FromSeconds(5));
+        var (workItem, instance) = await LockOrchestrationAsync("fetch-extend-lock-orchestration");
+        var lockedUntilBefore = workItem.LockedUntilUtc;
+
+        // The lock is only extended once less than half of it is left
+        await Task.Delay(TimeSpan.FromSeconds(3));
+
+        await taskHubClient.RaiseEventAsync(
+            new OrchestrationInstance { InstanceId = instance.InstanceId },
+            "event",
+            "data");
+
+        var messages = await workItem.Session.FetchNewOrchestrationMessagesAsync(workItem);
+        messages.Should().ContainSingle();
+
+        var (_, lockedUntilAfter) = await GetInstanceLockAsync(instance.InstanceId);
+        lockedUntilAfter.Should().BeAfter(lockedUntilBefore.AddSeconds(1));
+        workItem.LockedUntilUtc.Should().BeCloseTo(lockedUntilAfter, TimeSpan.FromSeconds(1));
+
+        await ReleaseAndPurgeAsync(workItem);
+    }
+
+    [SkippableFact]
+    public async Task CompleteTaskOrchestrationWorkItem_WhenLockWasLost_ShouldAbortSessionAndKeepOtherLock()
+    {
+        var orchestrationService = _host.Services.GetRequiredService<IOrchestrationService>();
+
+        var (workItem, instance) = await LockOrchestrationAsync("lost-lock-orchestration");
+        var (thiefLockId, thiefLockedUntil) = await StealInstanceLockAsync(instance.InstanceId);
+
+        await orchestrationService
+            .Invoking(s => CompleteOrchestrationAsync(workItem, instance, "lost-lock-orchestration"))
+            .Should().ThrowAsync<SessionAbortedException>();
+
+        // DTFx abandons the aborted session, which must not touch the lock of its successor
+        await orchestrationService.AbandonTaskOrchestrationWorkItemAsync(workItem);
+
+        var (lockId, lockedUntil) = await GetInstanceLockAsync(instance.InstanceId);
+        lockId.Should().Be(thiefLockId);
+        lockedUntil.Should().BeCloseTo(thiefLockedUntil, TimeSpan.FromSeconds(1));
+
+        await PurgeAsync();
+    }
+
+    [SkippableFact]
+    public async Task ReleaseTaskOrchestrationWorkItem_WhenLockWasLost_ShouldKeepOtherLock()
+    {
+        var orchestrationService = _host.Services.GetRequiredService<IOrchestrationService>();
+
+        var (workItem, instance) = await LockOrchestrationAsync("lost-lock-release-orchestration");
+        var (thiefLockId, thiefLockedUntil) = await StealInstanceLockAsync(instance.InstanceId);
+
+        await orchestrationService.ReleaseTaskOrchestrationWorkItemAsync(workItem);
+
+        var (lockId, lockedUntil) = await GetInstanceLockAsync(instance.InstanceId);
+        lockId.Should().Be(thiefLockId);
+        lockedUntil.Should().BeCloseTo(thiefLockedUntil, TimeSpan.FromSeconds(1));
+
+        await PurgeAsync();
+    }
+
+    [SkippableFact]
+    public async Task RenewTaskOrchestrationWorkItemLock_WhenLockWasLost_ShouldAbortSession()
+    {
+        var orchestrationService = _host.Services.GetRequiredService<IOrchestrationService>();
+
+        var (workItem, instance) = await LockOrchestrationAsync("lost-lock-renew-orchestration");
+        var (thiefLockId, thiefLockedUntil) = await StealInstanceLockAsync(instance.InstanceId);
+
+        await orchestrationService
+            .Invoking(s => s.RenewTaskOrchestrationWorkItemLockAsync(workItem))
+            .Should().ThrowAsync<SessionAbortedException>();
+
+        var (lockId, lockedUntil) = await GetInstanceLockAsync(instance.InstanceId);
+        lockId.Should().Be(thiefLockId);
+        lockedUntil.Should().BeCloseTo(thiefLockedUntil, TimeSpan.FromSeconds(1));
+
+        await PurgeAsync();
+    }
+
+    // Orchestration names used by these tests are not registered in the worker, so only the test consumes them
+    private async Task<(TaskOrchestrationWorkItem WorkItem, OrchestrationInstance Instance)> LockOrchestrationAsync(string name)
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+        var service = _host.Services.GetRequiredService<IDistributedOrchestrationService>();
+
+        var instance = await taskHubClient.CreateOrchestrationInstanceAsync(name, "", null);
+
+        var workItem = await service.LockNextTaskOrchestrationWorkItemAsync(
+            TimeSpan.FromSeconds(5),
+            new INameVersionInfo[] { new OrchestrationNameVersion(name, "") },
+            CancellationToken.None);
+        workItem.Should().NotBeNull();
+
+        // The dispatcher applies the new messages to the runtime state before completing
+        foreach (var message in workItem.NewMessages)
+            workItem.OrchestrationRuntimeState.AddEvent(message.Event);
+
+        return (workItem, instance);
+    }
+
+    private Task CompleteOrchestrationAsync(TaskOrchestrationWorkItem workItem, OrchestrationInstance instance, string name)
+    {
+        var orchestrationService = _host.Services.GetRequiredService<IOrchestrationService>();
+
+        return orchestrationService.CompleteTaskOrchestrationWorkItemAsync(
+            workItem,
+            workItem.OrchestrationRuntimeState,
+            new List<TaskMessage>(),
+            new List<TaskMessage>(),
+            new List<TaskMessage>(),
+            null,
+            new OrchestrationState
+            {
+                OrchestrationInstance = instance,
+                Name = name,
+                Version = "",
+                OrchestrationStatus = OrchestrationStatus.Running
+            });
+    }
+
+    private async Task<(string LockId, DateTime LockedUntil)> GetInstanceLockAsync(string instanceId)
+    {
+        var dbContextFactory = _host.Services.GetRequiredService<IDbContextFactory<OrchestrationDbContext>>();
+        using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        var instance = await dbContext.Instances.AsNoTracking().FirstAsync(i => i.InstanceId == instanceId);
+        return (instance.LockId, instance.LockedUntil);
+    }
+
+    // Simulates another worker taking over the instance after this session's lock expired
+    private async Task<(string LockId, DateTime LockedUntil)> StealInstanceLockAsync(string instanceId)
+    {
+        var dbContextFactory = _host.Services.GetRequiredService<IDbContextFactory<OrchestrationDbContext>>();
+        using (var dbContext = await dbContextFactory.CreateDbContextAsync())
+        {
+            var instance = await dbContext.Instances.FirstAsync(i => i.InstanceId == instanceId);
+            instance.LockId = Guid.NewGuid().ToString();
+            instance.LockedUntil = DateTime.UtcNow.AddMinutes(5);
+            await dbContext.SaveChangesAsync();
+        }
+
+        return await GetInstanceLockAsync(instanceId);
+    }
+
+    private async Task ReleaseAndPurgeAsync(TaskOrchestrationWorkItem workItem)
+    {
+        var orchestrationService = _host.Services.GetRequiredService<IOrchestrationService>();
+        await orchestrationService.ReleaseTaskOrchestrationWorkItemAsync(workItem);
+        await PurgeAsync();
+    }
+
+    private async Task PurgeAsync()
+    {
+        var taskHubClient = _host.Services.GetRequiredService<TaskHubClient>();
+        await taskHubClient.PurgeOrchestrationInstanceHistoryAsync(
+            DateTime.UtcNow,
+            OrchestrationStateTimeRangeFilterType.OrchestrationCreatedTimeFilter);
+    }
+
+    private IDisposable UseOrchestrationLockTimeout(TimeSpan timeout)
+    {
+        var options = _host.Services.GetRequiredService<IOptions<EFCoreOrchestrationOptions>>().Value;
+        var original = options.OrchestrationLockTimeout;
+        options.OrchestrationLockTimeout = timeout;
+        return new RestoreAction(() => options.OrchestrationLockTimeout = original);
+    }
+
+    private sealed class RestoreAction : IDisposable
+    {
+        private readonly Action _action;
+        public RestoreAction(Action action) => _action = action;
+        public void Dispose() => _action();
+    }
+
+    private record OrchestrationNameVersion(string Name, string Version) : INameVersionInfo;
 
     [Trait("Category", "Integration")]
     [SkippableFact]
